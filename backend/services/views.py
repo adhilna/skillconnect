@@ -2,9 +2,10 @@ from rest_framework import generics
 from .models import Service
 from .serializers import ServiceSerialzer
 from rest_framework.permissions import IsAuthenticated
+from users.permissions import IsCustomer
 
 class ServiceListView(generics.ListAPIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsCustomer]
     queryset = Service.objects.all()
     serializer_class = ServiceSerialzer
 
