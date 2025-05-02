@@ -1,5 +1,7 @@
 from rest_framework import serializers
 from .models import User, Profile, WorkerProfile
+from decimal import Decimal
+
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
@@ -26,6 +28,38 @@ class ProfileSerializer(serializers.ModelSerializer):
             }
         except WorkerProfile.DoesNotExist:
             return None
+        
+    def update(self, instance, validated_data):
+        instance.full_name = validated_data.get('full_name', instance.full_name)
+        instance.phone = validated_data.get('phone', instance.phone)
+        instance.location = validated_data.get('location', instance.location)
+        instance.save()
+
+        if instance.user.role == 'worker':
+            worker_fields = ['skills', 'hourly_rate', 'availability', 'certifications']
+            worker_data = {key: validated_data.get(key) for key in worker_fields if key in validated_data}
+            location = validated_data.get('location')
+            if worker_data or location:
+                try:
+                    worker_profile = instance.user.workerprofile
+                    worker_profile.skills = worker_data.get('skills', worker_profile.skills)
+                    worker_profile.hourly_rate = worker_data.get('hourly_rate', worker_profile.hourly_rate)
+                    worker_profile.availability = worker_data.get('availability', worker_profile.availability)
+                    worker_profile.certifications = worker_data.get('certifications', worker_profile.certifications)
+                    worker_profile.location = location if location is not None else worker_profile.location
+                    worker_profile.save()
+                except WorkerProfile.DoesNotExist:
+                    WorkerProfile.objects.create(
+                        user = instance.user,
+                        skills = worker_data.get('skills', ''),
+                        hourly_rate=worker_data.get('hourly_rate', Decimal('0.00')),
+                        availability=worker_data.get('availability', ''),
+                        certifications=worker_data.get('certifications', ''),
+                        location=validated_data.get('location', '')
+                    )
+        return instance
+
+                    
 
 class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, min_length=8)
@@ -50,7 +84,7 @@ class RegisterSerializer(serializers.ModelSerializer):
     def validate(self, data):
         if data['role'] == 'worker' and not data.get('skills'):
             raise serializers.ValidationError("Skills are required for workers")
-        if data['role'] == 'worker' and not data.get('worker_location'):
+        if data['role'] == 'worker' and not data.get('location'):
             raise serializers.ValidationError("Location is required for workers")
         return data
 
