@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import LoginPage from './pages/LoginPage';
 import ServicesPage from './pages/ServicesPage';
+import CreateServicePage from './pages/CreateServicePage';
 
 function App() {
   return (
@@ -11,6 +12,7 @@ function App() {
         <Routes>
           <Route path="/" element={<ServicesPage />} />
           <Route path="/login" element={<LoginPage />} />
+          <Route path='/create-service' element={<CreateServicePage />} />
         </Routes>
       </div>
     </Router>
