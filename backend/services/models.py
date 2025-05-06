@@ -12,7 +12,7 @@ class Service(models.Model):
     title = models.CharField(max_length=128)
     description = models.TextField()
     price = models.DecimalField(max_digits=10, decimal_places=2)
-    worker = models.ForeignKey(User, on_delete=models.CASCADE, limit_choices_to={'role': 'worker'})
+    worker = models.ForeignKey(User, on_delete=models.CASCADE, limit_choices_to={'role': 'worker'}, related_name='services')
     category = models.ForeignKey(ServiceCategory, on_delete=models.CASCADE)
 
     def __str__(self):

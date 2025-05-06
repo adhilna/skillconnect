@@ -1,0 +1,1 @@
+{"user":{"id":3,"email":"customer3@example.com","role":"customer"},"full_name":"Jane Smith","phone":"9876543210","location":"Manhattan, NY","worker_profile":null}

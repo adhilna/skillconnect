@@ -1,0 +1,1 @@
+{"id":3,"title":"Install Faucet","description":"Faucet installation service","price":"75.00","worker":4,"category":{"id":1,"name":"Plumbing"},"worker_location":"Queens, NY"}
