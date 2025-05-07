@@ -16,7 +16,11 @@ export const AuthProvider = ({ children }) => {
             const { access } = response.data;
             setToken(access);
             localStorage.setItem('token', access);
-            setUser({ email });
+            // Fetch user role from profile endpoint
+            const profileResponse = await axios.get('http://localhost:8000/api/v1/auth/profile/', {
+                headers: { Authorization: `Bearer ${access}` },
+            });
+            setUser({ email, role: profileResponse.data.user.role });
         } catch (error) {
             console.error('Login failed:', error.response?.data);
             throw error;
