@@ -1,121 +1,143 @@
 from rest_framework import serializers
-from .models import User, Profile, WorkerProfile
-from decimal import Decimal
-
-
-class UserSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = User
-        fields = ['id', 'email', 'role']
-
-class ProfileSerializer(serializers.ModelSerializer):
-    user = UserSerializer(read_only=True)
-    worker_profile = serializers.SerializerMethodField()
-
-    class Meta:
-        model = Profile
-        fields = ['user', 'full_name', 'phone', 'location', 'worker_profile']
-
-    def get_worker_profile(self, obj):
-        try:
-            worker_profile = obj.user.workerprofile
-            return {
-                'skills': worker_profile.skills,
-                'hourly_rate': worker_profile.hourly_rate,
-                'availability': worker_profile.availability,
-                'certifications': worker_profile.certifications,
-                'location': worker_profile.location
-            }
-        except WorkerProfile.DoesNotExist:
-            return None
-        
-    def update(self, instance, validated_data):
-        instance.full_name = validated_data.get('full_name', instance.full_name)
-        instance.phone = validated_data.get('phone', instance.phone)
-        instance.location = validated_data.get('location', instance.location)
-        instance.save()
-
-        if instance.user.role == 'worker':
-            worker_fields = ['skills', 'hourly_rate', 'availability', 'certifications']
-            worker_data = {key: validated_data.get(key) for key in worker_fields if key in validated_data}
-            location = validated_data.get('location')
-            if worker_data or location:
-                try:
-                    worker_profile = instance.user.workerprofile
-                    worker_profile.skills = worker_data.get('skills', worker_profile.skills)
-                    worker_profile.hourly_rate = worker_data.get('hourly_rate', worker_profile.hourly_rate)
-                    worker_profile.availability = worker_data.get('availability', worker_profile.availability)
-                    worker_profile.certifications = worker_data.get('certifications', worker_profile.certifications)
-                    worker_profile.location = location if location is not None else worker_profile.location
-                    worker_profile.save()
-                except WorkerProfile.DoesNotExist:
-                    WorkerProfile.objects.create(
-                        user = instance.user,
-                        skills = worker_data.get('skills', ''),
-                        hourly_rate=worker_data.get('hourly_rate', Decimal('0.00')),
-                        availability=worker_data.get('availability', ''),
-                        certifications=worker_data.get('certifications', ''),
-                        location=validated_data.get('location', '')
-                    )
-        return instance
-
-                    
+from django.utils.translation import gettext_lazy as _
+from django.contrib.auth import authenticate
+from rest_framework.exceptions import AuthenticationFailed
+from rest_framework_simplejwt.tokens import RefreshToken
+from .models import User
 
 class RegisterSerializer(serializers.ModelSerializer):
-    password = serializers.CharField(write_only=True, min_length=8)
-    full_name = serializers.CharField(max_length=128, required=False)
-    phone = serializers.CharField(max_length=15, required=False, allow_blank=True)
-    location = serializers.CharField(max_length=100, required=False, allow_blank=True)
-    skills = serializers.CharField(required=False, allow_blank=True)
-    hourly_rate = serializers.DecimalField(max_digits=10, decimal_places=2, required=False)
-    availability = serializers.CharField(required=False, allow_blank=True)
-    certifications = serializers.CharField(required=False, allow_blank=True)
-    worker_location = serializers.CharField(max_length=100, required=False, allow_blank=True)
+    password = serializers.CharField(
+        write_only=True,
+        required=True,
+        style={'input_type': 'password'},
+        label=_('password'),
+    )
 
     class Meta:
         model = User
-        fields = ['email', 'password', 'role', 'full_name', 'phone', 'location', 'skills', 'hourly_rate', 'availability', 'certifications', 'worker_location']
+        fields = ['id', 'email', 'phone', 'password', 'role']
+        read_only_fields = ['id']
 
-    def validate_email(self, value):
-        if User.objects.filter(email=value).exists():
-            raise serializers.ValidationError("Email already exists")
+    def validate_password(self, value):
+        """
+        Validate password strength (e.g., minimum length).
+        """
+        if len(value) < 8:
+            raise serializers.ValidationError(_('Password must be at least 8 characters long.'))
         return value
-
-    def validate(self, data):
-        if data['role'] == 'worker' and not data.get('skills'):
-            raise serializers.ValidationError("Skills are required for workers")
-        if data['role'] == 'worker' and not data.get('location'):
-            raise serializers.ValidationError("Location is required for workers")
-        return data
-
+    
     def create(self, validated_data):
-        worker_fields = ['skills', 'hourly_rate', 'availability', 'certifications', 'worker_location']
-        worker_data = {key: validated_data.pop(key, None) for key in worker_fields if key in validated_data}
-
-        user = User(
+        return User.objects.create_user(
             email=validated_data['email'],
-            role=validated_data['role'],
-            username=validated_data['email']
+            password=validated_data['password'],
+            phone=validated_data.get('phone'),
+            role=validated_data.get('role', 'CLIENT')
         )
-        user.set_password(validated_data['password'])
-        user.save()
+class LoginSerializer(serializers.Serializer):
+    email = serializers.EmailField(required=True)
+    password = serializers.CharField(write_only=True, style={'input_type': 'password'})
 
-        full_name = validated_data.get('full_name', validated_data['email'].split('@')[0])
-        Profile.objects.create(
-            user=user,
-            full_name=full_name,
-            phone=validated_data.get('phone', ''),
-            location=validated_data.get('location', '')
-        )
+    def validate(self, attrs):
+        email = attrs.get('email')
+        password = attrs.get('password')
 
-        if user.role == 'worker':
-            WorkerProfile.objects.create(
-                user=user,
-                skills=worker_data.get('skills', ''),
-                hourly_rate=worker_data.get('hourly_rate', 0.00),
-                availability=worker_data.get('availability', ''),
-                certifications=worker_data.get('certifications', ''),
-                location=worker_data.get('worker_location', '')
-            )
+        user = authenticate(email=email, password=password)
 
-        return user
+        if not user:
+            raise AuthenticationFailed("Invalid email or password")
+        if not user.is_active:
+            raise AuthenticationFailed( "Account disabled")
+        
+        refresh = RefreshToken.for_user(user)
+
+        return {
+            'refresh': str(refresh),
+            'access': str(refresh.access_token),
+            'user': {
+                'id': user.id,
+                'email': user.email,
+                'role': user.role
+            }
+        }
+
+# class FreelancerProfileSerializer(serializers.ModelSerializer):
+#     user = UserSerializer(read_only=True)
+#     location = LocationSerializer(read_only=True)
+#     rate = RateSerializer(many=True, read_only=True)
+
+#     class Meta:
+#         model = FreelancerProfile
+#         fields = ['id', 'user', 'bio', 'profile_photo', 'location', 'rate', 'is_complete', 'created_at', 'updated_at']
+#         read_only_fields = ['id', 'user', 'rates', 'is_complete', 'created_at', 'updated_at']
+
+# class  CategorySerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = Category
+#         fields = ['id', 'name']
+#         read_only_fields = ['id']
+
+# class ResumeSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = Resume
+#         fields = ['id', 'file', 'uploaded_at']
+#         read_only_fields = ['id', 'uploaded_at']
+
+#     def validate(self, data):
+#         # Ensure user is a freelancer
+#         user = self.context['request'].user
+#         if user.role != 'FREELANCER':
+#             raise serializers.ValidationError(_('Only freelancers can upload resumes'))
+#         return data
+
+# class SkillSerializer(serializers.ModelSerializer):
+#     category = CategorySerializer(read_only=True)
+#     category_id = serializers.PrimaryKeyRelatedField(
+#         queryset=Category.objects.all(),
+#         source='category',
+#         write_only=True,
+#         required=False
+#     )
+
+#     class Meta:
+#         model = Skill
+#         fields = ['id', 'name', 'category', 'category_id']
+#         read_only_fields = ['id']
+
+#     def validate(self, data):
+#         # Ensure user is a freelancer
+#         user = self.context['request'].user
+#         if user.role != 'FREELANCER':
+#             raise serializers.ValidationError(_('Only freelancers can validate skills'))
+#         return data
+
+# class ExperiexnceSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = Experience
+#         fields = ['id', 'job_title', 'company', 'start_date', 'end_date', 'description']
+#         read_only_fields = ['id']
+
+#     def validate(self, data):
+#         # Ensure user is a freelancer and start_date is before end_date
+#         user = self.context['request'].user
+#         if user.role != 'FREELANCER':
+#             raise serializers.ValidationError(_('Only freelancers can add experiences.'))
+#         start_date = data.get('start_date')
+#         end_date = data.get('end_date')
+#         if end_date and start_date and end_date < start_date:
+#             raise serializers.ValidationError(_('End date must be after start date'))
+#         return data
+
+# class EducationSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = Education
+#         fields = ['id', 'institution', 'degree', 'year']
+#         read_only_fields = ['id']
+
+#     def validate(self, data):
+#         user = self.context['request'].user
+#         if user.role != 'FREELANCER':
+#             raise serializers.ValidationError(_('Only freelancers can add educations'))
+#         year = data.get('year')
+#         if year and year < 1950:
+#             raise serializers.ValidationError('Year must be after 1950')
+#         return data

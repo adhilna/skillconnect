@@ -43,12 +43,9 @@ INSTALLED_APPS = [
     'django_extensions',
     'corsheaders',
     'channels',
+    'phonenumber_field',
     'users',
     'services',
-    'booking',
-    'payments',
-    'reviews',
-    'notifications',
 ]
 
 MIDDLEWARE = [

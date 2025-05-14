@@ -1,60 +1,55 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser, BaseUserManager
+from django.utils.translation import gettext_lazy as _
+from phonenumber_field.modelfields import PhoneNumberField
 
+USER_ROLE_CHOICES = (
+    ('CLIENT', 'Client'),
+    ('FREELANCER', 'Freelancer'),
+)
 
 class UserManager(BaseUserManager):
     def create_user(self, email, password=None, **extra_fields):
         if not email:
-            raise ValueError("The Email fieldmust be set")
+            raise ValueError(_('The Email field must be set'))
         email = self.normalize_email(email)
+        extra_fields.setdefault('role', 'CLIENT')
         user = self.model(email=email, **extra_fields)
         user.set_password(password)
         user.save(using=self._db)
         return user
-    
+
     def create_superuser(self, email, password=None, **extra_fields):
         extra_fields.setdefault('is_staff', True)
         extra_fields.setdefault('is_superuser', True)
+        extra_fields.setdefault('role', 'CLIENT')  # You can change later to 'ADMIN' if needed
+
+        if extra_fields.get('is_staff') is not True:
+            raise ValueError(_('Superuser must have is_staff=True'))
+        if extra_fields.get('is_superuser') is not True:
+            raise ValueError(_('Superuser must have is_superuser=True'))
+
         return self.create_user(email, password, **extra_fields)
-    
 
 class User(AbstractUser):
-    ROLE_CHOICES = (
-        ('customer', 'Customer'),
-        ('worker', 'Worker'),
-        ('admin', 'Admin')
-    )
-    email = models.EmailField(unique=True)
-    username = models.CharField(max_length=150, unique=True)
-    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='customer')
-    is_active = models.BooleanField(default=True)
-    is_staff = models.BooleanField(default=False)
-    is_superuser = models.BooleanField(default=False)
+    username = None
+    email = models.EmailField(_('email address'), unique=True)
+    role = models.CharField(_('role'), max_length=20, choices=USER_ROLE_CHOICES, default='CLIENT')
+    phone = PhoneNumberField(_('phone number'), null=True, blank=True)
+    is_active = models.BooleanField(_('active'), default=True)
+    date_joined = models.DateTimeField(_('date joined'), auto_now_add=True)
+
+    USERNAME_FIELD = 'email'
+    REQUIRED_FIELDS = []
 
     objects = UserManager()
 
-    USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = ['username', 'role']
+    class Meta:
+        verbose_name = _('user')
+        verbose_name_plural = _('users')
+        indexes = [
+            models.Index(fields=['email', 'role']),
+        ]
 
     def __str__(self):
         return self.email
-
-class Profile(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
-    full_name = models.CharField(max_length=128)
-    phone = models.CharField(max_length=15, blank=True)
-    location = models.CharField(max_length=128, blank=True)
-
-    def __str__(self):
-        return self.full_name
-    
-class WorkerProfile(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE,related_name='workerprofile', limit_choices_to={'role': 'worker'})
-    skills = models.TextField(blank=True)
-    hourly_rate = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
-    availability = models.TextField(blank=True)
-    certifications = models.TextField(blank=True)
-    location = models.CharField(max_length=128, blank=True)
-
-    def __str__(self):
-        return f"Worker Profile for {self.user.email}"
