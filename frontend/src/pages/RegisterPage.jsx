@@ -11,6 +11,7 @@ export default function RegistrationPage() {
     const [loading, setLoading] = useState(false);
     const [errors, setErrors] = useState({});
 
+
     const [formValues, setFormValues] = useState({
         email: '',
         password: '',
@@ -394,7 +395,7 @@ export default function RegistrationPage() {
                                     </button>
 
                                     <button
-                                        onClick={() => window.location.href = '/profile'}
+                                        onClick={() => window.location.href = '/welcome'}
                                         className="w-full bg-white/10 hover:bg-white/20 text-white px-6 py-3 rounded-xl font-medium transition-colors"
                                     >
                                         Complete Your Profile

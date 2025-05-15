@@ -56,9 +56,16 @@ class LoginSerializer(serializers.Serializer):
             'user': {
                 'id': user.id,
                 'email': user.email,
-                'role': user.role
+                'role': user.role,
+                'first_login':user.first_login
             }
         }
+
+class UserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['email', 'role', 'first_login']
+        read_only_fields = ['email', 'role']
 
 # class FreelancerProfileSerializer(serializers.ModelSerializer):
 #     user = UserSerializer(read_only=True)

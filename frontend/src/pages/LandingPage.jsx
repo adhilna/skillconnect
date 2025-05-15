@@ -245,3 +245,78 @@ export default function LandingPage() {
         </div>
     );
 }
+
+
+// import React, { useState, useEffect } from 'react';
+// import Navbar from '../components/Navbar';
+// import Hero from '../components/Hero';
+// import SearchBar from '../components/SearchBar';
+// import Features from '../components/Features';
+// import Categories from '../components/Categories';
+// import Testimonials from '../components/Testimonials';
+// import CTA from '../components/CTA';
+// import Footer from '../components/Footer';
+
+// const LandingPage = () => {
+//     const [heroIndex, setHeroIndex] = useState(0);
+//     const [isVisible, setIsVisible] = useState(false);
+//     const [searchInput, setSearchInput] = useState('');
+//     const [category, setCategory] = useState('Design');
+
+//     const heroTexts = [
+//         { title: "Find the perfect freelance services for your business", subtitle: "Work with talented freelancers at the most affordable price" },
+//         { title: "Get work done faster, with confidence", subtitle: "Your payment is released only when you approve the work" },
+//         { title: "The best for every budget", subtitle: "Quality work done quickly across thousands of categories" }
+//     ];
+
+//     const categories = [
+//         'Design', 'Development', 'Marketing', 'Writing', 'Video', 'Music', 'Business'
+//     ];
+
+//     const popular = [
+//         'Logo Design', 'Website Development', 'Content Writing', 'Video Editing', 'Social Media'
+//     ];
+
+//     useEffect(() => {
+//         const timer = setTimeout(() => {
+//             setHeroIndex((prevIndex) => (prevIndex + 1) % heroTexts.length);
+//         }, 5000);
+
+//         setIsVisible(true);
+
+//         return () => clearTimeout(timer);
+//     }, [heroIndex]);
+
+//     const handleSearchSubmit = (e) => {
+//         e.preventDefault();
+//         alert(`Searching for "${searchInput}" in ${category}`);
+//     };
+
+//     return (
+//         <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-indigo-800 text-white">
+//             {/* Background blobs */}
+//             <div className="absolute inset-0 overflow-hidden">
+//                 <div className="absolute w-64 h-64 rounded-full bg-purple-500 opacity-10 blur-3xl -top-10 -left-10 animate-pulse"></div>
+//                 <div className="absolute w-96 h-96 rounded-full bg-blue-500 opacity-10 blur-3xl top-1/4 -right-20 animate-pulse"></div>
+//                 <div className="absolute w-80 h-80 rounded-full bg-indigo-500 opacity-10 blur-3xl bottom-10 left-1/3 animate-pulse"></div>
+//             </div>
+
+//             <Navbar />
+//             <Hero heroTexts={heroTexts} heroIndex={heroIndex} isVisible={isVisible} />
+//             <SearchBar
+//                 category={category}
+//                 searchInput={searchInput}
+//                 setSearchInput={setSearchInput}
+//                 handleSearchSubmit={handleSearchSubmit}
+//                 popular={popular}
+//             />
+//             <Features />
+//             <Categories categories={categories} category={category} setCategory={setCategory} />
+//             <Testimonials />
+//             <CTA />
+//             <Footer categories={categories} />
+//         </div>
+//     );
+// };
+
+// export default LandingPage;

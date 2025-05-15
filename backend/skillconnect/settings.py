@@ -45,7 +45,6 @@ INSTALLED_APPS = [
     'channels',
     'phonenumber_field',
     'users',
-    'services',
 ]
 
 MIDDLEWARE = [

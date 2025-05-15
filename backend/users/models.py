@@ -38,6 +38,7 @@ class User(AbstractUser):
     phone = PhoneNumberField(_('phone number'), null=True, blank=True)
     is_active = models.BooleanField(_('active'), default=True)
     date_joined = models.DateTimeField(_('date joined'), auto_now_add=True)
+    first_login = models.BooleanField(_('first login'), default=True)
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = []

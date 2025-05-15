@@ -7,12 +7,12 @@ import LandingPage from './pages/LandingPage';
 import RegisterPage from './pages/RegisterPage';
 import RoleSelectPage from './pages/RoleSelectPage';
 import SplashScreen from './pages/SplashScreen';
+import WelcomePage from './pages/WelcomePage';
 
 function App() {
   return (
     <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <div className="min-h-screen bg-gray-100">
-        {/* <Navbar /> */}
         <Routes>
           <Route path='/' element={<LandingPage />} />
           <Route path="/services" element={<ServicesPage />} />
@@ -21,6 +21,7 @@ function App() {
           <Route path="/splash" element={<SplashScreen />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path='/create-service' element={<CreateServicePage />} />
+          <Route path='/welcome' element={<WelcomePage />} />
         </Routes>
       </div>
     </Router>
