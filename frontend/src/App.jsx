@@ -8,6 +8,8 @@ import RegisterPage from './pages/RegisterPage';
 import RoleSelectPage from './pages/RoleSelectPage';
 import SplashScreen from './pages/SplashScreen';
 import WelcomePage from './pages/WelcomePage';
+import FreelancerProfileSetup from './pages/FreelancerProfileSetup ';
+import ClientProfileSetup from './pages/ClientProfileSetup';
 
 function App() {
   return (
@@ -22,6 +24,9 @@ function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route path='/create-service' element={<CreateServicePage />} />
           <Route path='/welcome' element={<WelcomePage />} />
+          <Route path='/freelancer/profile' element={<FreelancerProfileSetup />} />
+          <Route path='/client/profile' element={<ClientProfileSetup />} />
+
         </Routes>
       </div>
     </Router>
