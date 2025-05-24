@@ -8,10 +8,13 @@ class FreelancerProfileViewset(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        return FreelancerProfile.objects.filter(user = self.request.user)
+        return FreelancerProfile.objects.filter(user=self.request.user)
 
     def get_object(self):
-        return FreelancerProfile.objects.get(user = self.request.user)
+        return FreelancerProfile.objects.get(user=self.request.user)
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
 
 class ClientProfileViewset(viewsets.ModelViewSet):
     serializer_class = ClientProfileSerializer

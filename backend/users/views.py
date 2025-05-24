@@ -1,11 +1,15 @@
-from rest_framework import generics
-from .serializers import RegisterSerializer, LoginSerializer, UserSerializer
+from rest_framework import generics, status
+from .serializers import RegisterSerializer, LoginSerializer, UserSerializer, OTPSerializer, ResendOTPSerializer
 from .models import User
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework import serializers, status
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.views import APIView
 from rest_framework.response import Response
+from django_ratelimit.decorators import ratelimit
+from django.utils.decorators import method_decorator
+from rest_framework_simplejwt.tokens import RefreshToken
+from .tasks import send_otp_email_task
 
 
 
@@ -14,6 +18,18 @@ class RegisterView(generics.CreateAPIView):
     serializer_class = RegisterSerializer
     permission_classes = [AllowAny]
     queryset = User.objects.all()
+
+    @method_decorator(ratelimit(key='ip', rate='10/m', method='POST', block=True))
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        if serializer.is_valid():
+            user = serializer.save()  # Save the user and get the instance
+            send_otp_email_task.delay(user.email, user.otp)  # Use the correct Celery task
+            return Response(
+                {'message': 'User registered. OTP sent to your email.'},
+                status=status.HTTP_201_CREATED
+            )
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class LoginView(APIView):
     permission_classes = [AllowAny]
@@ -30,7 +46,7 @@ class UserProfileView(generics.RetrieveAPIView):
 
     def get_object(self):
         return self.request.user
-    
+
 class UserUpdateView(generics.UpdateAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = UserSerializer
@@ -38,49 +54,55 @@ class UserUpdateView(generics.UpdateAPIView):
     def get_object(self):
         return self.request.user
 
+class VerifyOTPView(APIView):
+    permission_classes = [AllowAny]
 
-# class FreelancerRateView(generics.CreateAPIView):
-#     queryset = Rate.objects.all()
-#     permission_classes = [IsAuthenticated]
-#     serializer_class = RateSerializer
+    @method_decorator(ratelimit(key='ip', rate='10/m', method='POST', block=True))
+    def post(self, request, *args, **kwargs):
+        serializer = OTPSerializer(data=request.data)
+        if serializer.is_valid():
+            email = serializer.validated_data['email']
+            otp = serializer.validated_data['otp']
+            try:
+                user = User.objects.get(email=email)
+                if user.is_verified:
+                    return Response({'error': 'Email already verified.'}, status=status.HTTP_400_BAD_REQUEST)
+                if user.otp_is_valid() and user.otp == otp:
+                    user.is_verified = True
+                    user.first_login = True
+                    user.otp = None
+                    user.otp_created_at = None
+                    user.save()
+                    refresh = RefreshToken.for_user(user)
+                    return Response({
+                        'message': 'Email verified successfully.',
+                        'refresh': str(refresh),
+                        'access': str(refresh.access_token),
+                        'user': {
+                            'id': user.id,
+                            'email': user.email,
+                            'role': user.role,
+                            'first_login': user.first_login
+                        }
+                    }, status=status.HTTP_200_OK)
+                else:
+                    return Response({'error': 'Invalid or expired OTP.'}, status=status.HTTP_400_BAD_REQUEST)
+            except User.DoesNotExist:
+                return Response({'error': 'User not found.'}, status=status.HTTP_404_NOT_FOUND)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-#     def perform_create(self, serializer):
-            
-#             if self.request.user.role != 'FREELANCER':
-#                 raise PermissionDenied("Only freelancers can set rates.")
-#             serializer.save(user=self.request.user)
+class ResendOTPView(APIView):
+    permission_classes = [AllowAny]
 
-# class FreelancerProfileView(generics.RetrieveAPIView):
-#      queryset = FreelancerProfile.objects.all()
-#      serializer_class = FreelancerProfileSerializer
-#      permission_classes = [IsAuthenticated]
-#      lookup_field = 'pk'
-
-# class FreelancerCreateUpdateView(generics.CreateAPIView, generics.UpdateAPIView):
-#      queryset = FreelancerProfile.objects.all()
-#      permission_classes = [IsAuthenticated]
-#      serializer_class = FreelancerProfileSerializer
-
-#      def perform_create(self, serializer):
-#           if self.request.user.role != 'FREELANCER':
-#                raise PermissionDenied("Only freelancers can set rates")
-#           serializer.save(user=self.request.user)
-#      def get_object(self):
-#           return get_object_or_404(FreelancerProfile, user=self.request.user)
-
-
-
-# class ProfileView(generics.RetrieveAPIView):
-#     permission_classes = [IsAuthenticated]
-#     serializer_class = ProfileSerializer
-
-#     def get_object(self):
-#         return self.request.user.profile
-    
-# class ProfileUpdateView(generics.UpdateAPIView):
-#     permission_classes = [IsAuthenticated]
-#     serializer_class = ProfileSerializer
-
-#     def get_object(self):
-#         return self.request.user.profile
-    
+    @method_decorator(ratelimit(key='ip', rate='5/m', block=True))
+    def post(self, request, *args, **kwargs):
+        serializer = ResendOTPSerializer(data=request.data)
+        if serializer.is_valid():
+            try:
+                user = User.objects.get(email=serializer.validated_data['email'])
+                if user.is_verified:
+                    return Response({'error': 'Email already verified.'}, status=status.HTTP_400_BAD_REQUEST)
+                serializer.save()
+                return Response({'message': 'New OTP sent to your email.'}, status=status.HTTP_200_OK)
+            except Exception as e:
+                return Response({'error': f'Failed to resend OTP: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

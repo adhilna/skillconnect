@@ -1,10 +1,10 @@
 from rest_framework.permissions import BasePermission
 
-class IsCustomer(BasePermission):
-    def has_permission(self, request, view):
-        return request.user.is_authenticated and request.user.role == 'Client'
+# class IsCustomer(BasePermission):
+#     def has_permission(self, request, view):
+#         return request.user.is_authenticated and request.user.role == 'Client'
     
-class IsWorker(BasePermission):
-    def has_permission(self, request, view):
-        return request.user.is_authenticated and request.user.role == 'Freelancer'
+# class IsWorker(BasePermission):
+#     def has_permission(self, request, view):
+#         return request.user.is_authenticated and request.user.role == 'Freelancer'
     

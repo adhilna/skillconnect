@@ -1,7 +1,8 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.utils.translation import gettext_lazy as _
-from phonenumber_field.modelfields import PhoneNumberField
+from django.utils import timezone
+from datetime import timedelta
 
 USER_ROLE_CHOICES = (
     ('CLIENT', 'Client'),
@@ -35,10 +36,16 @@ class User(AbstractUser):
     username = None
     email = models.EmailField(_('email address'), unique=True)
     role = models.CharField(_('role'), max_length=20, choices=USER_ROLE_CHOICES, default='CLIENT')
-    phone = PhoneNumberField(_('phone number'), null=True, blank=True)
     is_active = models.BooleanField(_('active'), default=True)
     date_joined = models.DateTimeField(_('date joined'), auto_now_add=True)
     first_login = models.BooleanField(_('first login'), default=True)
+    otp = models.CharField(max_length=6, null=True, blank=True)
+    otp_created_at = models.DateTimeField(null=True, blank=True)
+    is_verified = models.BooleanField(default=False)
+
+    def otp_is_valid(self):
+        from .utils import OTP_VALIDITY_MINUTES
+        return self.otp and self.otp_created_at and timezone.now() < self.otp_created_at + timezone.timedelta(minutes=OTP_VALIDITY_MINUTES)
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = []

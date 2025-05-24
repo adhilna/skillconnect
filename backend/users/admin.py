@@ -9,19 +9,19 @@ class UserAdmin(BaseUserAdmin):
     """
     Admin interface for User model, customized for SkillConnect.
     """
-    list_display = ['email', 'role', 'phone', 'is_active','first_login', 'is_staff', 'date_joined']
+    list_display = ['email', 'role', 'is_active','first_login', 'is_staff', 'date_joined']
     list_filter = ['role', 'is_active', 'is_staff','first_login']
     search_fields = ['email', 'phone']
     ordering = ['email']
     fieldsets = (
         (None, {'fields': ('email', 'password')}),
-        (_('Personal Info'), {'fields': ('role', 'phone', 'first_login')}),
+        (_('Personal Info'), {'fields': ('role', 'first_login')}),
         (_('Permissions'), {'fields': ('is_active', 'is_staff', 'is_superuser')}),
     )
     add_fieldsets = (
         (None, {
             'classes': ('wide',),
-            'fields': ('email', 'role', 'phone', 'password1', 'password2', 'is_staff', 'is_superuser', 'first_login'),
+            'fields': ('email', 'role', 'password1', 'password2', 'is_staff', 'is_superuser', 'first_login'),
         }),
     )
     readonly_fields = ['last_login', 'date_joined']
