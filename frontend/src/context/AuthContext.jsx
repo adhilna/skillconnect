@@ -1,28 +1,19 @@
 import { createContext, useState } from 'react';
-import axios from 'axios';
 
 export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
-    const [token, setToken] = useState(localStorage.getItem('token') || '');
+    const [token, setToken] = useState(localStorage.getItem('access_token') || '');
 
-    const login = async (email, password) => {
+    const login = async (data) => {
         try {
-            const response = await axios.post('http://localhost:8000/api/v1/auth/token/', {
-                email,
-                password,
-            });
-            const { access } = response.data;
-            setToken(access);
-            localStorage.setItem('token', access);
-            // Fetch user role from profile endpoint
-            const profileResponse = await axios.get('http://localhost:8000/api/v1/auth/profile/', {
-                headers: { Authorization: `Bearer ${access}` },
-            });
-            setUser({ email, role: profileResponse.data.user.role });
+            // Set user data from verify-otp response
+            setUser({ email: data.email, role: data.role });
+            setToken(localStorage.getItem('access_token')); // Use stored token
+            return data;
         } catch (error) {
-            console.error('Login failed:', error.response?.data);
+            console.error('Login failed:', error.response?.data || error.message);
             throw error;
         }
     };
@@ -30,7 +21,8 @@ export const AuthProvider = ({ children }) => {
     const logout = () => {
         setToken('');
         setUser(null);
-        localStorage.removeItem('token');
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('refresh_token');
     };
 
     return (
