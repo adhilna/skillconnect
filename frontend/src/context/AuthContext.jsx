@@ -6,16 +6,17 @@ export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [token, setToken] = useState(localStorage.getItem('access_token') || '');
 
-    const login = async (data) => {
-        try {
-            // Set user data from verify-otp response
-            setUser({ email: data.email, role: data.role });
-            setToken(localStorage.getItem('access_token')); // Use stored token
-            return data;
-        } catch (error) {
-            console.error('Login failed:', error.response?.data || error.message);
-            throw error;
-        }
+    const login = (data) => {
+        return new Promise((resolve, reject) => {
+            try {
+                setUser({ email: data.email, role: data.role });
+                setToken(localStorage.getItem('access_token') || '');
+                resolve(data);
+            } catch (error) {
+                console.error('Login failed:', error.response?.data || error.message);
+                reject(error);
+            }
+        });
     };
 
     const logout = () => {

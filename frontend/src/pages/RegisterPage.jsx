@@ -1,4 +1,5 @@
 import { useState, useEffect, useContext } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Stepper from '../components/Shared/Stepper.jsx';
 import RoleSelection from '../components/Shared/RoleSelection.jsx';
 import AccountForm from '../components/Shared/AccountForm.jsx';
@@ -7,7 +8,7 @@ import { AuthContext } from '../context/AuthContext.jsx';
 import axios from 'axios';
 
 export default function Register() {
-    const { login } = useContext(AuthContext);
+    const { login, user } = useContext(AuthContext);
     const [formStep, setFormStep] = useState(0);
     const [isPasswordVisible, setIsPasswordVisible] = useState(false);
     const [loading, setLoading] = useState(false);
@@ -17,12 +18,15 @@ export default function Register() {
     const [resendCooldown, setResendCooldown] = useState(0);
     const [success, setSuccess] = useState('');
     const [verified, setVerified] = useState(false); // New state for verification status
+
     const [formValues, setFormValues] = useState({
         email: '',
         password: '',
         role: '',
         agreeTerms: false,
     });
+
+    const navigate = useNavigate()
 
     useEffect(() => {
         let timer;
@@ -105,6 +109,7 @@ export default function Register() {
             });
 
             const { access, refresh, user } = response.data;
+            console.log('Tokens:', { access, refresh }); // Debug
 
             // Store tokens
             localStorage.setItem('access_token', access);
@@ -112,6 +117,7 @@ export default function Register() {
 
             // Update global auth state (via context, etc.)
             await login({ email: formValues.email, role: user.role });
+            console.log('User after login:', user); // Debug
 
             setSuccess('Email verified successfully!');
             setVerified(true); // Show Next or continue to dashboard
@@ -124,7 +130,12 @@ export default function Register() {
 
 
     const handleNextAfterVerification = () => {
-        window.location.href = '/welcome'; // Redirect to welcome page
+        if (user) {
+            navigate('/welcome');
+        } else {
+            console.error('User not authenticated, redirecting to login');
+            navigate('/login');
+        }
     };
 
     const handleResendOtp = async () => {

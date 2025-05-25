@@ -4,17 +4,19 @@ import { useNavigate } from "react-router-dom";
 import { SyncLoader } from "react-spinners";
 
 const WelcomePage = () => {
-    const [userData, setUserData] = useState({ email: '', role: '', first_login: true });
+    const [userData, setUserData] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
     const navigate = useNavigate();
 
     useEffect(() => {
         const fetchUserData = async () => {
             try {
-                const token = localStorage.getItem('token');
+                const token = localStorage.getItem('access_token');
                 const response = await axios.get('http://localhost:8000/api/v1/auth/profile/', {
                     headers: { Authorization: `Bearer ${token}` },
                 });
+                console.log('Profile response:', response.data); // Debug
                 setUserData(response.data);
 
                 // If not first login, redirect immediately
@@ -25,8 +27,8 @@ const WelcomePage = () => {
                     navigate(redirectPath);
                 }
             } catch (error) {
-                console.log('Error fetching user data:', error);
-                navigate('/login');
+                console.error('Error fetching user data:', error.response?.data || error.message);
+                setError('Failed to load profile. Please log in again.');
             } finally {
                 setLoading(false);
             }
@@ -35,10 +37,13 @@ const WelcomePage = () => {
     }, [navigate]);
 
     useEffect(() => {
-        if (userData.first_login) {
+        if (userData && userData.first_login) {
             const timer = setTimeout(async () => {
                 try {
-                    const token = localStorage.getItem('token');
+                    const token = localStorage.getItem('access_token');
+                    if (!token) {
+                        throw new Error('No access token found');
+                    }
                     // PATCH request to update first_login to false
                     await axios.patch('http://localhost:8000/api/v1/auth/update/', {
                         first_login: false,
@@ -53,7 +58,7 @@ const WelcomePage = () => {
                     navigate(redirectPath);
                 } catch (error) {
                     console.error('Error updating first_login:', error);
-                    navigate('/login');
+                    setError('Failed to update profile. Please log in again.');
                 }
             }, 5000);
             return () => clearTimeout(timer);
@@ -65,6 +70,14 @@ const WelcomePage = () => {
             <div className="min-h-screen flex items-center justify-center bg-black text-white">
                 <SyncLoader color="#a855f7" size={15} />
                 <p className="ml-4 text-purple-300">Loading your profile...</p>
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-black text-white">
+                <p className="text-red-400">{error}</p>
             </div>
         );
     }

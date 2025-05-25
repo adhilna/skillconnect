@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Search, CheckCircle, Star, ChevronDown, Users, Globe, Briefcase } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 export default function LandingPage() {
     const [heroIndex, setHeroIndex] = useState(0);
@@ -67,8 +68,13 @@ export default function LandingPage() {
                     <a href="#" className="hover:text-purple-300 transition-colors">Enterprise</a>
                 </div>
                 <div className="space-x-4">
-                    <button className="hidden md:inline-block px-4 py-2 rounded-lg text-white hover:text-purple-300 transition-colors">Log In</button>
-                    <button className="px-4 py-2 rounded-lg bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 font-medium transition-all transform hover:scale-105">Join Now</button>
+                    <Link to="/login">
+                        <button className="hidden md:inline-block px-4 py-2 rounded-lg text-white hover:text-purple-300 transition-colors">Log In</button></Link>
+                    <Link to="/register">
+                        <button className="px-4 py-2 rounded-lg bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 font-medium transition-all transform hover:scale-105">
+                            Join Now
+                        </button>
+                    </Link>
                 </div>
             </nav>
 
@@ -192,9 +198,10 @@ export default function LandingPage() {
                     <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold mb-6">Ready to get started?</h2>
                     <p className="text-lg text-purple-200 mb-8">Join thousands of businesses finding the perfect talent for their projects</p>
                     <div className="flex flex-col sm:flex-row justify-center gap-4">
-                        <button className="px-8 py-3 rounded-lg bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 font-medium transition-all transform hover:scale-105 text-lg">
-                            Sign Up For Free
-                        </button>
+                        <Link to="/register">
+                            <button className="px-8 py-3 rounded-lg bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 font-medium transition-all transform hover:scale-105 text-lg">
+                                Sign Up For Free
+                            </button></Link>
                         <button className="px-8 py-3 rounded-lg border border-purple-400 hover:bg-white/10 font-medium transition-all text-lg">
                             Learn How It Works
                         </button>
