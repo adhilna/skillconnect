@@ -1,3 +1,4 @@
+import React from 'react';
 import { useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Stepper from '../components/Shared/Stepper.jsx';
@@ -207,46 +208,6 @@ export default function Register() {
         </div>
     );
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 // import { useState, useEffect, useContext } from 'react';
 // import { CheckCircle, Eye, EyeOff, ArrowRight, Mail, Lock, User, Key, Loader2 } from 'lucide-react';
