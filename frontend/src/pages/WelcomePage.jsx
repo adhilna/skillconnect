@@ -13,7 +13,7 @@ const WelcomePage = () => {
         const fetchUserData = async () => {
             try {
                 const token = localStorage.getItem('access_token');
-                const response = await axios.get('http://localhost:8000/api/v1/auth/profile/', {
+                const response = await axios.get('http://localhost:8000/api/v1/profiles/', {
                     headers: { Authorization: `Bearer ${token}` },
                 });
                 console.log('Profile response:', response.data); // Debug
@@ -45,7 +45,7 @@ const WelcomePage = () => {
                         throw new Error('No access token found');
                     }
                     // PATCH request to update first_login to false
-                    await axios.patch('http://localhost:8000/api/v1/auth/update/', {
+                    await axios.patch('http://localhost:8000/api/v1/profiles/update/', {
                         first_login: false,
                     }, {
                         headers: { Authorization: `Bearer ${token}` },

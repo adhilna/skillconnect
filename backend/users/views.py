@@ -1,5 +1,14 @@
 from rest_framework import generics, status
-from .serializers import RegisterSerializer, LoginSerializer, UserSerializer, OTPSerializer, ResendOTPSerializer
+from .serializers import (
+    RegisterSerializer,
+    LoginSerializer,
+    UserSerializer,
+    OTPSerializer,
+    ResendOTPSerializer,
+    ForgotPasswordRequestSerializer,
+    ForgotPasswordVerifySerializer,
+    ResetPasswordSerializer
+)
 from .models import User
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework import serializers, status
@@ -106,3 +115,26 @@ class ResendOTPView(APIView):
                 return Response({'message': 'New OTP sent to your email.'}, status=status.HTTP_200_OK)
             except Exception as e:
                 return Response({'error': f'Failed to resend OTP: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+class ForgotPasswordRequestAPIView(APIView):
+    def post(self, request):
+        serializer = ForgotPasswordRequestSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({"detail": "OTP sent to email"}, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class ForgotPasswordVerifyAPIView(APIView):
+    def post(self, request):
+        serializer = ForgotPasswordVerifySerializer(data=request.data)
+        if serializer.is_valid():
+            return Response({"detail": "OTP is valid"}, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class ResetPasswordAPIView(APIView):
+    def post(self, request):
+        serializer = ResetPasswordSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({"detail": "Password reset successfully"}, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

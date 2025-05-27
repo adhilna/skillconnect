@@ -1,5 +1,5 @@
 import React, { useState, useContext } from 'react';
-import { AuthContext } from '../context/AuthContext.jsx'; // adjust path
+import { AuthContext } from '../../../context/AuthContext.jsx'; // adjust path
 import axios from 'axios';
 
 const steps = [

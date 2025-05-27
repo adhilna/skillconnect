@@ -81,7 +81,7 @@ export default function Register() {
 
         setLoading(true);
         try {
-            const response = await axios.post('http://localhost:8000/api/v1/auth/register/', formValues);
+            const response = await axios.post('http://localhost:8000/api/v1/auth/users/register/', formValues);
             console.log('Registration success:', response.data);
             nextStep();
             setOtpTimer(300);
@@ -103,7 +103,7 @@ export default function Register() {
         setErrors({});
         setSuccess('');
         try {
-            const response = await axios.post('http://localhost:8000/api/v1/auth/verify-otp/', {
+            const response = await axios.post('http://localhost:8000/api/v1/auth/users/verify-otp/', {
                 email: formValues.email,
                 otp,
             });
@@ -141,7 +141,7 @@ export default function Register() {
     const handleResendOtp = async () => {
         setLoading(true);
         try {
-            await axios.post('http://localhost:8000/api/v1/auth/resend-otp/', { email: formValues.email });
+            await axios.post('http://localhost:8000/api/v1/auth/users/resend-otp/', { email: formValues.email });
             setOtpTimer(300);
             setResendCooldown(60);
         } catch (error) {
