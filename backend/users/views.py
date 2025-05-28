@@ -19,7 +19,10 @@ from django_ratelimit.decorators import ratelimit
 from django.utils.decorators import method_decorator
 from rest_framework_simplejwt.tokens import RefreshToken
 from .tasks import send_otp_email_task
-
+from google.oauth2 import id_token
+from google.auth.transport import requests
+from rest_framework_simplejwt.tokens import RefreshToken
+from django.contrib.auth import get_user_model
 
 
 
@@ -138,3 +141,53 @@ class ResetPasswordAPIView(APIView):
             serializer.save()
             return Response({"detail": "Password reset successfully"}, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class GoogleAuthView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        token = request.data.get('token')
+        role = request.data.get('role')
+
+        if not token:
+            return Response({'detail': 'No token provided'}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            idinfo = id_token.verify_oauth2_token(
+                token,
+                requests.Request(),
+                "177280873690-gfuk3olcl1ue5ue3c693jdd7850tk9uf.apps.googleusercontent.com"
+            )
+            email = idinfo.get('email')
+
+            if not email:
+                return Response({'detail': 'Email not found in token'}, status=status.HTTP_400_BAD_REQUEST)
+
+            User = get_user_model()
+            user, created = User.objects.get_or_create(email=email)
+
+            if created:
+                # If user is new and no role yet, prompt for role
+                if not role:
+                    return Response({'need_role': True}, status=200)
+                # Validate role value (optional, but recommended)
+                if role not in ['CLIENT', 'FREELANCER']:
+                    return Response({'detail': 'Invalid role.'}, status=400)
+                user.role = role
+                user.is_verified = True  # Consider Google-verified emails as verified
+                user.save()
+
+            refresh = RefreshToken.for_user(user)
+            return Response({
+                'access': str(refresh.access_token),
+                'refresh': str(refresh),
+                'user': {
+                    'id': user.id,
+                    'email': user.email,
+                    'role': user.role,
+                }
+            }, status=status.HTTP_200_OK)
+
+        except ValueError:
+            return Response({'detail': 'Invalid Google token'}, status=400)
+        except Exception as e:
+            return Response({'detail': str(e)}, status=400)

@@ -1,9 +1,12 @@
+import React from 'react';
 import { useState, useContext, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, Mail, Lock, AlertCircle } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext.jsx';
 import { FaApple } from "react-icons/fa";
-import { SiGoogle } from "react-icons/si";
+import { GoogleLogin } from '@react-oauth/google';
+import axios from 'axios';
+import RoleSelection from '../components/Shared/RoleSelection.jsx';
 
 
 export default function LoginPage() {
@@ -13,6 +16,10 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [animateIn, setAnimateIn] = useState(false);
+  const [googleToken, setGoogleToken] = useState(null);
+  const [showRoleSelection, setShowRoleSelection] = useState(false);
+  const [selectedRole, setSelectedRole] = useState(null);
+  const [googleLoading, setGoogleLoading] = useState(false);
 
   const { login } = useContext(AuthContext);
   const navigate = useNavigate();
@@ -38,6 +45,47 @@ export default function LoginPage() {
     }
     setIsLoading(false);
   };
+
+  const handleGoogleSuccess = async (googleToken) => {
+    setError('');
+    setGoogleLoading(true);
+    try {
+      const response = await axios.post('http://localhost:8000/api/v1/auth/users/google/', { token: googleToken });
+      if (response.data.access) {
+        // Save JWT, redirect, etc.
+        localStorage.setItem("access", response.data.access);
+        localStorage.setItem("refresh", response.data.refresh);
+        navigate('/welcome');
+      } else if (response.data.need_role) {
+        setGoogleToken(googleToken);
+        setShowRoleSelection(true);
+      }
+    } catch (error) {
+      setError(error.response?.data?.detail || "Google login failed.");
+    }
+    setGoogleLoading(false);
+  };
+
+  const handleRoleContinue = async () => {
+    setGoogleLoading(true);
+    setError('');
+    try {
+      const response = await axios.post('http://localhost:8000/api/v1/auth/users/google/', {
+        token: googleToken,
+        role: selectedRole,
+      });
+      if (response.data.access) {
+        localStorage.setItem("access", response.data.access);
+        localStorage.setItem("refresh", response.data.refresh);
+        setShowRoleSelection(false);
+        navigate('/welcome');
+      }
+    } catch (error) {
+      setError(error.response?.data?.detail || "Role selection failed.");
+    }
+    setGoogleLoading(false);
+  };
+
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-900 via-purple-900 to-indigo-800 p-4">
@@ -69,7 +117,7 @@ export default function LoginPage() {
               </div>
             )}
 
-            <div className="space-y-4 mb-8">
+            <form onSubmit={handleSubmit} className="space-y-4 mb-8">
               {/* Email Field */}
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -119,24 +167,30 @@ export default function LoginPage() {
                   Forgot Password?
                 </a>
               </div>
-            </div>
 
-            {/* Submit Button */}
-            <button
-              onClick={handleSubmit}
-              disabled={isLoading}
-              className={`w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white py-3 px-4 rounded-xl font-medium transition-all transform hover:scale-105 focus:outline-none ${isLoading ? "opacity-70 cursor-not-allowed" : "hover:from-blue-600 hover:to-purple-700"}`}
-            >
-              {isLoading ? "Signing in..." : "Sign In"}
-            </button>
+              {/* Submit Button */}
+              <button
+                type="submit"
+                disabled={isLoading}
+                className={`w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white py-3 px-4 rounded-xl font-medium transition-all transform hover:scale-105 focus:outline-none ${isLoading ? "opacity-70 cursor-not-allowed" : "hover:from-blue-600 hover:to-purple-700"}`}
+              >
+                {isLoading ? "Signing in..." : "Sign In"}
+              </button>
+            </form>
 
             {/* Divider */}
             <div className="mt-8 pt-6 border-t border-white/10 text-center">
-              <p className="text-purple-200 mb-4">Or sign in with</p>
+              <p className="text-purple-200 mb-4">or</p>
               <div className="flex justify-center space-x-4">
-                <button className="p-3 rounded-lg bg-white/10 hover:bg-white/20 transition-colors">
-                  <SiGoogle className="text-white" size={20} />
-                </button>
+                <GoogleLogin
+                  onSuccess={credentialResponse => handleGoogleSuccess(credentialResponse.credential)}
+                  onError={() => setError("Google Sign-In failed")}
+                  width="48"
+                  theme="filled_black"
+                  shape="circle"
+                  logo_alignment="center"
+                  disabled={googleLoading}
+                />
                 <button className="p-3 rounded-lg bg-white/10 hover:bg-white/20 transition-colors">
                   <FaApple className="text-white" size={20} />
                 </button>
@@ -148,10 +202,25 @@ export default function LoginPage() {
         {/* Sign up link */}
         <div className="text-center mt-6">
           <p className="text-purple-200">
-            Don't have an account? <a href="/register" className="text-purple-400 hover:text-white font-medium">Sign up</a>
+            Don&apos;t have an account? <a href="/register" className="text-purple-400 hover:text-white font-medium">Sign up</a>
           </p>
         </div>
       </div>
+
+      {/* Role selection modal */}
+      {showRoleSelection && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black/60 z-50">
+          <div className="bg-gray-900 p-8 rounded-xl shadow-lg w-full max-w-md">
+            <RoleSelection
+              selectedRole={selectedRole}
+              onSelect={setSelectedRole}
+              onContinue={handleRoleContinue}
+              loading={googleLoading}
+            />
+            {error && <div className="text-red-400 mt-4">{error}</div>}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

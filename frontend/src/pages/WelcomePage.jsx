@@ -12,7 +12,7 @@ const WelcomePage = () => {
     useEffect(() => {
         const fetchUserData = async () => {
             try {
-                const token = localStorage.getItem('access_token');
+                const token = localStorage.getItem('access');
                 const response = await axios.get('http://localhost:8000/api/v1/profiles/', {
                     headers: { Authorization: `Bearer ${token}` },
                 });
@@ -40,7 +40,7 @@ const WelcomePage = () => {
         if (userData && userData.first_login) {
             const timer = setTimeout(async () => {
                 try {
-                    const token = localStorage.getItem('access_token');
+                    const token = localStorage.getItem('access');
                     if (!token) {
                         throw new Error('No access token found');
                     }

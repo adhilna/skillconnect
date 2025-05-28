@@ -1,3 +1,4 @@
+import React from 'react';
 import { useState } from 'react';
 import { BackgroundBlobs } from '../components/Landing/BackgroundBlobs';
 import { Navbar } from '../components/Landing/Navbar';

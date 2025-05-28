@@ -7,7 +7,9 @@ from .views import(RegisterView,
                    ResendOTPView,
                    ForgotPasswordRequestAPIView,
                    ForgotPasswordVerifyAPIView,
-                   ResetPasswordAPIView)
+                   ResetPasswordAPIView,
+                   GoogleAuthView
+                   )
 
 urlpatterns = [
     path('register/', RegisterView.as_view(), name='register'),
@@ -19,4 +21,5 @@ urlpatterns = [
     path('forgot-password/request/', ForgotPasswordRequestAPIView.as_view(), name='forgot-password-request'),
     path('forgot-password/verify/', ForgotPasswordVerifyAPIView.as_view(), name='forgot-password-verify'),
     path('forgot-password/reset/', ResetPasswordAPIView.as_view(), name='forgot-password-reset'),
+    path('google/', GoogleAuthView.as_view(), name='google-auth')
 ]

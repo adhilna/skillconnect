@@ -182,3 +182,7 @@ CACHES = {
         }
     }
 }
+
+GOOGLE_CLIENT_ID = "177280873690-gfuk3olcl1ue5ue3c693jdd7850tk9uf.apps.googleusercontent.com"
+
+SECURE_CROSS_ORIGIN_OPENER_POLICY = 'same-origin-allow-popups'
