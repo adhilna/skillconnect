@@ -166,15 +166,18 @@ class GoogleAuthView(APIView):
             user, created = User.objects.get_or_create(email=email)
 
             if created:
-                # If user is new and no role yet, prompt for role
                 if not role:
                     return Response({'need_role': True}, status=200)
-                # Validate role value (optional, but recommended)
                 if role not in ['CLIENT', 'FREELANCER']:
                     return Response({'detail': 'Invalid role.'}, status=400)
                 user.role = role
-                user.is_verified = True  # Consider Google-verified emails as verified
+                user.is_verified = True
                 user.save()
+            else:
+                # Always update the role to the selected value
+                if role in ['CLIENT', 'FREELANCER']:
+                    user.role = role
+                    user.save()
 
             refresh = RefreshToken.for_user(user)
             return Response({
@@ -191,3 +194,4 @@ class GoogleAuthView(APIView):
             return Response({'detail': 'Invalid Google token'}, status=400)
         except Exception as e:
             return Response({'detail': str(e)}, status=400)
+

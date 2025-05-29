@@ -9,7 +9,7 @@ import { AuthContext } from '../context/AuthContext.jsx';
 import axios from 'axios';
 
 export default function Register() {
-    const { login, user } = useContext(AuthContext);
+    const { login, /*user*/ } = useContext(AuthContext);
     const [formStep, setFormStep] = useState(0);
     const [isPasswordVisible, setIsPasswordVisible] = useState(false);
     const [loading, setLoading] = useState(false);
@@ -113,14 +113,14 @@ export default function Register() {
             console.log('Tokens:', { access, refresh }); // Debug
 
             // Store tokens
-            localStorage.setItem('access_token', access);
+            localStorage.setItem('access', access);
             localStorage.setItem('refresh_token', refresh);
 
             // Update global auth state (via context, etc.)
             await login({ email: formValues.email, role: user.role });
             console.log('User after login:', user); // Debug
-
             setSuccess('Email verified successfully!');
+            navigate('/welcome')
             setVerified(true); // Show Next or continue to dashboard
         } catch (error) {
             setErrors({ otp: error.response?.data.error || 'Invalid or expired OTP' });
@@ -130,14 +130,14 @@ export default function Register() {
     };
 
 
-    const handleNextAfterVerification = () => {
-        if (user) {
-            navigate('/welcome');
-        } else {
-            console.error('User not authenticated, redirecting to login');
-            navigate('/login');
-        }
-    };
+    // const handleNextAfterVerification = () => {
+    //     if (user) {
+    //         navigate('/welcome');
+    //     } else {
+    //         console.error('User not authenticated, redirecting to login');
+    //         navigate('/login');
+    //     }
+    // };
 
     const handleResendOtp = async () => {
         setLoading(true);
@@ -155,6 +155,14 @@ export default function Register() {
     const handleRoleSelect = (role) => {
         setFormValues((prev) => ({ ...prev, role }));
     };
+
+    // useEffect(() => {
+    //     if (verified && user) {
+    //         navigate('/welcome');
+    //     }
+    // }, [verified, user, navigate]);
+
+
 
     return (
         <div className="min-h-screen flex items-center justify-center bg-gradient-to-r from-blue-900 via-purple-900 to-indigo-900 px-4 py-12">
@@ -201,7 +209,7 @@ export default function Register() {
                         onBack={prevStep}
                         success={success}
                         verified={verified} // Pass verified state
-                        onNext={handleNextAfterVerification} // Pass Next handler
+                    // onNext={handleNextAfterVerification} // Pass Next handler
                     />
                 )}
             </div>

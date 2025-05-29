@@ -1,6 +1,7 @@
-import { useState } from 'react';
-import { Building2, MapPin, CheckCircle, ArrowRight } from 'lucide-react';
+import React, { useState } from 'react';
+import { Building2, MapPin, CheckCircle } from 'lucide-react';
 import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 
 export default function ClientProfileSetup() {
     const [formValues, setFormValues] = useState({
@@ -8,15 +9,14 @@ export default function ClientProfileSetup() {
         location: '',
         bio: '',
     });
-
     const [errors, setErrors] = useState({});
     const [loading, setLoading] = useState(false);
     const [success, setSuccess] = useState(false);
+    const navigate = useNavigate();
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
         setFormValues({ ...formValues, [name]: value });
-
         if (errors[name]) {
             setErrors({ ...errors, [name]: '' });
         }
@@ -27,7 +27,6 @@ export default function ClientProfileSetup() {
         if (!formValues.companyName) newErrors.companyName = 'Company name is required';
         if (!formValues.location) newErrors.location = 'Location is required';
         if (!formValues.bio) newErrors.bio = 'Bio is required';
-
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
     };
@@ -35,12 +34,22 @@ export default function ClientProfileSetup() {
     const handleSubmit = async () => {
         if (!validateForm()) return;
         setLoading(true);
-
         try {
-            await axios.post('http://localhost:8000/api/v1/profiles/client/profile/', formValues);
+            await axios.post(
+                'http://localhost:8000/api/v1/profiles/client/profile/',
+                formValues,
+                {
+                    headers: {
+                        Authorization: `Bearer ${localStorage.getItem('access')}`,
+                    },
+                }
+            );
             setSuccess(true);
+            setTimeout(() => navigate('/client/dashboard'), 1500); // or your desired route
         } catch (error) {
-            setErrors({ general: 'Failed to save profile. Please try again.', error });
+            setErrors({
+                general: error.response?.data?.detail || 'Failed to save profile. Please try again.'
+            });
         } finally {
             setLoading(false);
         }
@@ -52,7 +61,6 @@ export default function ClientProfileSetup() {
                 <CheckCircle size={64} className="text-green-400 mb-4" />
                 <h2 className="text-2xl font-bold mb-2">Profile Setup Complete!</h2>
                 <p className="mb-4">Your client profile has been saved successfully.</p>
-                {/* You can add a button here to navigate to dashboard */}
             </div>
         );
     }
@@ -61,13 +69,11 @@ export default function ClientProfileSetup() {
         <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-900 via-purple-900 to-indigo-800 p-4">
             <div className="relative z-10 w-full max-w-md bg-white/10 backdrop-blur-lg rounded-2xl shadow-2xl p-8 border border-white/20">
                 <h2 className="text-xl font-bold text-white mb-6">Set up your Client Profile</h2>
-
                 {errors.general && (
                     <div className="bg-red-500/20 border border-red-500/50 text-white p-3 rounded-lg mb-4">
                         {errors.general}
                     </div>
                 )}
-
                 <div className="space-y-4">
                     <div className="relative">
                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -83,7 +89,6 @@ export default function ClientProfileSetup() {
                         />
                         {errors.companyName && <p className="text-red-400 text-sm mt-1">{errors.companyName}</p>}
                     </div>
-
                     <div className="relative">
                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                             <MapPin className="text-purple-300" size={18} />
@@ -98,7 +103,6 @@ export default function ClientProfileSetup() {
                         />
                         {errors.location && <p className="text-red-400 text-sm mt-1">{errors.location}</p>}
                     </div>
-
                     <div>
                         <textarea
                             name="bio"
@@ -110,7 +114,6 @@ export default function ClientProfileSetup() {
                         />
                         {errors.bio && <p className="text-red-400 text-sm mt-1">{errors.bio}</p>}
                     </div>
-
                     <button
                         onClick={handleSubmit}
                         disabled={loading}

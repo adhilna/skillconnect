@@ -1,3 +1,4 @@
+import React from 'react';
 import { Key, Loader2 } from 'lucide-react';
 
 export default function OtpVerification({

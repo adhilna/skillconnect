@@ -13,18 +13,26 @@ const WelcomePage = () => {
         const fetchUserData = async () => {
             try {
                 const token = localStorage.getItem('access');
-                const response = await axios.get('http://localhost:8000/api/v1/profiles/', {
+                if (!token) {
+                    setError('No access token found. Please log in.');
+                    navigate('/login');
+                    return;
+                }
+                const response = await axios.get('http://localhost:8000/api/v1/auth/users/profile/', {
                     headers: { Authorization: `Bearer ${token}` },
                 });
-                console.log('Profile response:', response.data); // Debug
                 setUserData(response.data);
 
                 // If not first login, redirect immediately
                 if (!response.data.first_login) {
-                    const redirectPath = response.data.role === 'CLIENT'
-                        ? '/client/profile'
-                        : '/freelancer/profile';
-                    navigate(redirectPath);
+                    const role = response.data.role?.toUpperCase();
+                    if (role === 'CLIENT') {
+                        navigate('/client/profile');
+                    } else if (role === 'FREELANCER') {
+                        navigate('/freelancer/profile');
+                    } else {
+                        setError('Unknown user role. Please contact support.');
+                    }
                 }
             } catch (error) {
                 console.error('Error fetching user data:', error.response?.data || error.message);
@@ -45,11 +53,14 @@ const WelcomePage = () => {
                         throw new Error('No access token found');
                     }
                     // PATCH request to update first_login to false
-                    await axios.patch('http://localhost:8000/api/v1/profiles/update/', {
+                    const response = await axios.patch('http://localhost:8000/api/v1/auth/users/update/', {
                         first_login: false,
                     }, {
                         headers: { Authorization: `Bearer ${token}` },
                     });
+                    console.log('User role:', response.data.role);
+                    console.log('PATCH response:', response.data);
+
 
                     // Redirect based on role
                     const redirectPath = userData.role === 'CLIENT'
@@ -92,7 +103,7 @@ const WelcomePage = () => {
                     Welcome to SkillConnect! Discover top talent for your projects.
                 </p>
                 <SyncLoader color="#a855f7" size={15} />
-                <p className="mt-4 text-purple-200">Preparing your experience...</p>
+                <p className="mt-4 text-purple-200">Preparing your profile page setup...</p>
             </div>
         </div>
     );
