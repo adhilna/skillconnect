@@ -1,3 +1,4 @@
+import React from 'react';
 import { Search } from 'lucide-react';
 
 export const ExploreHeroSection = ({ searchInput, setSearchInput, selectedCategory, setSelectedCategory }) => {

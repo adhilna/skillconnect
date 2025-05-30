@@ -1,3 +1,4 @@
+import React from 'react';
 import { TrendingUp } from 'lucide-react';
 import { ArrowRight } from 'lucide-react';
 import { ServiceCard } from './ServiceCard';

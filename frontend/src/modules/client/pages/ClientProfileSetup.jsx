@@ -1,126 +1,279 @@
-import React, { useState } from 'react';
-import { Building2, MapPin, CheckCircle } from 'lucide-react';
-import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
+
+import React from 'react';
+import { useState } from 'react';
+import { Building, User, Target, CreditCard } from 'lucide-react';
+import Stepper from '../components/clientProfileSetup/Stepper';
+import AccountTypeStep from '../components/clientProfileSetup/AccountTypeStep';
+import BusinessInfoStep from '../components/clientProfileSetup/BusinessInfoStep';
+import ProjectNeedsStep from '../components/clientProfileSetup/ProjectNeedsStep';
+import BudgetPaymentStep from '../components/clientProfileSetup/BudgetPaymentStep';
+import CompletionStep from '../components/clientProfileSetup/CompletionStep';
+import NavigationButtons from '../components/clientProfileSetup/NavigationButtons';
 
 export default function ClientProfileSetup() {
-    const [formValues, setFormValues] = useState({
-        companyName: '',
-        location: '',
-        bio: '',
-    });
-    const [errors, setErrors] = useState({});
+    const [formStep, setFormStep] = useState(0);
     const [loading, setLoading] = useState(false);
-    const [success, setSuccess] = useState(false);
-    const navigate = useNavigate();
+    const [errors, setErrors] = useState({});
+    const [profileImage, setProfileImage] = useState(null);
+    const [isCompleted, setIsCompleted] = useState(false);
+
+    const [clientData, setClientData] = useState({
+        // Personal/Business Info
+        firstName: '',
+        lastName: '',
+        companyName: '',
+        accountType: '', // 'personal' or 'business'
+        industry: '',
+        companySize: '',
+        website: '',
+        location: '',
+        timezone: '',
+        description: '',
+
+        // Project Preferences
+        projectTypes: [],
+        budgetRange: '',
+        projectFrequency: '',
+        preferredCommunication: [],
+        workingHours: '',
+
+        // Requirements & Goals
+        businessGoals: [],
+        currentChallenges: [],
+        previousExperience: '',
+        expectedTimeline: '',
+        qualityImportance: '',
+
+        // Payment & Budget
+        paymentMethod: '',
+        monthlyBudget: '',
+        projectBudget: '',
+        paymentTiming: ''
+    });
+
+    const steps = [
+        { title: 'Account Type', icon: User },
+        { title: 'Business Info', icon: Building },
+        { title: 'Project Needs', icon: Target },
+        { title: 'Budget & Payment', icon: CreditCard }
+    ];
+
+    const industries = [
+        'Technology', 'Healthcare', 'Finance', 'Education', 'E-commerce', 'Real Estate',
+        'Marketing & Advertising', 'Manufacturing', 'Food & Beverage', 'Fashion',
+        'Travel & Tourism', 'Non-profit', 'Entertainment', 'Consulting', 'Other'
+    ];
+
+    const companySizes = [
+        'Just me (1)', 'Small team (2-10)', 'Growing business (11-50)',
+        'Medium company (51-200)', 'Large enterprise (200+)'
+    ];
+
+    const projectTypes = [
+        'Web Development', 'Mobile App Development', 'UI/UX Design', 'Graphic Design',
+        'Content Writing', 'Digital Marketing', 'SEO', 'Social Media Management',
+        'Video Production', 'Photography', 'Translation', 'Data Entry',
+        'Virtual Assistant', 'Consulting', 'Research', 'Other'
+    ];
+
+    const budgetRanges = [
+        'Under $500', '$500 - $1,000', '$1,000 - $5,000',
+        '$5,000 - $10,000', '$10,000 - $25,000', '$25,000+'
+    ];
+
+    const businessGoals = [
+        'Increase online presence', 'Launch new product/service', 'Improve efficiency',
+        'Scale business operations', 'Enter new markets', 'Reduce costs',
+        'Improve customer experience', 'Digital transformation', 'Brand development'
+    ];
+
+    const challenges = [
+        'Limited technical expertise', 'Tight deadlines', 'Budget constraints',
+        'Finding reliable freelancers', 'Communication barriers', 'Quality control',
+        'Project management', 'Time zone differences', 'Scope creep'
+    ];
+
+    const communicationMethods = [
+        'Email', 'Slack', 'WhatsApp', 'Zoom', 'Skype', 'Microsoft Teams', 'Phone calls'
+    ];
+
+    const timezones = [
+        'UTC-12:00 Baker Island', 'UTC-11:00 American Samoa', 'UTC-10:00 Hawaii',
+        'UTC-09:00 Alaska', 'UTC-08:00 Pacific Time', 'UTC-07:00 Mountain Time',
+        'UTC-06:00 Central Time', 'UTC-05:00 Eastern Time', 'UTC-04:00 Atlantic Time',
+        'UTC-03:00 Argentina', 'UTC-02:00 Mid-Atlantic', 'UTC-01:00 Azores',
+        'UTC+00:00 London/Dublin', 'UTC+01:00 Paris/Berlin', 'UTC+02:00 Cairo',
+        'UTC+03:00 Moscow', 'UTC+04:00 Dubai', 'UTC+05:00 Pakistan',
+        'UTC+05:30 India', 'UTC+06:00 Bangladesh', 'UTC+07:00 Thailand',
+        'UTC+08:00 Singapore', 'UTC+09:00 Japan', 'UTC+10:00 Australia',
+        'UTC+11:00 Solomon Islands', 'UTC+12:00 New Zealand'
+    ];
 
     const handleInputChange = (e) => {
-        const { name, value } = e.target;
-        setFormValues({ ...formValues, [name]: value });
-        if (errors[name]) {
-            setErrors({ ...errors, [name]: '' });
+        const { name, value, type, checked } = e.target;
+        setClientData(prev => ({
+            ...prev,
+            [name]: type === 'checkbox' ? checked : value
+        }));
+    };
+
+    const handleArrayInput = (field, value) => {
+        setClientData(prev => ({
+            ...prev,
+            [field]: prev[field].includes(value)
+                ? prev[field].filter(item => item !== value)
+                : [...prev[field], value]
+        }));
+    };
+
+    // const removeArrayItem = (field, index) => {
+    //     setClientData(prev => ({
+    //         ...prev,
+    //         [field]: prev[field].filter((_, i) => i !== index)
+    //     }));
+    // };
+
+    const handleImageUpload = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                setProfileImage(e.target.result);
+            };
+            reader.readAsDataURL(file);
         }
     };
 
-    const validateForm = () => {
+    const nextStep = () => setFormStep(prev => prev + 1);
+    const prevStep = () => setFormStep(prev => prev - 1);
+
+    const validateStep = () => {
         const newErrors = {};
-        if (!formValues.companyName) newErrors.companyName = 'Company name is required';
-        if (!formValues.location) newErrors.location = 'Location is required';
-        if (!formValues.bio) newErrors.bio = 'Bio is required';
+
+        switch (formStep) {
+            case 0:
+                if (!clientData.accountType) newErrors.accountType = 'Please select account type';
+                break;
+            case 1:
+                if (!clientData.firstName) newErrors.firstName = 'First name is required';
+                if (!clientData.lastName) newErrors.lastName = 'Last name is required';
+                if (clientData.accountType === 'business' && !clientData.companyName) {
+                    newErrors.companyName = 'Company name is required for business accounts';
+                }
+                if (!clientData.location) newErrors.location = 'Location is required';
+                break;
+            case 2:
+                if (clientData.projectTypes.length === 0) newErrors.projectTypes = 'Select at least one project type';
+                if (!clientData.budgetRange) newErrors.budgetRange = 'Budget range is required';
+                break;
+            case 3:
+                if (!clientData.paymentMethod) newErrors.paymentMethod = 'Payment method is required';
+                break;
+        }
+
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
     };
 
+    const handleNext = () => {
+        if (validateStep()) {
+            if (formStep < steps.length - 1) {
+                nextStep();
+            } else {
+                handleSubmit();
+            }
+        }
+    };
+
     const handleSubmit = async () => {
-        if (!validateForm()) return;
         setLoading(true);
         try {
-            await axios.post(
-                'http://localhost:8000/api/v1/profiles/client/profile/',
-                formValues,
-                {
-                    headers: {
-                        Authorization: `Bearer ${localStorage.getItem('access')}`,
-                    },
-                }
-            );
-            setSuccess(true);
-            setTimeout(() => navigate('/client/dashboard'), 1500); // or your desired route
+            // Simulate API call
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            console.log('Client profile setup completed:', clientData);
+            setIsCompleted(true);
         } catch (error) {
-            setErrors({
-                general: error.response?.data?.detail || 'Failed to save profile. Please try again.'
-            });
+            console.error('Error:', error);
         } finally {
             setLoading(false);
         }
     };
 
-    if (success) {
+
+
+    const getCurrentStepComponent = () => {
+        switch (formStep) {
+            case 0: return <AccountTypeStep
+                clientData={clientData}
+                setClientData={setClientData}
+                errors={errors}
+            />;
+            case 1: return <BusinessInfoStep
+                clientData={clientData}
+                errors={errors}
+                industries={industries}
+                companySizes={companySizes}
+                timezones={timezones}
+                handleInputChange={handleInputChange}
+                handleImageUpload={handleImageUpload}
+                profileImage={profileImage} />;
+            case 2: return <ProjectNeedsStep
+                clientData={clientData}
+                errors={errors}
+                projectTypes={projectTypes}
+                budgetRanges={budgetRanges}
+                communicationMethods={communicationMethods}
+                businessGoals={businessGoals}
+                challenges={challenges}
+                handleArrayInput={handleArrayInput}
+                handleInputChange={handleInputChange} />;
+            case 3: return <BudgetPaymentStep
+                clientData={clientData}
+                errors={errors}
+                handleInputChange={handleInputChange} />;
+            default: return null;
+        }
+    };
+
+    if (isCompleted) {
         return (
-            <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-indigo-900 via-purple-900 to-indigo-800 p-4 text-white">
-                <CheckCircle size={64} className="text-green-400 mb-4" />
-                <h2 className="text-2xl font-bold mb-2">Profile Setup Complete!</h2>
-                <p className="mb-4">Your client profile has been saved successfully.</p>
+            <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center p-4">
+                <div className="w-full max-w-4xl">
+                    <CompletionStep
+                        clientData={clientData}
+                        onRestart={() => {
+                            setIsCompleted(false);
+                            setFormStep(0);
+                            setClientData({
+                                firstName: '', lastName: '', companyName: '', accountType: '',
+                                industry: '', companySize: '', website: '', location: '', timezone: '',
+                                description: '', projectTypes: [], budgetRange: '', projectFrequency: '',
+                                preferredCommunication: [], workingHours: '', businessGoals: [],
+                                currentChallenges: [], previousExperience: '', expectedTimeline: '',
+                                qualityImportance: '', paymentMethod: '', monthlyBudget: '',
+                                projectBudget: '', paymentTiming: ''
+                            });
+                            setProfileImage(null);
+                        }}
+                        onDashboard={() => console.log('Navigate to dashboard')} />
+                </div>
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-900 via-purple-900 to-indigo-800 p-4">
-            <div className="relative z-10 w-full max-w-md bg-white/10 backdrop-blur-lg rounded-2xl shadow-2xl p-8 border border-white/20">
-                <h2 className="text-xl font-bold text-white mb-6">Set up your Client Profile</h2>
-                {errors.general && (
-                    <div className="bg-red-500/20 border border-red-500/50 text-white p-3 rounded-lg mb-4">
-                        {errors.general}
-                    </div>
-                )}
-                <div className="space-y-4">
-                    <div className="relative">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <Building2 className="text-purple-300" size={18} />
-                        </div>
-                        <input
-                            type="text"
-                            name="companyName"
-                            value={formValues.companyName}
-                            onChange={handleInputChange}
-                            placeholder="Company Name"
-                            className={`w-full py-3 pl-10 pr-4 bg-white/10 border rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-white placeholder-purple-300 ${errors.companyName ? 'border-red-500' : 'border-white/20'}`}
-                        />
-                        {errors.companyName && <p className="text-red-400 text-sm mt-1">{errors.companyName}</p>}
-                    </div>
-                    <div className="relative">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <MapPin className="text-purple-300" size={18} />
-                        </div>
-                        <input
-                            type="text"
-                            name="location"
-                            value={formValues.location}
-                            onChange={handleInputChange}
-                            placeholder="Location"
-                            className={`w-full py-3 pl-10 pr-4 bg-white/10 border rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-white placeholder-purple-300 ${errors.location ? 'border-red-500' : 'border-white/20'}`}
-                        />
-                        {errors.location && <p className="text-red-400 text-sm mt-1">{errors.location}</p>}
-                    </div>
-                    <div>
-                        <textarea
-                            name="bio"
-                            value={formValues.bio}
-                            onChange={handleInputChange}
-                            placeholder="Brief bio or description"
-                            rows={4}
-                            className={`w-full py-3 px-4 bg-white/10 border rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-white placeholder-purple-300 resize-none ${errors.bio ? 'border-red-500' : 'border-white/20'}`}
-                        />
-                        {errors.bio && <p className="text-red-400 text-sm mt-1">{errors.bio}</p>}
-                    </div>
-                    <button
-                        onClick={handleSubmit}
-                        disabled={loading}
-                        className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white py-3 rounded-xl font-medium transition-all transform hover:scale-105 disabled:opacity-50"
-                    >
-                        {loading ? 'Saving...' : 'Save Profile'}
-                    </button>
+        <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center p-4">
+            <div className="w-full max-w-4xl">
+                <div className="bg-black/20 backdrop-blur-lg rounded-2xl border border-white/10 p-8 shadow-2xl">
+                    <Stepper steps={steps} formStep={formStep} />
+                    {getCurrentStepComponent()}
+                    {!isCompleted && <NavigationButtons
+                        formStep={formStep}
+                        stepsLength={steps.length}
+                        loading={loading}
+                        handleNext={handleNext}
+                        prevStep={prevStep}
+                        isLastStep={formStep === steps.length - 1} />}
                 </div>
             </div>
         </div>

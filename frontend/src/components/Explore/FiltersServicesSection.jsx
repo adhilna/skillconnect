@@ -1,3 +1,4 @@
+import React from 'react';
 import { Filter, Grid, List } from 'lucide-react';
 import { ServiceCard } from './ServiceCard';
 

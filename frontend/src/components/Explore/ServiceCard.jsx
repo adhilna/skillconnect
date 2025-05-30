@@ -1,3 +1,4 @@
+import React from 'react';
 import { Heart, Star, Clock } from 'lucide-react';
 
 export const ServiceCard = ({ service, isGridView, favorites, toggleFavorite }) => (

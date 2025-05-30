@@ -1,3 +1,4 @@
+import React from "react";
 export const StatsSection = () => (
     <div className="relative z-10 px-6 py-8 bg-white/5 backdrop-blur-lg">
         <div className="max-w-6xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
