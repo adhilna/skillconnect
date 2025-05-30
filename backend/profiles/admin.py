@@ -6,14 +6,18 @@ from .models import (
 
 @admin.register(FreelancerProfile)
 class FreelancerProfileAdmin(admin.ModelAdmin):
-    list_display = ('full_name', 'user', 'location_name', 'is_available')
-    search_fields = ('full_name', 'user__email', 'location_name')
+    list_display = ('get_full_name', 'location', 'is_available')
+    search_fields = ('first_name', 'user__email', 'location')
     list_filter = (['is_available'])
 
-@admin.register(ClientProfile)
-class ClientProfileAdmin(admin.ModelAdmin):
-    list_display = ('full_name', 'user', 'company_name', 'location_name')
-    search_fields = ('full_name', 'user__email', 'company_name')
+    def get_full_name(self, obj):
+        return f"{obj.first_name} {obj.last_name}"
+    get_full_name.short_description = 'Full Name'
+
+# @admin.register(ClientProfile)
+# class ClientProfileAdmin(admin.ModelAdmin):
+#     list_display = ('full_name', 'user', 'company_name', 'location')
+#     search_fields = ('full_name', 'user__email', 'company_name')
 
 @admin.register(Skill)
 class SkillAdmin(admin.ModelAdmin):
@@ -30,7 +34,7 @@ class EducationAdmin(admin.ModelAdmin):
 
 @admin.register(Experience)
 class ExperienceAdmin(admin.ModelAdmin):
-    list_display = ('profile', 'role', 'company', 'duration')
+    list_display = ('profile', 'role', 'company', 'start_date', 'end_date')
     search_fields = ('profile__full_name', 'role', 'company')
 
 @admin.register(Certification)
@@ -44,5 +48,5 @@ class LanguageAdmin(admin.ModelAdmin):
 
 @admin.register(Portfolio)
 class PortfolioAdmin(admin.ModelAdmin):
-    list_display = ('freelancer', 'title', 'link')
-    search_fields = ('freelancer__full_name', 'title')
+    list_display = ('profile', 'title', 'project_link')
+    search_fields = ('profile__first_name', 'title')

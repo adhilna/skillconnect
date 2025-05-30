@@ -2,6 +2,7 @@ from rest_framework import viewsets
 from rest_framework.permissions import IsAuthenticated
 from .models import FreelancerProfile, ClientProfile
 from .serializers import FreelancerProfileSerializer, ClientProfileSerializer
+from django.shortcuts import get_object_or_404
 
 class FreelancerProfileViewset(viewsets.ModelViewSet):
     serializer_class = FreelancerProfileSerializer
@@ -11,7 +12,7 @@ class FreelancerProfileViewset(viewsets.ModelViewSet):
         return FreelancerProfile.objects.filter(user=self.request.user)
 
     def get_object(self):
-        return FreelancerProfile.objects.get(user=self.request.user)
+        return get_object_or_404(FreelancerProfile, user=self.request.user)
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)

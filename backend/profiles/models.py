@@ -1,5 +1,6 @@
 from django.db import models
 from django.conf import settings
+from django.utils import timezone
 
 User = settings.AUTH_USER_MODEL
 
@@ -27,34 +28,28 @@ class Skill(models.Model):
         return self.name
 
 class FreelancerProfile(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
-    full_name = models.CharField(max_length=128)
-    # LASTNAME
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='freelancer_profile')
+    first_name = models.CharField(max_length=64)
+    last_name = models.CharField(max_length=64)
     profile_picture = models.ImageField(upload_to='freelancers/profile_pics', blank=True, null=True)
     about = models.TextField(blank=True)
-    location_name = models.CharField(max_length=255)
-    latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
-    longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
-    # LAT AND LONG NOT REQUIRED FOR NOW
-    linkedin_url = models.URLField(max_length=200, null=True, blank=True)
-    github_url = models.URLField(max_length=200, null=True, blank=True)
-    # THESE BOTH CAN BE EDITTED TO PORTFOLIO MODEL
-    skills = models.ManyToManyField(Skill, blank=True)
-    # SKILL AND EXPERIENCE WILL BE IN ONE MODEL 
-    # THERE WILL BE A (MANY) FILE FIELD FOR UPLOADING YOUR CERTIFICATOIN
+    age = models.PositiveIntegerField(null=True, blank=True)
+    location = models.CharField(max_length=255)
+    skills = models.ManyToManyField(Skill, blank=True, related_name='freelancers')
     verification = models.OneToOneField(Verification, on_delete=models.SET_NULL, null=True, blank=True)
-    # MAY BE RECOSINDER ABOUT VERIFICATION FIELD
     is_available = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
 
     def __str__(self):
-        return self.full_name
+        return self.first_name
 
 class Education(models.Model):
     profile = models.ForeignKey(FreelancerProfile, on_delete=models.CASCADE, related_name='educations')
     college = models.CharField(max_length=128)
     degree = models.CharField(max_length=128)
-    year = models.IntegerField()
+    year = models.PositiveIntegerField()
 
     def __str__(self):
         return f"{self.degree} at {self.college}"
@@ -63,8 +58,10 @@ class Experience(models.Model):
     profile = models.ForeignKey(FreelancerProfile, on_delete=models.CASCADE, related_name='experiences')
     role = models.CharField(max_length=128)
     company = models.CharField(max_length=128)
-    duration = models.CharField(max_length=128)
-    description = models.TextField()
+    start_date = models.DateField(null=True, blank=True)
+    end_date = models.DateField(null=True, blank=True)
+    description = models.TextField(blank=True)
+    cerificate = models.FileField(upload_to='freelancers/certifications/experience_certificates', blank=True, null=True)
 
     def __str__(self):
         return f"{self.role} at {self.company}"
@@ -93,10 +90,12 @@ class Language(models.Model):
         return f"{self.name} ({self.get_proficiency_display()})"
 
 class Portfolio(models.Model):
-    freelancer = models.ForeignKey(FreelancerProfile, on_delete=models.CASCADE, related_name='portfolios')
+    profile = models.ForeignKey(FreelancerProfile, on_delete=models.CASCADE, related_name='portfolios')
     title = models.CharField(max_length=100)
     description = models.TextField(blank=True)
-    link = models.URLField()
+    project_link = models.URLField()
+    linkedin_url = models.URLField(blank=True, null=True)
+    github_url = models.URLField(blank=True, null=True)
 
     def __str__(self):
         return self.title
