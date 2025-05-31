@@ -61,7 +61,7 @@ class Experience(models.Model):
     start_date = models.DateField(null=True, blank=True)
     end_date = models.DateField(null=True, blank=True)
     description = models.TextField(blank=True)
-    cerificate = models.FileField(upload_to='freelancers/certifications/experience_certificates', blank=True, null=True)
+    certificate = models.FileField(upload_to='freelancers/certifications/experience_certificates', blank=True, null=True)
 
     def __str__(self):
         return f"{self.role} at {self.company}"

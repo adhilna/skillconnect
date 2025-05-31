@@ -25,6 +25,7 @@ class EducationSerializer(serializers.ModelSerializer):
         fields = ['id', 'college', 'degree', 'year']
 
 class ExperienceSerializer(serializers.ModelSerializer):
+    profile = serializers.PrimaryKeyRelatedField(read_only=True)
     class Meta:
         model = Experience
         fields = [
@@ -33,16 +34,19 @@ class ExperienceSerializer(serializers.ModelSerializer):
         ]
 
 class CertificationSerializer(serializers.ModelSerializer):
+    profile = serializers.PrimaryKeyRelatedField(read_only=True)
     class Meta:
         model = Certification
         fields = ['id', 'profile', 'title', 'organization', 'file']
 
 class LanguageSerializer(serializers.ModelSerializer):
+    profile = serializers.PrimaryKeyRelatedField(read_only=True)
     class Meta:
         model = Language
         fields = ['id', 'profile', 'name', 'proficiency']
 
 class PortfolioSerializer(serializers.ModelSerializer):
+    profile = serializers.PrimaryKeyRelatedField(read_only=True)
     class Meta:
         model = Portfolio
         fields = [
