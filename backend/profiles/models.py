@@ -8,6 +8,17 @@ User = settings.AUTH_USER_MODEL
 # SHARED MODELS
 # -----------------------------------
 
+class SocialLinks(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='social_links')
+    github_url = models.URLField(blank=True, null=True)
+    linkedin_url = models.URLField(blank=True, null=True)
+    twitter_url = models.URLField(blank=True, null=True)
+    facebook_url = models.URLField(blank=True, null=True)
+    instagram_url = models.URLField(blank=True, null=True)
+
+    def __str__(self):
+        return f"Social Links for {self.user.username}"
+
 class Verification(models.Model):
     email_verified = models.BooleanField(default=False)
     phone_verified = models.BooleanField(default=False)
@@ -50,6 +61,7 @@ class Education(models.Model):
     college = models.CharField(max_length=128)
     degree = models.CharField(max_length=128)
     year = models.PositiveIntegerField()
+    certificate = models.FileField(upload_to='freelancers/certifications/education_certificates', blank=True, null=True)
 
     def __str__(self):
         return f"{self.degree} at {self.college}"
@@ -65,15 +77,6 @@ class Experience(models.Model):
 
     def __str__(self):
         return f"{self.role} at {self.company}"
-
-class Certification(models.Model):
-    profile = models.ForeignKey(FreelancerProfile, on_delete=models.CASCADE, related_name='certifications')
-    title = models.CharField(max_length=128)
-    organization = models.CharField(max_length=128)
-    file = models.FileField(upload_to='freelancers/certifications', blank=True, null=True)
-
-    def __str__(self):
-        return self.title
 
 class Language(models.Model):
     PROFICIENCY_CHOICES = [
@@ -93,9 +96,7 @@ class Portfolio(models.Model):
     profile = models.ForeignKey(FreelancerProfile, on_delete=models.CASCADE, related_name='portfolios')
     title = models.CharField(max_length=100)
     description = models.TextField(blank=True)
-    project_link = models.URLField()
-    linkedin_url = models.URLField(blank=True, null=True)
-    github_url = models.URLField(blank=True, null=True)
+    project_link = models.URLField(blank=True, null=True)
 
     def __str__(self):
         return self.title

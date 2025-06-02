@@ -29,7 +29,3 @@ export default function Stepper({ steps, formStep }) {
         </div>
     )
 }
-
-
-
-

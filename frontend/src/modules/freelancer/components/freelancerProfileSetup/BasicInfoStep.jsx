@@ -7,7 +7,7 @@ export default function BasicInfoStep({
     freelancerData,
     errors,
     handleInputChange,
-    handleImageUpload
+    handleImageUpload,
 }) {
     return (
         <div className="space-y-6">
@@ -19,8 +19,8 @@ export default function BasicInfoStep({
             <div className="flex justify-center mb-6">
                 <div className="relative">
                     <div className="w-24 h-24 rounded-full bg-white/10 flex items-center justify-center overflow-hidden border-2 border-white/20">
-                        {freelancerData.profileImage ? (
-                            <img src={freelancerData.profileImage} alt="Profile" className="w-full h-full object-cover" />
+                        {freelancerData.profile_picture_preview ? (
+                            <img src={freelancerData.profile_picture_preview} alt="Profile" className="w-full h-full object-cover" />
                         ) : (
                             <User size={32} className="text-white/50" />
                         )}
@@ -37,69 +37,77 @@ export default function BasicInfoStep({
                 </div>
             </div>
 
-            <div>
-                <label className="block text-white/80 text-sm font-medium mb-2">Full Name</label>
-                <input
-                    type="text"
-                    name="fullName"
-                    value={freelancerData.fullName}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder:text-white/50 focus:outline-none focus:border-blue-400 transition-colors"
-                    placeholder="John Doe"
-                />
-                {errors.fullName && <p className="text-red-400 text-sm mt-1">{errors.fullName}</p>}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label className="block text-white/80 text-sm font-medium mb-2">First Name</label>
+                    <input
+                        type="text"
+                        name="first_name"
+                        value={freelancerData.first_name}
+                        onChange={handleInputChange}
+                        className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder:text-white/50 focus:outline-none focus:border-blue-400 transition-colors"
+                        placeholder="John"
+                    />
+                    {errors.first_name && <p className="text-red-400 text-sm mt-1">{errors.first_name}</p>}
+                </div>
+
+                <div>
+                    <label className="block text-white/80 text-sm font-medium mb-2">Last Name</label>
+                    <input
+                        type="text"
+                        name="last_name"
+                        value={freelancerData.last_name}
+                        onChange={handleInputChange}
+                        className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder:text-white/50 focus:outline-none focus:border-blue-400 transition-colors"
+                        placeholder="Doe"
+                    />
+                    {errors.last_name && <p className="text-red-400 text-sm mt-1">{errors.last_name}</p>}
+                </div>
             </div>
+
 
             <div className="grid grid-cols-3 gap-4">
                 <div className="col-span-2">
                     <label className="block text-white/80 text-sm font-medium mb-2">Location</label>
                     <input
                         type="text"
-                        name="locationName"
-                        value={freelancerData.locationName}
+                        name="location"
+                        value={freelancerData.location}
                         onChange={handleInputChange}
                         className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder:text-white/50 focus:outline-none focus:border-blue-400 transition-colors"
                         placeholder="New York, USA"
                     />
-                    {errors.locationName && <p className="text-red-400 text-sm mt-1">{errors.locationName}</p>}
+                    {errors.location && (
+                        <p className="text-red-400 text-sm mt-1">{errors.location}</p>
+                    )}
                 </div>
-                <div className="grid grid-cols-2 gap-2">
-                    <div>
-                        <label className="block text-white/80 text-sm font-medium mb-2">Lat</label>
-                        <input
-                            type="text"
-                            name="latitude"
-                            value={freelancerData.latitude}
-                            onChange={handleInputChange}
-                            className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder:text-white/50 focus:outline-none focus:border-blue-400 transition-colors"
-                            placeholder="40.7128"
-                        />
-                    </div>
-                    <div>
-                        <label className="block text-white/80 text-sm font-medium mb-2">Lng</label>
-                        <input
-                            type="text"
-                            name="longitude"
-                            value={freelancerData.longitude}
-                            onChange={handleInputChange}
-                            className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder:text-white/50 focus:outline-none focus:border-blue-400 transition-colors"
-                            placeholder="-74.0060"
-                        />
-                    </div>
+
+                <div>
+                    <label className="block text-white/80 text-sm font-medium mb-2">Age</label>
+                    <input
+                        type="number"
+                        name="age"
+                        value={freelancerData.age}
+                        onChange={handleInputChange}
+                        className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder:text-white/50 focus:outline-none focus:border-blue-400 transition-colors"
+                        placeholder="25"
+                    />
+                    {errors.age && <p className="text-red-400 text-sm mt-1">{errors.age}</p>}
                 </div>
             </div>
+
 
             <div>
                 <label className="block text-white/80 text-sm font-medium mb-2">About/Bio</label>
                 <textarea
-                    name="bio"
-                    value={freelancerData.bio}
+                    name="about"
+                    value={freelancerData.about}
                     onChange={handleInputChange}
                     rows={4}
                     className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder:text-white/50 focus:outline-none focus:border-blue-400 resize-none transition-colors"
                     placeholder="Tell us about yourself, your experience, and what makes you unique..."
                 />
-                {errors.bio && <p className="text-red-400 text-sm mt-1">{errors.bio}</p>}
+                {errors.about && <p className="text-red-400 text-sm mt-1">{errors.about}</p>}
             </div>
         </div>
     );

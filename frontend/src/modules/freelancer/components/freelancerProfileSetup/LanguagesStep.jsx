@@ -1,12 +1,13 @@
 import React from 'react';
-import {Plus, X} from 'lucide-react';
+import { Plus, X } from 'lucide-react';
 export default function LanguagesStep({
-  freelancerData,
-  languageOptions,
-  proficiencyLevels,
-  addLanguage,
-  updateLanguage,
-  removeLanguage
+    freelancerData,
+    languageOptions,
+    proficiencyLevels,
+    addLanguage,
+    updateLanguage,
+    removeLanguage,
+    errors,
 }) {
     return (
         <div className="space-y-6">
@@ -26,6 +27,9 @@ export default function LanguagesStep({
                         Add Language
                     </button>
                 </div>
+                {errors.languages && (
+                    <p className="text-red-400 text-sm mb-2">{errors.languages}</p>
+                )}
                 {freelancerData.languages.map((lang, index) => (
                     <div key={index} className="bg-white/5 border border-white/20 rounded-lg p-4 mb-3">
                         <div className="flex justify-between items-start mb-3">
@@ -48,6 +52,10 @@ export default function LanguagesStep({
                                     <option key={language} value={language} className="bg-gray-800">{language}</option>
                                 ))}
                             </select>
+                            {/* Validation error for language name */}
+                            {errors[`language_${index}_name`] && (
+                                <p className="text-red-400 text-sm mt-1">{errors[`language_${index}_name`]}</p>
+                            )}
                             <select
                                 value={lang.proficiency}
                                 onChange={(e) => updateLanguage(index, 'proficiency', e.target.value)}
@@ -58,6 +66,10 @@ export default function LanguagesStep({
                                     <option key={level} value={level} className="bg-gray-800">{level}</option>
                                 ))}
                             </select>
+                            {/* Validation error for proficiency */}
+                            {errors[`language_${index}_proficiency`] && (
+                                <p className="text-red-400 text-sm mt-1">{errors[`language_${index}_proficiency`]}</p>
+                            )}
                         </div>
                     </div>
                 ))}

@@ -1,7 +1,7 @@
 from django.contrib import admin
 from .models import (
     FreelancerProfile, ClientProfile, Skill, Verification, Education,
-    Experience, Certification, Language, Portfolio
+    Experience, Language, Portfolio, SocialLinks
 )
 
 @admin.register(FreelancerProfile)
@@ -32,14 +32,13 @@ class EducationAdmin(admin.ModelAdmin):
     list_display = ('profile', 'degree', 'college', 'year')
     search_fields = ('profile__full_name', 'degree', 'college')
 
+
+
 @admin.register(Experience)
 class ExperienceAdmin(admin.ModelAdmin):
     list_display = ('profile', 'role', 'company', 'start_date', 'end_date')
     search_fields = ('profile__full_name', 'role', 'company')
 
-@admin.register(Certification)
-class CertificationAdmin(admin.ModelAdmin):
-    list_display = ('profile', 'title', 'organization')
 
 @admin.register(Language)
 class LanguageAdmin(admin.ModelAdmin):

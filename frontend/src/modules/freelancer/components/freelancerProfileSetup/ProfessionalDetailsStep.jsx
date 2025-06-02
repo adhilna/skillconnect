@@ -1,5 +1,5 @@
 import React from 'react';
-import {Plus, X} from 'lucide-react';
+import { Plus, X } from 'lucide-react';
 
 export default function ProfessionalDetailsStep({
     freelancerData,
@@ -13,6 +13,8 @@ export default function ProfessionalDetailsStep({
     updateEducation,
     removeEducation
 }) {
+
+
     return (
         <div className="space-y-6">
             <div className="text-center">
@@ -46,7 +48,7 @@ export default function ProfessionalDetailsStep({
                     <label className="block text-white/80 text-sm font-medium">Experience</label>
                     <button
                         onClick={addExperience}
-                        className="flex items-center gap-2 px-3 py-1 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-sm"
+                        className="flex items-center gap-2 px-3 py-1 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors text-sm"
                     >
                         <Plus size={16} />
                         Add Experience
@@ -79,13 +81,45 @@ export default function ProfessionalDetailsStep({
                                 className="px-3 py-2 bg-white/10 border border-white/20 rounded text-white placeholder:text-white/50 focus:outline-none focus:border-blue-400"
                             />
                         </div>
-                        <input
-                            type="text"
-                            placeholder="Duration (e.g., Jan 2020 - Dec 2022)"
-                            value={exp.duration}
-                            onChange={(e) => updateExperience(index, 'duration', e.target.value)}
-                            className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded text-white placeholder:text-white/50 focus:outline-none focus:border-blue-400 mb-3"
-                        />
+                        <div className="flex gap-4 mb-3">
+                            <div className="flex-1">
+                                <label className="block text-white/80 text-sm mb-1">Start Date</label>
+                                <input
+                                    type="date"
+                                    value={exp.start_date}
+                                    onChange={e => updateExperience(index, 'start_date', e.target.value)}
+                                    className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded text-white placeholder:text-white/50 focus:outline-none focus:border-blue-400"
+                                />
+                            </div>
+                            <div className="flex-1">
+                                <label className="block text-white/80 text-sm mb-1">End Date</label>
+                                <input
+                                    type="date"
+                                    value={exp.end_date}
+                                    onChange={e => updateExperience(index, 'end_date', e.target.value)}
+                                    disabled={exp.ongoing}
+                                    className={`w-full px-3 py-2 bg-white/10 border border-white/20 rounded text-white placeholder:text-white/50 focus:outline-none focus:border-blue-400 ${exp.ongoing ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                />
+                                <div className="flex items-center mt-1">
+                                    <input
+                                        type="checkbox"
+                                        id={`ongoing-${index}`}
+                                        checked={exp.ongoing}
+                                        onChange={e => {
+                                            updateExperience(index, 'ongoing', e.target.checked);
+                                            if (e.target.checked) {
+                                                updateExperience(index, 'end_date', ""); // Clear end_date if ongoing
+                                            }
+                                        }}
+                                        className="mr-2"
+                                    />
+                                    <label htmlFor={`ongoing-${index}`} className="text-white/70 text-sm">
+                                        Ongoing
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
                         <textarea
                             placeholder="Description of your role and achievements..."
                             value={exp.description}
@@ -93,6 +127,30 @@ export default function ProfessionalDetailsStep({
                             rows={3}
                             className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded text-white placeholder:text-white/50 focus:outline-none focus:border-blue-400 resize-none"
                         />
+                        <div className="mb-2">
+                            <label className="block text-white/80 text-sm mb-1">Certificate (optional)</label>
+                            <div className="flex items-center gap-3">
+                                <input
+                                    type="file"
+                                    accept=".pdf,.jpg,.jpeg,.png"
+                                    id={`certificate-${index}`}
+                                    className="hidden"
+                                    onChange={e => updateExperience(index, 'certificate', e.target.files[0])}
+                                />
+                                <label
+                                    htmlFor={`certificate-${index}`}
+                                    className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded cursor-pointer transition"
+                                >
+                                    {exp.certificate ? "Change Certificate" : "Add Certificate"}
+                                </label>
+                                {exp.certificate && (
+                                    <span className="text-white/60 text-xs truncate max-w-[120px]">
+                                        {exp.certificate.name}
+                                    </span>
+                                )}
+                            </div>
+                        </div>
+
                     </div>
                 ))}
             </div>
@@ -143,6 +201,30 @@ export default function ProfessionalDetailsStep({
                                 className="px-3 py-2 bg-white/10 border border-white/20 rounded text-white placeholder:text-white/50 focus:outline-none focus:border-blue-400"
                             />
                         </div>
+                        <div className="mt-3">
+                            <label className="block text-white/80 text-sm mb-1">Certificate (optional)</label>
+                            <div className="flex items-center gap-3">
+                                <input
+                                    type="file"
+                                    accept=".pdf,.jpg,.jpeg,.png"
+                                    id={`edu-certificate-${index}`}
+                                    className="hidden"
+                                    onChange={e => updateEducation(index, 'certificate', e.target.files[0])}
+                                />
+                                <label
+                                    htmlFor={`edu-certificate-${index}`}
+                                    className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded cursor-pointer transition"
+                                >
+                                    {edu.certificate ? "Change Certificate" : "Add Certificate"}
+                                </label>
+                                {edu.certificate && (
+                                    <span className="text-white/60 text-xs truncate max-w-[120px]">
+                                        {edu.certificate.name}
+                                    </span>
+                                )}
+                            </div>
+                        </div>
+
                     </div>
                 ))}
             </div>
