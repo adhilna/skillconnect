@@ -106,15 +106,39 @@ class Portfolio(models.Model):
 # -----------------------------------
 
 class ClientProfile(models.Model):
+    ACCOUNT_TYPE_CHOICES = [
+        ('personal', 'Personal'),
+        ('business', 'Business'),
+    ]
     user = models.OneToOneField(User, on_delete=models.CASCADE)
-    full_name = models.CharField(max_length=128)
+    account_type = models.CharField(max_length=16, choices=ACCOUNT_TYPE_CHOICES, default=None)
+    first_name = models.CharField(max_length=128)
+    last_name = models.CharField(max_length=128, blank=True, null=True)
     profile_picture = models.ImageField(upload_to='clients/profile_pics/', blank=True, null=True)
     company_name = models.CharField(max_length=128, blank=True)
     about = models.TextField(blank=True)
-    location_name = models.CharField(max_length=255)
-    latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
-    longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    location = models.CharField(max_length=255)
+    industry = models.CharField(max_length=128, blank=True)
+    company_size = models.CharField(max_length=64, blank=True)
+    website = models.URLField(blank=True, null=True)
+    project_types = models.JSONField(default=list, blank=True)
+    budget_range = models.CharField(max_length=64, blank=True)
+    project_frequency = models.CharField(max_length=64, blank=True)
+    preferred_communications = models.JSONField(default=list, blank=True)
+    working_hours = models.CharField(max_length=64, blank=True)
+    business_goals = models.JSONField(default=list, blank=True)
+    current_challenges = models.JSONField(default=list, blank=True)
+    previous_experiences = models.CharField(max_length=64, blank=True)
+    expected_timeline = models.CharField(max_length=64, blank=True)
+    quality_importance = models.CharField(max_length=64, blank=True)
+    payment_method = models.CharField(max_length=64, blank=True)
+    monthly_budget = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
+    project_budget = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
+    payment_timing = models.CharField(max_length=64, blank=True)
     verification = models.OneToOneField(Verification, on_delete=models.SET_NULL, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
 
     def __str__(self):
-        return self.full_name
+        return f"{self.first_name} {self.last_name} ({self.company_name})"
