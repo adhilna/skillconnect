@@ -3,7 +3,6 @@ import { CheckCircle } from 'lucide-react';
 
 export default function CompletionStep({
     clientData,
-    onRestart,
     onDashboard
 }) {
     return (
@@ -32,12 +31,7 @@ export default function CompletionStep({
             </div>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <button
-                    onClick={onRestart}
-                    className="px-6 py-3 border border-white/20 text-white rounded-lg hover:bg-white/10 transition-colors"
-                >
-                    Create Another Profile
-                </button>
+
                 <button
                     onClick={onDashboard}
                     className="px-6 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors font-medium"

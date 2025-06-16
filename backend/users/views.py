@@ -38,7 +38,7 @@ class RegisterView(generics.CreateAPIView):
             user = serializer.save()  # Save the user and get the instance
             send_otp_email_task.delay(user.email, user.otp)  # Use the correct Celery task
             return Response(
-                {'message': 'User registered. OTP sent to your email.'},
+                {'message': 'OTP sent to your email. Please verify to complete registration.'},
                 status=status.HTTP_201_CREATED
             )
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -81,6 +81,7 @@ class VerifyOTPView(APIView):
                     return Response({'error': 'Email already verified.'}, status=status.HTTP_400_BAD_REQUEST)
                 if user.otp_is_valid() and user.otp == otp:
                     user.is_verified = True
+                    user.is_active = True
                     user.first_login = True
                     user.otp = None
                     user.otp_created_at = None

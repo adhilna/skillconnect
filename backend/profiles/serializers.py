@@ -89,6 +89,17 @@ class FreelancerProfileSerializer(serializers.ModelSerializer):
             'social_links'
         ]
 
+    ALLOWED_INDUSTRIES = [
+        'Technology', 'Healthcare', 'Finance', 'Education', 'E-commerce', 'Real Estate',
+        'Marketing & Advertising', 'Manufacturing', 'Food & Beverage', 'Fashion',
+        'Travel & Tourism', 'Non-profit', 'Entertainment', 'Consulting', 'Other'
+    ]
+
+    ALLOWED_COMPANY_SIZES = [
+        'Just me (1)', 'Small team (2-10)', 'Growing business (11-50)',
+        'Medium company (51-200)', 'Large enterprise (200+)'
+    ]
+
     @transaction.atomic
     def create(self, validated_data):
         skills_data = validated_data.pop('skills', [])
@@ -234,6 +245,21 @@ class ClientProfileSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Project budget must be positive.")
         return value
 
+    def validate_industry(self, value):
+        if value not in ClientProfileSerializer.ALLOWED_INDUSTRIES:
+            raise serializers.ValidationError(
+                f"Industry must be one of: {', '.join(ClientProfileSerializer.ALLOWED_INDUSTRIES)}"
+            )
+        return value
+
+    def validate_company_size(self, value):
+        if value not in ClientProfileSerializer.ALLOWED_COMPANY_SIZES:
+            raise serializers.ValidationError(
+                f"Company size must be one of: {', '.join(ClientProfileSerializer.ALLOWED_COMPANY_SIZES)}"
+            )
+        return value
+
+
 
     class Meta:
         model = ClientProfile
@@ -245,7 +271,7 @@ class ClientProfileSerializer(serializers.ModelSerializer):
             'last_name',
             'company_name',
             'profile_picture',
-            'about',
+            'company_description',
             'location',
             'industry',
             'company_size',

@@ -11,6 +11,7 @@ import ErrorBoundary from './components/ErrorBoundary';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 import ExplorePage from './pages/ExplorePage';
+import FreelancerDashboard from './modules/freelancer/pages/FreelancerDashboard';
 
 function App() {
   return (
@@ -27,6 +28,8 @@ function App() {
             <Route path='/freelancer/profile' element={<FreelancerProfileSetup />} />
             <Route path='/client/profile' element={<ClientProfileSetup />} />
             <Route path='/explore' element={<ExplorePage />} />
+            <Route path='/dashboard' element={<FreelancerDashboard />} />
+
           </Routes>
         </ErrorBoundary>
       </div>

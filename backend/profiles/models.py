@@ -116,7 +116,7 @@ class ClientProfile(models.Model):
     last_name = models.CharField(max_length=128, blank=True, null=True)
     profile_picture = models.ImageField(upload_to='clients/profile_pics/', blank=True, null=True)
     company_name = models.CharField(max_length=128, blank=True)
-    about = models.TextField(blank=True)
+    company_description = models.TextField(blank=True)
     location = models.CharField(max_length=255)
     industry = models.CharField(max_length=128, blank=True)
     company_size = models.CharField(max_length=64, blank=True)

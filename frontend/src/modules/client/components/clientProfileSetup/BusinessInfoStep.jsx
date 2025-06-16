@@ -6,7 +6,6 @@ export default function BusinessInfoStep({
     errors,
     industries,
     companySizes,
-    timezones,
     handleInputChange,
     handleImageUpload,
     profileImage
@@ -140,20 +139,6 @@ export default function BusinessInfoStep({
                         placeholder="New York, USA"
                     />
                     {errors.location && <p className="text-red-400 text-sm mt-1">{errors.location}</p>}
-                </div>
-                <div>
-                    <label className="block text-white/80 text-sm font-medium mb-2">Timezone</label>
-                    <select
-                        name="timezone"
-                        value={clientData.timezone}
-                        onChange={handleInputChange}
-                        className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:border-green-400 transition-colors"
-                    >
-                        <option value="" className="bg-gray-800">Select timezone</option>
-                        {timezones.map(tz => (
-                            <option key={tz} value={tz} className="bg-gray-800">{tz}</option>
-                        ))}
-                    </select>
                 </div>
             </div>
 

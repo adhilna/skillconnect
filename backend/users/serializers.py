@@ -39,7 +39,9 @@ class RegisterSerializer(serializers.ModelSerializer):
         user = User.objects.create_user(
             email=validated_data['email'],
             password=validated_data['password'],
-            role=validated_data.get('role', 'CLIENT')
+            role=validated_data.get('role', 'CLIENT'),
+            is_active=False,        # <-- User cannot log in yet
+            is_verified=False       # <-- User not verified yet
         )
         otp = generate_otp()
         user.otp = otp

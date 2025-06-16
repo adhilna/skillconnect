@@ -18,7 +18,7 @@ export default function BudgetPaymentStep({
                     <input
                         type="number"
                         name="monthlyBudget"
-                        value={clientData.monthlyBudget}
+                        value={clientData.monthlyBudget || ''}
                         onChange={handleInputChange}
                         className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder:text-white/50 focus:outline-none focus:border-green-400 transition-colors"
                         placeholder="5000"
@@ -29,7 +29,7 @@ export default function BudgetPaymentStep({
                     <input
                         type="number"
                         name="projectBudget"
-                        value={clientData.projectBudget}
+                        value={clientData.projectBudget || ''}
                         onChange={handleInputChange}
                         className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder:text-white/50 focus:outline-none focus:border-green-400 transition-colors"
                         placeholder="1000"
@@ -41,7 +41,7 @@ export default function BudgetPaymentStep({
                 <label className="block text-white/80 text-sm font-medium mb-2">Preferred Payment Method</label>
                 <select
                     name="paymentMethod"
-                    value={clientData.paymentMethod}
+                    value={clientData?.paymentMethod || ''}
                     onChange={handleInputChange}
                     className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:border-green-400 transition-colors"
                 >
@@ -59,7 +59,7 @@ export default function BudgetPaymentStep({
                 <label className="block text-white/80 text-sm font-medium mb-2">Payment Timing Preference</label>
                 <select
                     name="paymentTiming"
-                    value={clientData.paymentTiming}
+                    value={clientData.paymentTiming || ''}
                     onChange={handleInputChange}
                     className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:border-green-400 transition-colors"
                 >
@@ -76,7 +76,7 @@ export default function BudgetPaymentStep({
                 <label className="block text-white/80 text-sm font-medium mb-2">Previous Experience with Freelancers</label>
                 <select
                     name="previousExperience"
-                    value={clientData.previousExperience}
+                    value={clientData.previousExperience || ''}
                     onChange={handleInputChange}
                     className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:border-green-400 transition-colors"
                 >
@@ -92,7 +92,7 @@ export default function BudgetPaymentStep({
                 <label className="block text-white/80 text-sm font-medium mb-2">Expected Project Timeline</label>
                 <select
                     name="expectedTimeline"
-                    value={clientData.expectedTimeline}
+                    value={clientData.expectedTimeline || ''}
                     onChange={handleInputChange}
                     className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:border-green-400 transition-colors"
                 >
@@ -109,7 +109,7 @@ export default function BudgetPaymentStep({
                 <label className="block text-white/80 text-sm font-medium mb-2">Quality vs Speed Preference</label>
                 <select
                     name="qualityImportance"
-                    value={clientData.qualityImportance}
+                    value={clientData.qualityImportance || ''}
                     onChange={handleInputChange}
                     className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:border-green-400 transition-colors"
                 >

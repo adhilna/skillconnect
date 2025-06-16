@@ -10,7 +10,6 @@ export default function OtpVerification({
     onOtpChange,
     onVerifyOtp,
     onResendOtp,
-    onBack,
     success,
     verified,
     onNext,
@@ -38,15 +37,7 @@ export default function OtpVerification({
                     <div className="text-red-400 text-xs mt-1">{errors.otp}</div>
                 )}
             </div>
-            <div className="flex justify-between items-center mb-4">
-                <button
-                    type="button"
-                    onClick={onBack}
-                    className="bg-white/20 text-white px-6 py-3 rounded-xl font-medium"
-                    disabled={loading || verified}
-                >
-                    Back
-                </button>
+            <div className="flex justify-center items-center mb-4">
                 {verified ? (
                     <button
                         type="button"
@@ -67,6 +58,7 @@ export default function OtpVerification({
                     </button>
                 )}
             </div>
+
             <div className="flex justify-between items-center">
                 <span className="text-purple-200 text-xs">
                     {otpTimer > 0
