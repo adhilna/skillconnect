@@ -10,161 +10,166 @@ from rest_framework.response import Response
 CITIES = [
     # Andhra Pradesh (20 cities)
     "Visakhapatnam", "Vijayawada", "Guntur", "Nellore", "Tirupati", "Kurnool", "Rajahmundry", "Kadapa", "Anantapur",
-    "Eluru", "Ongole", "Nandyal", "Machilipatnam", "Adoni", "Tenali", "Proddatur", "Chittoor", "Hindupur", "Srikakulam", "Guntakal",  # Added
+    "Eluru", "Ongole", "Nandyal", "Machilipatnam", "Adoni", "Tenali", "Proddatur", "Chittoor", "Hindupur", "Srikakulam", "Guntakal",
 
     # Arunachal Pradesh (8 cities)
-    "Itanagar", "Naharlagun", "Pasighat", "Tawang",
-    "Ziro", "Bomdila", "Along", "Tezu",  # Added
+    "Itanagar", "Naharlagun", "Pasighat", "Tawang", "Ziro", "Bomdila", "Along", "Tezu",
 
     # Assam (15 cities)
-    "Guwahati", "Dibrugarh", "Silchar", "Jorhat", "Tezpur", "Nagaon",
-    "Tinsukia", "Bongaigaon", "Karimganj", "Goalpara", "Barpeta", "Lakhimpur", "Hailakandi", "Sivasagar", "Dhubri",  # Added
+    "Guwahati", "Dibrugarh", "Silchar", "Jorhat", "Tezpur", "Nagaon", "Tinsukia", "Bongaigaon", "Karimganj",
+    "Goalpara", "Barpeta", "Lakhimpur", "Hailakandi", "Sivasagar", "Dhubri",
 
     # Bihar (25 cities)
-    "Patna", "Gaya", "Bhagalpur", "Muzaffarpur", "Darbhanga", "Purnia", "Arrah",
-    "Bihar Sharif", "Katihar", "Begusarai", "Chapra", "Hajipur", "Samastipur", "Motihari", "Siwan", "Bettiah", "Aurangabad", "Sasaram", "Dehri", "Madhubani", "Saharsa", "Kishanganj", "Jamui", "Buxar", "Jehanabad",  # Added
+    "Patna", "Gaya", "Bhagalpur", "Muzaffarpur", "Darbhanga", "Purnia", "Arrah", "Bihar Sharif", "Katihar",
+    "Begusarai", "Chapra", "Hajipur", "Samastipur", "Motihari", "Siwan", "Bettiah", "Aurangabad", "Sasaram",
+    "Dehri", "Madhubani", "Saharsa", "Kishanganj", "Jamui", "Buxar", "Jehanabad",
 
     # Chhattisgarh (15 cities)
-    "Raipur", "Bhilai", "Bilaspur", "Korba", "Durg", "Jagdalpur",
-    "Rajnandgaon", "Ambikapur", "Raigarh", "Dhamtari", "Mahasamund", "Janjgir", "Kanker", "Kawardha", "Bastar",  # Added
+    "Raipur", "Bhilai", "Bilaspur", "Korba", "Durg", "Jagdalpur", "Rajnandgaon", "Ambikapur", "Raigarh",
+    "Dhamtari", "Mahasamund", "Janjgir", "Kanker", "Kawardha", "Bastar",
 
     # Goa (8 cities)
-    "Panaji", "Vasco da Gama", "Margao", "Mapusa", "Ponda",
-    "Bicholim", "Curchorem", "Quepem",  # Added
+    "Panaji", "Vasco da Gama", "Margao", "Mapusa", "Ponda", "Bicholim", "Curchorem", "Quepem",
 
     # Gujarat (25 cities)
     "Ahmedabad", "Surat", "Vadodara", "Rajkot", "Gandhinagar", "Bhavnagar", "Jamnagar", "Junagadh", "Anand",
-    "Mehsana", "Nadiad", "Bharuch", "Porbandar", "Navsari", "Veraval", "Patan", "Morbi", "Surendranagar", "Gandhidham", "Vapi", "Ankleshwar", "Botad", "Palanpur", "Deesa", "Jetpur",  # Added
+    "Mehsana", "Nadiad", "Bharuch", "Porbandar", "Navsari", "Veraval", "Patan", "Morbi", "Surendranagar",
+    "Gandhidham", "Vapi", "Ankleshwar", "Botad", "Palanpur", "Deesa", "Jetpur",
 
     # Haryana (20 cities)
-    "Faridabad", "Gurgaon", "Panipat", "Hisar", "Rohtak", "Karnal", "Sonipat",
-    "Yamunanagar", "Ambala", "Bhiwani", "Sirsa", "Bahadurgarh", "Jind", "Thanesar", "Kaithal", "Rewari", "Palwal", "Panchkula", "Fatehabad", "Hansi",  # Added
+    "Faridabad", "Gurgaon", "Panipat", "Hisar", "Rohtak", "Karnal", "Sonipat", "Yamunanagar", "Ambala",
+    "Bhiwani", "Sirsa", "Bahadurgarh", "Jind", "Thanesar", "Kaithal", "Rewari", "Palwal", "Panchkula",
+    "Fatehabad", "Hansi",
 
     # Himachal Pradesh (10 cities)
-    "Shimla", "Mandi", "Solan", "Dharamshala", "Kullu", "Una",
-    "Hamirpur", "Bilaspur", "Chamba", "Nahan",  # Added
+    "Shimla", "Mandi", "Solan", "Dharamshala", "Kullu", "Una", "Hamirpur", "Bilaspur", "Chamba", "Nahan",
 
     # Jharkhand (15 cities)
-    "Ranchi", "Jamshedpur", "Dhanbad", "Bokaro Steel City", "Hazaribagh", "Deoghar",
-    "Giridih", "Ramgarh", "Phusro", "Medininagar", "Chaibasa", "Koderma", "Gumla", "Sahibganj", "Jhumri Telaiya",  # Added
+    "Ranchi", "Jamshedpur", "Dhanbad", "Bokaro Steel City", "Hazaribagh", "Deoghar", "Giridih", "Ramgarh",
+    "Phusro", "Medininagar", "Chaibasa", "Koderma", "Gumla", "Sahibganj", "Jhumri Telaiya",
 
     # Karnataka (25 cities)
     "Bangalore", "Mysuru", "Hubli", "Mangalore", "Belgaum", "Davanagere", "Ballari", "Shivamogga", "Tumakuru",
-    "Bijapur", "Hospet", "Hassan", "Raichur", "Udupi", "Chitradurga", "Kolar", "Mandya", "Bagalkot", "Karwar", "Sirsi", "Gadag", "Chikkamagaluru", "Bidar", "Haveri", "Koppal",  # Added
+    "Bijapur", "Hospet", "Hassan", "Raichur", "Udupi", "Chitradurga", "Kolar", "Mandya", "Bagalkot", "Karwar",
+    "Sirsi", "Gadag", "Chikkamagaluru", "Bidar", "Haveri", "Koppal",
 
-    # Kerala (15 cities)
-    "Thiruvananthapuram", "Kochi", "Kozhikode", "Thrissur", "Kollam", "Palakkad", "Alappuzha",
-    "Kannur", "Kottayam", "Manjeri", "Thalassery", "Nedumangad", "Ponnani", "Pathanamthitta", "Malappuram",  # Added
+    # Kerala (30 cities)
+    "Thiruvananthapuram", "Kochi", "Kozhikode", "Thrissur", "Kollam", "Palakkad", "Alappuzha", "Kannur",
+    "Kottayam", "Manjeri", "Thalassery", "Nedumangad", "Ponnani", "Pathanamthitta", "Malappuram",
+    "Kasaragod", "Payyanur", "Aluva", "Muvattupuzha", "Perinthalmanna", "Tirur", "Koyilandy", "Irinjalakuda",
+    "Changanassery", "Kanhangad", "Ottapalam", "Chalakudy", "Kodungallur", "Attingal", "Pala",  # Added
 
     # Madhya Pradesh (25 cities)
-    "Indore", "Bhopal", "Gwalior", "Jabalpur", "Ujjain", "Sagar", "Dewas", "Ratlam",
-    "Satna", "Rewa", "Katni", "Singrauli", "Burhanpur", "Khandwa", "Bhind", "Chhindwara", "Guna", "Shivpuri", "Vidisha", "Chhatarpur", "Damoh", "Mandsaur", "Neemuch", "Hoshangabad", "Itarsi",  # Added
+    "Indore", "Bhopal", "Gwalior", "Jabalpur", "Ujjain", "Sagar", "Dewas", "Ratlam", "Satna", "Rewa",
+    "Katni", "Singrauli", "Burhanpur", "Khandwa", "Bhind", "Chhindwara", "Guna", "Shivpuri", "Vidisha",
+    "Chhatarpur", "Damoh", "Mandsaur", "Neemuch", "Hoshangabad", "Itarsi",
 
-    # Maharashtra (30 cities)
+    # Maharashtra (25 cities)
     "Mumbai", "Pune", "Nagpur", "Nashik", "Aurangabad", "Thane", "Kolhapur", "Solapur", "Amravati",
-    "Navi Mumbai", "Akola", "Dhule", "Jalgaon", "Nanded", "Sangli", "Malegaon", "Latur", "Ahmednagar", "Chandrapur", "Parbhani", "Jalna", "Bhiwandi", "Panvel", "Ulhasnagar", "Ichalkaranji", "Wardha", "Yavatmal", "Satara", "Gondia", "Beed",  # Added
+    "Navi Mumbai", "Akola", "Dhule", "Jalgaon", "Nanded", "Sangli", "Malegaon", "Latur", "Ahmednagar",
+    "Chandrapur", "Parbhani", "Jalna", "Bhiwandi", "Panvel", "Ulhasnagar", "Ichalkaranji",
 
     # Manipur (8 cities)
-    "Imphal", "Thoubal", "Bishnupur",
-    "Churachandpur", "Kakching", "Moreh", "Ukhrul", "Senapati",  # Added
+    "Imphal", "Thoubal", "Bishnupur", "Churachandpur", "Kakching", "Moreh", "Ukhrul", "Senapati",
 
     # Meghalaya (8 cities)
-    "Shillong", "Tura", "Nongstoin",
-    "Jowai", "Williamnagar", "Baghmara", "Resubelpara", "Nongpoh",  # Added
+    "Shillong", "Tura", "Nongstoin", "Jowai", "Williamnagar", "Baghmara", "Resubelpara", "Nongpoh",
 
     # Mizoram (8 cities)
-    "Aizawl", "Lunglei", "Champhai",
-    "Saiha", "Kolasib", "Serchhip", "Lawngtlai", "Mamit",  # Added
+    "Aizawl", "Lunglei", "Champhai", "Saiha", "Kolasib", "Serchhip", "Lawngtlai", "Mamit",
 
     # Nagaland (8 cities)
-    "Kohima", "Dimapur", "Mokokchung", "Wokha",
-    "Tuensang", "Zunheboto", "Phek", "Mon",  # Added
+    "Kohima", "Dimapur", "Mokokchung", "Wokha", "Tuensang", "Zunheboto", "Phek", "Mon",
 
     # Odisha (15 cities)
-    "Bhubaneswar", "Cuttack", "Rourkela", "Sambalpur", "Berhampur", "Puri",
-    "Balasore", "Bhadrak", "Baripada", "Jeypore", "Jharsuguda", "Rayagada", "Angul", "Dhenkanal", "Paradip",  # Added
+    "Bhubaneswar", "Cuttack", "Rourkela", "Sambalpur", "Berhampur", "Puri", "Balasore", "Bhadrak",
+    "Baripada", "Jeypore", "Jharsuguda", "Rayagada", "Angul", "Dhenkanal", "Paradip",
 
     # Punjab (15 cities)
-    "Amritsar", "Ludhiana", "Jalandhar", "Patiala", "Bathinda", "Mohali",
-    "Hoshiarpur", "Moga", "Firozpur", "Khanna", "Abohar", "Phagwara", "Barnala", "Sangrur", "Kapurthala",  # Added
+    "Amritsar", "Ludhiana", "Jalandhar", "Patiala", "Bathinda", "Mohali", "Hoshiarpur", "Moga",
+    "Firozpur", "Khanna", "Abohar", "Phagwara", "Barnala", "Sangrur", "Kapurthala",
 
     # Rajasthan (20 cities)
-    "Jaipur", "Jodhpur", "Udaipur", "Ajmer", "Bikaner", "Kota",
-    "Alwar", "Sikar", "Bharatpur", "Pali", "Sriganganagar", "Hanumangarh", "Churu", "Dausa", "Nagaur", "Barmer", "Jhunjhunu", "Bhilwara", "Tonk", "Sawai Madhopur",  # Added
+    "Jaipur", "Jodhpur", "Udaipur", "Ajmer", "Bikaner", "Kota", "Alwar", "Sikar", "Bharatpur",
+    "Pali", "Sriganganagar", "Hanumangarh", "Churu", "Dausa", "Nagaur", "Barmer", "Jhunjhunu",
+    "Bhilwara", "Tonk", "Sawai Madhopur",
 
     # Sikkim (5 cities)
-    "Gangtok", "Namchi", "Gyalshing",
-    "Singtam", "Jorethang",  # Added
+    "Gangtok", "Namchi", "Gyalshing", "Singtam", "Jorethang",
 
     # Tamil Nadu (30 cities)
     "Chennai", "Coimbatore", "Madurai", "Tiruchirappalli", "Salem", "Erode", "Vellore", "Thanjavur",
-    "Tirunelveli", "8", "Dindigul", "Cuddalore", "Kanchipuram", "Tiruvannamalai", "Hosur", "Nagercoil", "Kumbakonam", "Karur", "Pollachi", "Rajapalayam", "Sivakasi", "Pudukkotta", "Namakkal", "Dharmapuri", "Krishnagiri", "Perambalur", "Nagapattinam", "Virudhunagar", "Tenkasi", "Theni",  # Added
+    "Tirunelveli", "Dindigul", "Cuddalore", "Kanchipuram", "Tiruvannamalai", "Hosur", "Nagercoil",
+    "Kumbakonam", "Karur", "Pollachi", "Rajapalayam", "Sivakasi", "Pudukkottai", "Namakkal",
+    "Dharmapuri", "Krishnagiri", "Perambalur", "Nagapattinam", "Virudhunagar", "Tenkasi", "Theni",
+    "Ramanathapuram",
 
     # Telangana (15 cities)
-    "Hyderabad", "Warangal", "Nizamabad", "Khammam", "Karimnagar",
-    "Ramagundam", "Mahbubnagar", "Siddipet", "Suryapet", "Miryalaguda", "Jagtial", "Kothagudem", "Adilabad", "Mancherial", "Sangareddy",  # Added
+    "Hyderabad", "Warangal", "Nizamabad", "Khammam", "Karimnagar", "Ramagundam", "Mahbubnagar",
+    "Siddipet", "Suryapet", "Miryalaguda", "Jagtial", "Kothagudem", "Adilabad", "Mancherial", "Sangareddy",
 
     # Tripura (8 cities)
-    "Agartala", "Udaipur", "Dharman",
-",
-    "Kailas",
- "K",
-    "Ambassa",
- "Khow",
-    "Belonia",
- "Telonia",  # Added
+    "Agartala", "Udaipur", "Dharmanagar", "Kailasahar", "Ambassa", "Khowai", "Belonia", "Teliamura",  # Corrected
 
-    # Uttar Pradesh (40 cities)
-    "Lucknow", "Kanpur", "Agra", "Varanasi",
- "Allahabad", "Meerut", "Bareilly", "Aligarh",
-    "Ghaziabad", "Noida", "Moradabad", "Saharanpur",
-    "Gorakhpur", "Faihazabad", "Jhansi", "Muzaffarnagar", "Mathura", "Shahjahanpur", "Rampur", "Sitapur", "Hapur", "Etah", "Budaun", "Bulandshahr", "Firozabad", "Basti", "Deoria", "Sultanpur", "Azamgarh", "Banda", "Jaunpur", "Mirzapur", "Raebareli", "Ball",ia", "Mauz", "Ambed",karn,agar", "n",
-", "Hathra",
-    "s",
-    #Hat Addedra added
+    # Uttar Pradesh (25 cities)
+    "Lucknow", "Kanpur", "Agra", "Varanasi", "Allahabad", "Meerut", "Bareilly", "Aligarh",
+    "Ghaziabad", "Noida", "Moradabad", "Saharanpur", "Gorakhpur", "Faizabad", "Jhansi",
+    "Muzaffarnagar", "Mathura", "Shahjahanpur", "Rampur", "Sitapur", "Hapur", "Etah",
+    "Budaun", "Bulandshahr", "Firozabad",
 
-    # Uttar Pradesh continued
-    "Amroha",
- "Sambhal",
-    # AddedS
-
-    # Himachal Pradesh continued
-    "Paonta Sahib",
-    # Added
+    # Uttarakhand (10 cities)
+    "Dehradun", "Haridwar", "Nainital", "Rishikesh", "Haldwani", "Rudrapur", "Kashipur",
+    "Roorkee", "Pithoragarh", "Ramnagar",
 
     # West Bengal (20 cities)
-    "Kolkata", "Howrah", "Durgapur", "Asansol", "Siliguri", "Malda", "Bardhaman",
-    "Jalpaiguri", "Kharagpur", "Haldia", "Berhampore", "Krishnanagar", "Purulia", "Raiganj", "Balurghat", "Basirhat", "Bankura", "Chakdaha", "Darjeeling", "Alipurduar",  # Added
+    "Kolkata", "Howrah", "Durgapur", "Asansol", "Siliguri", "Malda", "Bardhaman", "Jalpaiguri",
+    "Kharagpur", "Haldia", "Berhampore", "Krishnanagar", "Purulia", "Raiganj", "Balurghat",
+    "Basirhat", "Bankura", "Chakdaha", "Darjeeling", "Alipurduar",
 
     # Andaman and Nicobar Islands (5 cities)
-    "Port Blair", "Diglipur", "Rangat",
-    "Mayabunder", "Bambooflat",  # Added
+    "Port Blair", "Diglipur", "Rangat", "Mayabunder", "Bambooflat",
 
     # Chandigarh (1 city)
     "Chandigarh",
 
     # Dadra and Nagar Haveli and Daman and Diu (5 cities)
-    "Daman", "Diu", "Silvassa",
-    "Dadra", "Nani Daman",  # Added
+    "Daman", "Diu", "Silvassa", "Dadra", "Nani Daman",
 
     # Delhi (2 cities)
     "New Delhi", "Delhi",
 
     # Jammu and Kashmir (10 cities)
-    "Srinagar", "Jammu", "Anantnag", "Baramulla",
-    "Sopore", "Kathua", "Udhampur", "Bandipora", "Kupwara", "Pulwama",  # Added
+    "Srinagar", "Jammu", "Anantnag", "Baramulla", "Sopore", "Kathua", "Udhampur",
+    "Bandipora", "Kupwara", "Pulwama",
 
     # Ladakh (3 cities)
-    "Leh", "Kargil",
-    "Nubra",  # Added
+    "Leh", "Kargil", "Nubra",
 
     # Puducherry (5 cities)
-    "Puducherry", "Karaikal", "Yanam",
-    "Mahe", "Oulgaret",  # Added
+    "Puducherry", "Karaikal", "Yanam", "Mahe", "Oulgaret",
 
     # Lakshadweep (3 cities)
     "Kavaratti", "Minicoy", "Andrott",
+
 ]
+
+@api_view(['GET'])
+def city_autocomplete(request):
+    query = request.GET.get('q', '').lower().strip()
+    if not query:
+        return Response([])
+    # Filter and sort
+    filtered = sorted(
+        [city for city in CITIES if query in city.lower()],
+        key=lambda x: x.lower()
+    )
+    # Limit results
+    MAX_RESULTS = 10
+    results = [
+        {'id': idx, 'name': city}
+        for idx, city in enumerate(filtered[:MAX_RESULTS])
+    ]
+    return Response(results)
 
 class IsOwnerOrReadOnly(permissions.BasePermission):
     """

@@ -1,5 +1,6 @@
 import React from 'react';
 import { User, Upload } from 'lucide-react';
+import CityAutocomplete from '../../../../components/Shared/CityAutoComplete';
 
 export default function BusinessInfoStep({
     clientData,
@@ -130,15 +131,12 @@ export default function BusinessInfoStep({
             <div className="grid grid-cols-2 gap-4">
                 <div>
                     <label className="block text-white/80 text-sm font-medium mb-2">Location</label>
-                    <input
-                        type="text"
-                        name="location"
+                    <CityAutocomplete
                         value={clientData.location}
                         onChange={handleInputChange}
-                        className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder:text-white/50 focus:outline-none focus:border-green-400 transition-colors"
-                        placeholder="New York, USA"
+                        onBlur={() => { }} // Add your onBlur logic if needed
+                        errors={errors}
                     />
-                    {errors.location && <p className="text-red-400 text-sm mt-1">{errors.location}</p>}
                 </div>
             </div>
 
