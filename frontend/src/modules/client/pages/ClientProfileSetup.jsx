@@ -18,7 +18,7 @@ function mapClientFrontendToBackend(frontendData) {
         last_name: frontendData.lastName || '',
         company_name: frontendData.companyName || '',
         profile_picture: frontendData.profileImageFile || null,
-        about: frontendData.about || '',
+        company_description: frontendData.companyDescription || '',
         location: frontendData.location || '',
         industry: frontendData.industry || '',
         company_size: frontendData.companySize || '',
@@ -26,7 +26,7 @@ function mapClientFrontendToBackend(frontendData) {
         project_types: frontendData.projectTypes || [],
         budget_range: frontendData.budgetRange || '',
         project_frequency: frontendData.projectFrequency || '',
-        preferred_communications: frontendData.preferredComms || [],
+        preferred_communications: frontendData.preferredCommunication || [],
         working_hours: frontendData.workingHours || '',
         business_goals: frontendData.businessGoals || [],
         current_challenges: frontendData.currentChallenges || [],
@@ -64,7 +64,7 @@ export default function ClientProfileSetup() {
         companySize: '',
         website: '',
         location: '',
-        description: '',
+        companyDescription: '',
 
         // Project Preferences
         projectTypes: [],
@@ -72,19 +72,18 @@ export default function ClientProfileSetup() {
         projectFrequency: '',
         preferredCommunication: [],
         workingHours: '',
-
-        // Requirements & Goals
         businessGoals: [],
         currentChallenges: [],
-        previousExperience: '',
-        expectedTimeline: '',
-        qualityImportance: '',
+
 
         // Payment & Budget
         paymentMethod: '',
         monthlyBudget: '',
         projectBudget: '',
-        paymentTiming: ''
+        paymentTiming: '',
+        previousExperience: '',
+        expectedTimeline: '',
+        qualityImportance: '',
     });
 
     const steps = [
@@ -156,12 +155,15 @@ export default function ClientProfileSetup() {
     };
 
     const handleArrayInput = (field, value) => {
-        setClientData(prev => ({
-            ...prev,
-            [field]: prev[field].includes(value)
-                ? prev[field].filter(item => item !== value)
-                : [...prev[field], value]
-        }));
+        setClientData(prev => {
+            const arr = prev[field] || [];
+            return {
+                ...prev,
+                [field]: arr.includes(value)
+                    ? arr.filter(item => item !== value)
+                    : [...arr, value]
+            };
+        });
     };
 
     // const removeArrayItem = (field, index) => {
@@ -221,20 +223,18 @@ export default function ClientProfileSetup() {
                 }
                 break;
 
-            case 2: // Project Info
-                if (clientData.projectTypes.length === 0) newErrors.projectTypes = 'Select at least one project type';
-                if (!clientData.budgetRange) newErrors.budgetRange = 'Budget range is required';
-                // Optional: Validate budgetRange is a string (though likely always is)
-                if (clientData.budgetRange && typeof clientData.budgetRange !== 'string') {
-                    newErrors.budgetRange = 'Budget range must be a string';
-                }
-                if (!clientData.projectFrequency) newErrors.projectFrequency = 'Project frequency is required';
-                else if (!['one-time', 'weekly', 'monthly', 'quarterly', 'annually'].includes(clientData.projectFrequency)) {
-                    newErrors.projectFrequency = 'Project frequency must be one of: one-time, weekly, monthly, quarterly, annually';
-                }
-                if (clientData.workingHours && !clientData.workingHours.toString().match(/^\d+$/)) {
-                    newErrors.workingHours = 'Working hours must be a number';
-                }
+            case 2:
+                if (!clientData.projectTypes || clientData.projectTypes.length === 0)
+                    newErrors.projectTypes = 'Please select at least one project type.';
+                if (!clientData.budgetRange)
+                    newErrors.budgetRange = 'Budget range is required.';
+                if (!clientData.projectFrequency)
+                    newErrors.projectFrequency = 'Project frequency is required.';
+                if (!clientData.preferredCommunication || clientData.preferredCommunication.length === 0)
+                    newErrors.preferredCommunication = 'Select at least one communication method.';
+                if (!clientData.workingHours)
+                    newErrors.workingHours = 'Working hours preference is required.';
+                // businessGoals and challenges can be optional, but you can add checks if needed
                 break;
 
             case 3: // Payment Info
@@ -315,6 +315,8 @@ export default function ClientProfileSetup() {
 
             // 4. Add authentication token
             const authtoken = localStorage.getItem('access');
+            console.log("Sending data to API:", clientData);
+
 
             await axios.post('http://localhost:8000/api/v1/profiles/client/profile-setup/', formData, {
                 headers: {
@@ -328,10 +330,12 @@ export default function ClientProfileSetup() {
             setIsCompleted(true);
         } catch (error) {
             if (error.response && error.response.data) {
+                console.error('Form submission error:', error.response.data);
                 setFieldErrors(error.response.data);
                 setErrors('Failed to submit profile. Please check the errors and try again.');
             }
-            console.error('Error:', error);
+            console.error('Unexpected Error:', error);
+            setErrors('Something went wrong. Please try again later.');
         } finally {
             setLoading(false);
         }
@@ -366,16 +370,17 @@ export default function ClientProfileSetup() {
                 handleArrayInput={handleArrayInput}
                 handleInputChange={handleInputChange} />;
             case 3: return <BudgetPaymentStep
-                clientData={clientData}
-                errors={errors}
+                clientData={clientData || {}}
+                errors={errors || {}}
                 handleInputChange={handleInputChange} />;
             default: return null;
         }
     };
+    console.log('formStep', formStep, 'errors', errors, 'clientData', clientData);
 
     if (isCompleted) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center p-4">
+            <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900">
                 <div className="w-full max-w-4xl">
                     <CompletionStep
                         clientData={clientData}
@@ -385,7 +390,7 @@ export default function ClientProfileSetup() {
                             setClientData({
                                 firstName: '', lastName: '', companyName: '', accountType: '',
                                 industry: '', companySize: '', website: '', location: '',
-                                description: '', projectTypes: [], budgetRange: '', projectFrequency: '',
+                                companyDescription: '', projectTypes: [], budgetRange: '', projectFrequency: '',
                                 preferredCommunication: [], workingHours: '', businessGoals: [],
                                 currentChallenges: [], previousExperience: '', expectedTimeline: '',
                                 qualityImportance: '', paymentMethod: '', monthlyBudget: '',
@@ -393,14 +398,14 @@ export default function ClientProfileSetup() {
                             });
                             setProfileImage(null);
                         }}
-                        onDashboard={() => navigate('/dashboard')} />
+                        onDashboard={() => navigate('/client/dashboard')} />
                 </div>
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center p-4">
+        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900">
             <div className="w-full max-w-4xl">
                 <div className="bg-black/20 backdrop-blur-lg rounded-2xl border border-white/10 p-8 shadow-2xl">
                     <Stepper steps={steps} formStep={formStep} />

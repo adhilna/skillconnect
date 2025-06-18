@@ -145,8 +145,8 @@ export default function BusinessInfoStep({
                     {clientData.accountType === 'business' ? 'Company Description' : 'About You'}
                 </label>
                 <textarea
-                    name="description"
-                    value={clientData.description}
+                    name="companyDescription"
+                    value={clientData.companyDescription}
                     onChange={handleInputChange}
                     rows={4}
                     className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder:text-white/50 focus:outline-none focus:border-green-400 resize-none transition-colors"

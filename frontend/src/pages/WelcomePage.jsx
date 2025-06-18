@@ -1,29 +1,33 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { SyncLoader } from "react-spinners";
+import { AuthContext } from "../context/AuthContext"; // <-- Import AuthContext
 
 const WelcomePage = () => {
     const [userData, setUserData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const navigate = useNavigate();
+    const { logout } = useContext(AuthContext); // <-- Use AuthContext for logout
 
     useEffect(() => {
         const fetchUserData = async () => {
             try {
+                // Read token from localStorage (or use AuthContext.token if you prefer)
                 const token = localStorage.getItem('access');
                 if (!token) {
                     setError('No access token found. Please log in.');
                     navigate('/login');
                     return;
                 }
-                const response = await axios.get('http://localhost:8000/api/v1/auth/users/profile/', {
-                    headers: { Authorization: `Bearer ${token}` },
-                });
+                const response = await axios.get(
+                    'http://localhost:8000/api/v1/auth/users/profile/',
+                    { headers: { Authorization: `Bearer ${token}` } }
+                );
                 setUserData(response.data);
 
-                // If not first login, redirect immediately
+                // If not first login, redirect immediately based on role
                 if (!response.data.first_login) {
                     const role = response.data.role?.toUpperCase();
                     if (role === 'CLIENT') {
@@ -36,13 +40,19 @@ const WelcomePage = () => {
                 }
             } catch (error) {
                 console.error('Error fetching user data:', error.response?.data || error.message);
-                setError('Failed to load profile. Please log in again.');
+                // On 401, clear token and redirect to login
+                if (error.response?.status === 401) {
+                    logout(); // <-- Use AuthContext logout to clear token and state
+                    navigate('/login');
+                } else {
+                    setError('Failed to load profile. Please log in again.');
+                }
             } finally {
                 setLoading(false);
             }
         };
         fetchUserData();
-    }, [navigate]);
+    }, [navigate, logout]); // <-- Add logout to dependency array
 
     useEffect(() => {
         if (userData && userData.first_login) {
@@ -53,14 +63,13 @@ const WelcomePage = () => {
                         throw new Error('No access token found');
                     }
                     // PATCH request to update first_login to false
-                    const response = await axios.patch('http://localhost:8000/api/v1/auth/users/update/', {
-                        first_login: false,
-                    }, {
-                        headers: { Authorization: `Bearer ${token}` },
-                    });
+                    const response = await axios.patch(
+                        'http://localhost:8000/api/v1/auth/users/update/',
+                        { first_login: false },
+                        { headers: { Authorization: `Bearer ${token}` } }
+                    );
                     console.log('User role:', response.data.role);
                     console.log('PATCH response:', response.data);
-
 
                     // Redirect based on role
                     const redirectPath = userData.role === 'CLIENT'
@@ -69,13 +78,20 @@ const WelcomePage = () => {
                     navigate(redirectPath);
                 } catch (error) {
                     console.error('Error updating first_login:', error);
-                    setError('Failed to update profile. Please log in again.');
+                    // On 401, clear token and redirect to login
+                    if (error.response?.status === 401) {
+                        logout(); // <-- Use AuthContext logout
+                        navigate('/login');
+                    } else {
+                        setError('Failed to update profile. Please log in again.');
+                    }
                 }
-            }, 5000);
+            }, 2500);
             return () => clearTimeout(timer);
         }
-    }, [userData, navigate]);
+    }, [userData, navigate, logout]); // <-- Add logout to dependency array
 
+    // Show loading spinner while loading
     if (loading) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-black text-white">
@@ -85,6 +101,7 @@ const WelcomePage = () => {
         );
     }
 
+    // Show error message if there is an error
     if (error) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-black text-white">
@@ -93,7 +110,9 @@ const WelcomePage = () => {
         );
     }
 
-    if (!userData.first_login) return null;
+    // Only render welcome message if userData exists and first_login is true
+    // IMPORTANT: Check if userData exists before accessing its properties
+    if (!userData || !userData.first_login) return null;
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-indigo-800 flex items-center justify-center">

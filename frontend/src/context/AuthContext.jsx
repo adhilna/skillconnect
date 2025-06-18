@@ -1,30 +1,33 @@
-import React from 'react';
-import { createContext, useState } from 'react';
+import React, { createContext, useState, useEffect } from 'react';
 
 export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
-    const [token, setToken] = useState(localStorage.getItem('access') || '');
+    const [token, setToken] = useState('');
 
-    const login = (data) => {
-        return new Promise((resolve, reject) => {
-            try {
-                setUser({ email: data.email, role: data.role });
-                setToken(localStorage.getItem('access') || '');
-                resolve(data);
-            } catch (error) {
-                console.error('Login failed:', error.response?.data || error.message);
-                reject(error);
-            }
-        });
+    // Initialize from localStorage on mount
+    useEffect(() => {
+        const storedUser = localStorage.getItem('user');
+        const storedToken = localStorage.getItem('access');
+        if (storedUser) setUser(JSON.parse(storedUser));
+        if (storedToken) setToken(storedToken);
+    }, []);
+
+    const login = (userData, receivedToken) => {
+        setUser(userData);
+        setToken(receivedToken);
+        localStorage.setItem('user', JSON.stringify(userData));
+        localStorage.setItem('access', receivedToken);
+        return userData;
     };
 
     const logout = () => {
-        setToken('');
         setUser(null);
+        setToken('');
         localStorage.removeItem('access');
         localStorage.removeItem('refresh_token');
+        localStorage.removeItem('user');
     };
 
     return (

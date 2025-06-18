@@ -110,15 +110,14 @@ export default function Register() {
             });
 
             const { access, refresh, user } = response.data;
-            console.log('Tokens:', { access, refresh }); // Debug
 
             // Store tokens
             localStorage.setItem('access', access);
             localStorage.setItem('refresh_token', refresh);
 
             // Update global auth state (via context, etc.)
-            await login({ email: formValues.email, role: user.role });
-            console.log('User after login:', user); // Debug
+            await login({ email: formValues.email, role: user.role }, access);
+
             setSuccess('Email verified successfully!');
             navigate('/welcome')
             setVerified(true); // Show Next or continue to dashboard

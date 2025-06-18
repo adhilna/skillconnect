@@ -62,10 +62,11 @@ export default function ProjectNeedsStep({
                         className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:border-green-400 transition-colors"
                     >
                         <option value="" className="bg-gray-800">How often do you hire?</option>
-                        <option value="first-time" className="bg-gray-800">This is my first time</option>
-                        <option value="occasionally" className="bg-gray-800">Occasionally (few times a year)</option>
-                        <option value="regularly" className="bg-gray-800">Regularly (monthly)</option>
-                        <option value="frequently" className="bg-gray-800">Frequently (weekly)</option>
+                        <option value="one-time" className="bg-gray-800">This is my first time</option>
+                        <option value="weekly" className="bg-gray-800">Weekly</option>
+                        <option value="monthly" className="bg-gray-800">Monthly</option>
+                        <option value="quarterly" className="bg-gray-800">Quarterly</option>
+                        <option value="annually" className="bg-gray-800">Annually</option>
                     </select>
                 </div>
             </div>

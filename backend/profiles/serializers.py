@@ -231,8 +231,11 @@ class ClientProfileSerializer(serializers.ModelSerializer):
         return value
 
     def validate_working_hours(self, value):
-        if value and not value.isdigit():
-            raise serializers.ValidationError("Working hours must be a number.")
+        valid_options = ['business-hours', 'flexible', '24-7', 'overlap']
+        if value and value not in valid_options:
+            raise serializers.ValidationError(
+                f"Working hours must be one of: {', '.join(valid_options)}"
+        )
         return value
 
     def validate_budget_range(self, value):
@@ -296,6 +299,17 @@ class ClientProfileSerializer(serializers.ModelSerializer):
         ]
 
         read_only_fields = ['created_at', 'updated_at']
+
+    ALLOWED_INDUSTRIES = [
+        'Technology', 'Healthcare', 'Finance', 'Education', 'E-commerce', 'Real Estate',
+        'Marketing & Advertising', 'Manufacturing', 'Food & Beverage', 'Fashion',
+        'Travel & Tourism', 'Non-profit', 'Entertainment', 'Consulting', 'Other'
+    ]
+
+    ALLOWED_COMPANY_SIZES = [
+        'Just me (1)', 'Small team (2-10)', 'Growing business (11-50)',
+        'Medium company (51-200)', 'Large enterprise (200+)'
+    ]
 
     @transaction.atomic
     def create(self, validated_data):
