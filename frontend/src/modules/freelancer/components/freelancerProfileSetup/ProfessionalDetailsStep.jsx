@@ -194,7 +194,7 @@ export default function ProfessionalDetailsStep({
                                 className="px-3 py-2 bg-white/10 border border-white/20 rounded text-white placeholder:text-white/50 focus:outline-none focus:border-blue-400"
                             />
                             <input
-                                type="text"
+                                type="number"
                                 placeholder="Year"
                                 value={edu.year}
                                 onChange={(e) => updateEducation(index, 'year', e.target.value)}

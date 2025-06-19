@@ -14,15 +14,14 @@ import NavigationButtons from '../components/freelancerProfileSetup/NavigationBu
 import Stepper from '../components/freelancerProfileSetup/Stepper';
 
 function mapFrontendToBackend(frontendData) {
-
     return {
         first_name: frontendData.first_name || '',
         last_name: frontendData.last_name || '',
         about: frontendData.about || '',
         location: frontendData.location || '',
         age: frontendData.age || '',
-        is_available: frontendData.isAvailable || false,
-        profile_picture: frontendData.profileImageFile || null,
+        is_available: frontendData.is_available || false,
+        profile_picture: frontendData.profile_picture || null,
         skills: (frontendData.skills || []).map(skill => ({ name: skill })),
         educations: (frontendData.education || []).map(edu => ({
             college: edu.college,
@@ -50,17 +49,17 @@ function mapFrontendToBackend(frontendData) {
             linkedin_url: item.linkedin_url || ''
         })),
         social_links: {
-            github_url: frontendData.socialLinks?.github || '',
-            linkedin_url: frontendData.socialLinks?.linkedin || '',
-            twitter_url: frontendData.socialLinks?.twitter || '',
-            facebook_url: frontendData.socialLinks?.facebook || '',
-            instagram_url: frontendData.socialLinks?.instagram || '',
+            github_url: frontendData.social_links?.github_url || '',
+            linkedin_url: frontendData.social_links?.linkedin_url || '',
+            twitter_url: frontendData.social_links?.twitter_url || '',
+            facebook_url: frontendData.social_links?.facebook_url || '',
+            instagram_url: frontendData.social_links?.instagram_url || '',
         },
         verifications: {
-            email_verified: frontendData.emailVerified || false,
-            phone_verified: frontendData.phoneVerified || false,
-            id_verified: frontendData.idVerified || false,
-            video_verified: frontendData.videoVerified || false,
+            email_verified: frontendData.email_verified || false,
+            phone_verified: frontendData.phone_verified || false,
+            id_verified: frontendData.id_verified || false,
+            video_verified: frontendData.video_verified || false,
         }
 
     };
@@ -134,7 +133,7 @@ export default function FreelancerProfileSetup() {
         'Chinese (Mandarin)', 'Japanese', 'Korean', 'Arabic', 'Hindi', 'Dutch'
     ];
 
-    const proficiencyLevels = ['Beginner', 'Intermediate', 'Advanced', 'Native'];
+    const proficiencyLevels = ['Beginner', 'Intermediate', 'Fluent', 'Native'];
 
     const handleInputChange = (e) => {
         const { name, value, type } = e.target;
@@ -367,26 +366,53 @@ export default function FreelancerProfileSetup() {
             const experiencesData = backendData.experiences.map(({ certificate, ...rest }) => rest);
 
             const formData = new FormData();
-            formData.append('first_name', backendData.first_name);
-            formData.append('last_name', backendData.last_name);
-            formData.append('about', backendData.about);
-            formData.append('age', backendData.age);
-            formData.append('location', backendData.location)
-            formData.append('is_available', String(backendData.is_available));
-            formData.append('skills', JSON.stringify(backendData.skills));
-            formData.append('educations', JSON.stringify(educationsData));
-            formData.append('experiences', JSON.stringify(experiencesData));
-            formData.append('languages', JSON.stringify(backendData.languages));
-            formData.append('portfolios', JSON.stringify(backendData.portfolios));
-            formData.append('social_links', JSON.stringify(backendData.social_links));
-            formData.append('email_verified', backendData.verifications.email_verified);
-            formData.append('phone_verified', backendData.verifications.phone_verified);
-            formData.append('id_verified', backendData.verifications.id_verified);
-            formData.append('video_verified', backendData.verifications.video_verified);
 
-            if (freelancerData.profileImageFile) {
-                formData.append('profile_picture', freelancerData.profileImageFile);
+            if (backendData.profile_picture) {
+                formData.append('profile_picture', backendData.profile_picture);
             }
+
+            // Append education certificates
+            backendData.educations.forEach((edu, index) => {
+                if (edu.certificate) {
+                    formData.append(`education_certificate_${index}`, edu.certificate);
+                }
+            });
+
+            // Append experience certificates
+            backendData.experiences.forEach((exp, index) => {
+                if (exp.certificate) {
+                    formData.append(`experience_certificate_${index}`, exp.certificate);
+                }
+            });
+            const payload = {
+                first_name: backendData.first_name,
+                last_name: backendData.last_name,
+                about: backendData.about,
+                age: backendData.age,
+                location: backendData.location,
+                is_available: backendData.is_available,
+                skills: backendData.skills,
+                educations: educationsData.map(edu => ({
+                    ...edu,
+                    year: parseInt(edu.year) || edu.year, // Convert year to integer if possible
+                })),
+                experiences: experiencesData,
+                languages: backendData.languages.map(lang => ({
+                    ...lang,
+                    proficiency: lang.proficiency.toLowerCase(), // Convert proficiency to lowercase
+                })),
+                portfolios: backendData.portfolios,
+                social_links: backendData.social_links,
+                email_verified: backendData.verifications.email_verified,
+                phone_verified: backendData.verifications.phone_verified,
+                id_verified: backendData.verifications.id_verified,
+                video_verified: backendData.verifications.video_verified,
+            };
+
+            formData.append('data', JSON.stringify(payload));
+
+
+            // Debug: log FormData entries
             for (let pair of formData.entries()) {
                 console.log(pair[0] + ':', pair[1]);
             }
@@ -404,16 +430,17 @@ export default function FreelancerProfileSetup() {
 
             setErrors(null);
             setFieldErrors({});
+            setIsCompleted(true);
         } catch (error) {
             if (error.response && error.response.data) {
                 setFieldErrors(error.response.data);
-                setErrors('Failed to submit profile. Please check the errors and try again.');
-                setErrors('Faliled to submit profile. ' + (error.message || 'unnknown error'));
+                setErrors('Failed to submit profile. ' + (error.message || 'Unknown error'));
+
+
             }
         } finally {
             setLoading(false);
         }
-        setIsCompleted(true);
     };
 
 

@@ -191,9 +191,9 @@ export default function LoginPage() {
                   logo_alignment="center"
                   disabled={googleLoading}
                 />
-                <button className="p-3 rounded-lg bg-white/10 hover:bg-white/20 transition-colors">
+                {/* <button className="p-3 rounded-lg bg-white/10 hover:bg-white/20 transition-colors">
                   <FaApple className="text-white" size={20} />
-                </button>
+                </button> */}
               </div>
             </div>
           </div>

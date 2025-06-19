@@ -1,11 +1,12 @@
-from rest_framework import viewsets
+from rest_framework import viewsets, permissions, status
 from rest_framework.permissions import IsAuthenticated
-from rest_framework import permissions
 from .models import FreelancerProfile, ClientProfile
 from .serializers import FreelancerProfileSerializer, ClientProfileSerializer
 from django.shortcuts import get_object_or_404
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
+from rest_framework.decorators import action
+import json
 
 CITIES = [
     # Andhra Pradesh (20 cities)
@@ -187,11 +188,50 @@ class FreelancerProfileViewSet(viewsets.ModelViewSet):
     serializer_class = FreelancerProfileSerializer
     permission_classes = [IsAuthenticated, IsOwnerOrReadOnly]
 
-    def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
-
     def get_queryset(self):
         return FreelancerProfile.objects.filter(user=self.request.user)
+    
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+    
+    def create(self, request, *args, **kwargs):
+        try:
+             # 1. Parse the JSON data
+            data = json.loads(request.POST.get('data'))
+
+            # 2. Attach profile picture if present
+            if 'profile_picture' in request.FILES:
+                data['profile_picture'] = request.FILES['profile_picture']
+
+            # 3. Attach certificate files to educations and experiences
+            for i, edu in enumerate(data.get('educations', [])):
+                cert_key = f'education_certificate_{i}'
+                if cert_key in request.FILES:
+                    edu['certificate'] = request.FILES[cert_key]
+                else:
+                    edu['certificate'] = None 
+
+            for i, exp in enumerate(data.get('experiences', [])):
+                cert_key = f'experience_certificate_{i}'
+                if cert_key in request.FILES:
+                    exp['certificate'] = request.FILES[cert_key]
+                else:
+                    exp['certificate'] = None 
+
+            print("Data before serializer:", data)
+
+
+            # 4. Use your serializer to create the profile and nested objects
+            serializer = self.get_serializer(data=data)
+            if not serializer.is_valid():
+                print("Serializer errors:", serializer.errors)
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            self.perform_create(serializer)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+        
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 class ClientProfileViewSet(viewsets.ModelViewSet):
     serializer_class = ClientProfileSerializer
