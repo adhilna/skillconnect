@@ -218,7 +218,7 @@ class FreelancerProfileViewSet(viewsets.ModelViewSet):
                 else:
                     exp['certificate'] = None 
 
-            print("Data before serializer:", data)
+            # print("Data before serializer:", data)
 
 
             # 4. Use your serializer to create the profile and nested objects

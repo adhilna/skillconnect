@@ -1,5 +1,6 @@
 
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { User, Target, Code, Globe, CheckCircle, Shield, Link } from 'lucide-react';
 import BasicInfoStep from '../components/freelancerProfileSetup/BasicInfoStep';
@@ -156,6 +157,8 @@ export default function FreelancerProfileSetup() {
         }
     };
 
+    const navigate = useNavigate();
+
     const handleArrayInput = (field, value) => {
         setFreelancerData(prev => ({
             ...prev,
@@ -264,7 +267,7 @@ export default function FreelancerProfileSetup() {
 
             setFreelancerData(prev => ({
                 ...prev,
-                profileImageFile: file,
+                profile_picture: file,
                 profile_picture_preview: previewUrl
             }));
         }
@@ -521,8 +524,7 @@ export default function FreelancerProfileSetup() {
                                 isAvailable: true
                             });
                         }}
-                        onDashboard={() => console.log('Navigate to dashboard')}
-                    />
+                        onDashboard={() => navigate('/freelancer/dashboard')} />
                 </div>
             </div>
         );
