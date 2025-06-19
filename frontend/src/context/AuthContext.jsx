@@ -14,11 +14,12 @@ export const AuthProvider = ({ children }) => {
         if (storedToken) setToken(storedToken);
     }, []);
 
-    const login = (userData, receivedToken) => {
+    const login = (userData, receivedToken, refreshToken) => {
         setUser(userData);
         setToken(receivedToken);
         localStorage.setItem('user', JSON.stringify(userData));
         localStorage.setItem('access', receivedToken);
+        localStorage.setItem('refresh', refreshToken);
         return userData;
     };
 
@@ -26,7 +27,7 @@ export const AuthProvider = ({ children }) => {
         setUser(null);
         setToken('');
         localStorage.removeItem('access');
-        localStorage.removeItem('refresh_token');
+        localStorage.removeItem('refresh');
         localStorage.removeItem('user');
     };
 

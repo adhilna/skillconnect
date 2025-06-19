@@ -26,7 +26,6 @@ export default function LoginPage() {
 
   // Animation effect
   useEffect(() => {
-    setAnimateIn(true);
     const timer = setTimeout(() => {
       setAnimateIn(true);
     }, 100);
@@ -37,13 +36,29 @@ export default function LoginPage() {
     e.preventDefault();
     setIsLoading(true);
     try {
-      await login(email, password);
-      navigate('/welcome');
+      // Step 1: Call login API
+      const response = await axios.post('http://localhost:8000/api/v1/auth/token/', { email, password });
+      const { access, refresh } = response.data;
+
+      // Step 2: Fetch user profile (if not returned by login API)
+      // If your login API returns user data, skip this step
+      const userResponse = await axios.get('http://localhost:8000/api/v1/auth/users/profile/', {
+        headers: { Authorization: `Bearer ${access}` }
+      });
+      const userData = userResponse.data;
+
+      // Step 3: Call login in AuthContext
+      login(userData, access, refresh);
+
+      // Step 4: Redirect based on role
+      const dashboardPath = userData.role === 'client' ? '/client/dashboard' : '/freelancer/dashboard';
+      navigate(dashboardPath);
+
     } catch (err) {
-      console.log(err);
-      setError('Invalid email or password');
+      setError(err.response?.data?.detail || 'Login failed');
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   };
 
   const handleGoogleSuccess = async (googleToken) => {

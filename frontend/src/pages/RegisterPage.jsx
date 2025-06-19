@@ -113,7 +113,7 @@ export default function Register() {
 
             // Store tokens
             localStorage.setItem('access', access);
-            localStorage.setItem('refresh_token', refresh);
+            localStorage.setItem('refresh', refresh);
 
             // Update global auth state (via context, etc.)
             await login({ email: formValues.email, role: user.role }, access);
@@ -134,7 +134,7 @@ export default function Register() {
     //         navigate('/welcome');
     //     } else {
     //         console.error('User not authenticated, redirecting to login');
-    //         navigate('/login');
+    //         navigate('/login');  
     //     }
     // };
 

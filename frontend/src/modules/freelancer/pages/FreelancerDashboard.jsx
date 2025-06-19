@@ -10,6 +10,7 @@ import RequestSection from '../components/freelancerDashboard/RequestSection';
 import AnalyticsSection from '../components/freelancerDashboard/AnalyticsSection';
 import ProfileSection from '../components/freelancerDashboard/ProfileSection';
 import SettingsSection from '../components/freelancerDashboard/SettingsSection';
+import FreelancerProfileSetup from './FreelancerProfileSetup ';
 
 const FreelancerDashboard = () => {
   const [activeSection, setActiveSection] = useState('dashboard');
