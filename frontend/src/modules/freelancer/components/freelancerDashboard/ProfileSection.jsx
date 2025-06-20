@@ -1,19 +1,10 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { User } from 'lucide-react';
+import {
+  User, Edit3, Save, X, Plus, Trash2, MapPin, Calendar, Briefcase, GraduationCap, Globe, Star,
+  Award, Eye, EyeOff, Mail, Phone, Video, Shield, ExternalLink, FileText
+} from 'lucide-react';
 import axios from 'axios';
 import { AuthContext } from '../../../../context/AuthContext';
-
-// const ProfileSection = ({ profile }) => {
-
-//   if (!profile) {
-// return (
-//   <div className="bg-black/20 backdrop-blur-lg rounded-2xl border border-white/10 p-8 text-center">
-//     <User size={48} className="text-white/30 mx-auto mb-4" />
-//     <h4 className="text-xl font-semibold text-white mb-2">Profile Loading...</h4>
-//     <p className="text-white/50 text-sm">Profile data is not available yet.</p>
-//   </div>
-// );
-//   }
 
 const ProfileSection = () => {
   const { token } = useContext(AuthContext);
@@ -21,7 +12,7 @@ const ProfileSection = () => {
   const [editData, setEditData] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(true);
-
+  const [activeTab, setActiveTab] = useState('overview');
 
   useEffect(() => {
     if (!token) return;
@@ -30,12 +21,15 @@ const ProfileSection = () => {
       headers: { Authorization: `Bearer ${token}` }
     })
       .then(res => {
-        console.log('Profile data:', res.data); // <-- Add this
+        // If your backend returns an array, take the first item
         setProfileData(res.data[0]);
         setEditData(res.data[0]);
         setLoading(false);
       })
-      .catch(() => setLoading(false));
+      .catch(err => {
+        console.error('Error fetching profile:', err);
+        setLoading(false);
+      });
   }, [token]);
 
   const handleInputChange = (field, value) => {
@@ -52,7 +46,7 @@ const ProfileSection = () => {
   const handleAddItem = (field, newItem) => {
     setEditData(prev => ({
       ...prev,
-      [field]: [...prev[field], newItem]
+      [field]: [...(prev[field] || []), newItem]
     }));
   };
 
@@ -64,466 +58,521 @@ const ProfileSection = () => {
   };
 
   const handleSave = async () => {
-    try {
-      const authtoken = token;
-      const formData = new FormData();
-      // Add profile_picture and certificates if changed (not shown here for brevity)
-      formData.append('data', JSON.stringify(editData));
-      await axios.put('http://localhost:8000/api/v1/profiles/freelancer/profile/', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-          Authorization: `Bearer ${authtoken}`,
-        },
-      });
-      setProfileData(editData);
-      setIsEditing(false);
-    } catch (err) {
-      alert('Failed to save profile');
-      console.error(err?.response?.data || err.message);
-    }
+    setProfileData(editData);
+    setIsEditing(false);
   };
 
-  if (loading) return (
-    <div className="bg-black/20 backdrop-blur-lg rounded-2xl border border-white/10 p-8 text-center">
-      <User size={48} className="text-white/30 mx-auto mb-4" />
-      <h4 className="text-xl font-semibold text-white mb-2">Profile Loading...</h4>
-      <p className="text-white/50 text-sm">Profile data is not available yet.</p>
-    </div>
+  const getAvailabilityStatus = () => (
+    profileData?.is_available ? (
+      <div className="flex items-center gap-2 px-3 py-1 bg-green-500/20 rounded-full">
+        <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+        <span className="text-green-300 text-sm font-medium">Available</span>
+      </div>
+    ) : (
+      <div className="flex items-center gap-2 px-3 py-1 bg-red-500/20 rounded-full">
+        <div className="w-2 h-2 bg-red-400 rounded-full"></div>
+        <span className="text-red-300 text-sm font-medium">Busy</span>
+      </div>
+    )
   );
-  if (!profileData) return (
-    <div className="bg-black/20 backdrop-blur-lg rounded-2xl border border-white/10 p-8 text-center">
-      <User size={48} className="text-white/30 mx-auto mb-4" />
-      <h4 className="text-xl font-semibold text-white mb-2">Profile Loading...</h4>
-      <p className="text-white/50 text-sm">Profile data is not available yet.</p>
-    </div>
-  );
+
+  const getVerificationBadges = () => {
+    const verifications = [
+      { key: 'email_verified', icon: Mail, label: 'Email' },
+      { key: 'phone_verified', icon: Phone, label: 'Phone' },
+      { key: 'id_verified', icon: Shield, label: 'ID' },
+      { key: 'video_verified', icon: Video, label: 'Video' }
+    ];
+    return verifications.map(({ key, icon: Icon, label }) => (
+      <div
+        key={key}
+        className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs ${profileData?.[key]
+          ? 'bg-green-500/20 text-green-300'
+          : 'bg-gray-500/20 text-gray-400'
+          }`}
+      >
+        <Icon size={12} />
+        <span>{label}</span>
+        {profileData?.[key] ? '✓' : '✗'}
+      </div>
+    ));
+  };
+
+  if (loading) {
+    return (
+      <div className="bg-gradient-to-br from-purple-900/20 to-blue-900/20 backdrop-blur-lg rounded-3xl border border-white/10 p-8 text-center">
+        <div className="animate-spin w-12 h-12 border-4 border-purple-500/30 border-t-purple-500 rounded-full mx-auto mb-4"></div>
+        <h4 className="text-xl font-semibold text-white mb-2">Loading Profile...</h4>
+        <p className="text-white/50 text-sm">Please wait while we fetch your data.</p>
+      </div>
+    );
+  }
+
+  if (!profileData) {
+    return (
+      <div className="bg-gradient-to-br from-purple-900/20 to-blue-900/20 backdrop-blur-lg rounded-3xl border border-white/10 p-8 text-center">
+        <User size={48} className="text-white/30 mx-auto mb-4" />
+        <h4 className="text-xl font-semibold text-white mb-2">Profile Not Found</h4>
+        <p className="text-white/50 text-sm">Unable to load profile data.</p>
+      </div>
+    );
+  }
+
+  const tabs = [
+    { id: 'overview', label: 'Overview', icon: User },
+    { id: 'experience', label: 'Experience', icon: Briefcase },
+    { id: 'education', label: 'Education', icon: GraduationCap },
+    { id: 'portfolio', label: 'Portfolio', icon: Star }
+  ];
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h3 className="text-2xl font-bold text-white">Freelancer Profile</h3>
-        {isEditing ? (
-          <div className="flex gap-3">
-            <button
-              onClick={() => setIsEditing(false)}
-              className="bg-gray-700/20 hover:bg-gray-700/30 px-4 py-2 rounded-lg text-gray-300 hover:text-white transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleSave}
-              className="bg-purple-600/20 hover:bg-purple-600/30 px-4 py-2 rounded-lg text-purple-400 hover:text-white transition-colors"
-            >
-              Save Changes
-            </button>
+      {/* Header */}
+      <div className="bg-gradient-to-r from-purple-900/30 to-blue-900/30 backdrop-blur-lg rounded-3xl border border-white/10 p-6">
+        <div className="flex items-start justify-between mb-6">
+          <div className="flex items-center gap-4">
+            <div className="w-20 h-20 bg-gradient-to-br from-purple-500 to-blue-500 rounded-2xl flex items-center justify-center">
+              {profileData.profile_picture ? (
+                <img
+                  src={profileData.profile_picture}
+                  alt="Profile"
+                  className="w-full h-full rounded-2xl object-cover"
+                />
+              ) : (
+                <User size={32} className="text-white" />
+              )}
+            </div>
+            <div>
+              <h1 className="text-3xl font-bold text-white mb-2">
+                {profileData.first_name} {profileData.last_name}
+              </h1>
+              <div className="flex items-center gap-4 mb-3">
+                <div className="flex items-center gap-1 text-white/70">
+                  <MapPin size={16} />
+                  <span className="text-sm">{profileData.location}</span>
+                </div>
+                <div className="flex items-center gap-1 text-white/70">
+                  <Calendar size={16} />
+                  <span className="text-sm">{profileData.age} years old</span>
+                </div>
+                {getAvailabilityStatus()}
+              </div>
+              <div className="flex gap-2 flex-wrap">
+                {getVerificationBadges()}
+              </div>
+            </div>
           </div>
-        ) : (
-          <button
-            onClick={() => setIsEditing(true)}
-            className="bg-purple-600/20 hover:bg-purple-600/30 px-4 py-2 rounded-lg text-purple-400 hover:text-white transition-colors"
-          >
-            Edit Profile
-          </button>
-        )}
+          <div className="flex gap-3">
+            {isEditing ? (
+              <>
+                <button
+                  onClick={() => {
+                    setIsEditing(false);
+                    setEditData(profileData);
+                  }}
+                  className="flex items-center gap-2 bg-gray-700/30 hover:bg-gray-700/40 px-4 py-2 rounded-xl text-gray-300 hover:text-white transition-all duration-200"
+                >
+                  <X size={16} />
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSave}
+                  className="flex items-center gap-2 bg-gradient-to-r from-purple-600/30 to-blue-600/30 hover:from-purple-600/40 hover:to-blue-600/40 px-4 py-2 rounded-xl text-white transition-all duration-200 border border-purple-500/30"
+                >
+                  <Save size={16} />
+                  Save Changes
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={() => setIsEditing(true)}
+                className="flex items-center gap-2 bg-gradient-to-r from-purple-600/30 to-blue-600/30 hover:from-purple-600/40 hover:to-blue-600/40 px-4 py-2 rounded-xl text-white transition-all duration-200 border border-purple-500/30"
+              >
+                <Edit3 size={16} />
+                Edit Profile
+              </button>
+            )}
+          </div>
+        </div>
+        {/* About Section */}
+        <div className="bg-white/5 rounded-2xl p-4 border border-white/10">
+          <h3 className="text-lg font-semibold text-white mb-3">About</h3>
+          {isEditing ? (
+            <textarea
+              value={editData.about}
+              onChange={e => handleInputChange('about', e.target.value)}
+              className="w-full bg-white/10 text-white rounded-xl px-4 py-3 border border-white/20 focus:border-purple-500/50 focus:outline-none resize-none"
+              rows={4}
+              placeholder="Tell us about yourself..."
+            />
+          ) : (
+            <p className="text-white/80 leading-relaxed">
+              {profileData.about || 'No description available.'}
+            </p>
+          )}
+        </div>
       </div>
 
-      <div className="bg-black/20 backdrop-blur-lg rounded-2xl border border-white/10 p-6">
-        <div className="space-y-4">
-          {/* Personal Info */}
-          <div className="flex items-center justify-between p-4 bg-white/5 rounded-lg border border-white/10 hover:bg-white/10 transition-colors">
-            <span className="text-white/80">Name:</span>
-            {isEditing ? (
-              <div className="flex gap-2">
-                <input
-                  value={editData.first_name}
-                  onChange={e => handleInputChange('first_name', e.target.value)}
-                  className="bg-white/10 text-white rounded px-2 py-1 w-32"
-                />
-                <input
-                  value={editData.last_name}
-                  onChange={e => handleInputChange('last_name', e.target.value)}
-                  className="bg-white/10 text-white rounded px-2 py-1 w-32"
-                />
-              </div>
-            ) : (
-              <span className="text-white">{profileData.first_name} {profileData.last_name}</span>
-            )}
-          </div>
+      {/* Navigation Tabs */}
+      <div className="flex gap-2 p-2 bg-black/20 backdrop-blur-lg rounded-2xl border border-white/10">
+        {tabs.map(({ id, label, icon: Icon }) => (
+          <button
+            key={id}
+            onClick={() => setActiveTab(id)}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all duration-200 ${activeTab === id
+              ? 'bg-gradient-to-r from-purple-600/40 to-blue-600/40 text-white border border-purple-500/30'
+              : 'text-white/60 hover:text-white/80 hover:bg-white/5'
+              }`}
+          >
+            <Icon size={16} />
+            <span className="font-medium">{label}</span>
+          </button>
+        ))}
+      </div>
 
-          <div className="flex items-center justify-between p-4 bg-white/5 rounded-lg border border-white/10 hover:bg-white/10 transition-colors">
-            <span className="text-white/80">About:</span>
-            {isEditing ? (
-              <textarea
-                value={editData.about}
-                onChange={e => handleInputChange('about', e.target.value)}
-                className="bg-white/10 text-white rounded px-2 py-1 flex-1 ml-2"
-              />
-            ) : (
-              <span className="text-white">{profileData.about || 'Not set'}</span>
-            )}
-          </div>
-
-          <div className="flex items-center justify-between p-4 bg-white/5 rounded-lg border border-white/10 hover:bg-white/10 transition-colors">
-            <span className="text-white/80">Age:</span>
-            {isEditing ? (
-              <input
-                type="number"
-                value={editData.age}
-                onChange={e => handleInputChange('age', e.target.value)}
-                className="bg-white/10 text-white rounded px-2 py-1 w-20"
-              />
-            ) : (
-              <span className="text-white">{profileData.age || 'Not set'}</span>
-            )}
-          </div>
-
-          <div className="flex items-center justify-between p-4 bg-white/5 rounded-lg border border-white/10 hover:bg-white/10 transition-colors">
-            <span className="text-white/80">Location:</span>
-            {isEditing ? (
-              <input
-                value={editData.location}
-                onChange={e => handleInputChange('location', e.target.value)}
-                className="bg-white/10 text-white rounded px-2 py-1 flex-1 ml-2"
-              />
-            ) : (
-              <span className="text-white">{profileData.location || 'Not set'}</span>
-            )}
-          </div>
-
-          <div className="flex items-center justify-between p-4 bg-white/5 rounded-lg border border-white/10 hover:bg-white/10 transition-colors">
-            <span className="text-white/80">Available:</span>
-            {isEditing ? (
-              <select
-                value={editData.is_available}
-                onChange={e => handleInputChange('is_available', e.target.value === 'true')}
-                className="bg-white/10 text-white rounded px-2 py-1"
-              >
-                <option value="true">Yes</option>
-                <option value="false">No</option>
-              </select>
-            ) : (
-              <span className="text-white">{profileData.is_available ? 'Yes' : 'No'}</span>
-            )}
-          </div>
-
-          {/* Skills */}
-          <div className="p-4 bg-white/5 rounded-lg border border-white/10 hover:bg-white/10 transition-colors">
-            <span className="text-white/80">Skills:</span>
-            <div className="flex flex-wrap gap-2 mt-2">
-              {isEditing ? (
-                <div className="w-full">
-                  {editData.skills?.map((skill, idx) => (
-                    <div key={skill.id || idx} className="flex gap-2 mb-2 items-center">
-                      <input
-                        value={skill.name}
-                        onChange={e => handleArrayChange('skills', idx, { ...skill, name: e.target.value })}
-                        className="bg-white/10 text-white rounded px-2 py-1 flex-1"
-                      />
-                      <button
-                        onClick={() => handleRemoveItem('skills', idx)}
-                        className="bg-red-500/20 hover:bg-red-500/30 px-2 py-1 rounded text-red-300 text-sm"
-                      >
-                        Remove
-                      </button>
-                    </div>
-                  ))}
+      {/* Content Sections */}
+      <div className="bg-black/20 backdrop-blur-lg rounded-3xl border border-white/10 p-6">
+        {activeTab === 'overview' && (
+          <div className="space-y-6">
+            {/* Skills */}
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xl font-semibold text-white flex items-center gap-2">
+                  <Star className="text-purple-400" size={20} />
+                  Skills
+                </h3>
+                {isEditing && (
                   <button
                     onClick={() => handleAddItem('skills', { id: Date.now(), name: '' })}
-                    className="bg-green-500/20 hover:bg-green-500/30 px-2 py-1 rounded text-green-300 text-sm mt-2"
+                    className="flex items-center gap-1 bg-green-500/20 hover:bg-green-500/30 px-3 py-1 rounded-lg text-green-300 text-sm transition-colors"
                   >
+                    <Plus size={14} />
                     Add Skill
                   </button>
-                </div>
-              ) : (
-                profileData.skills?.map((skill, idx) => (
-                  <span key={skill.id || idx} className="px-3 py-1 bg-purple-500/20 rounded-full text-purple-300 text-sm">
-                    {skill.name}
-                  </span>
-                ))
-              )}
-            </div>
-          </div>
-
-
-          {/* Educations */}
-          <div className="p-4 bg-white/5 rounded-lg border border-white/10 hover:bg-white/10 transition-colors">
-            <span className="text-white/80">Educations:</span>
-            <div className="space-y-2 mt-2">
-              {isEditing ? (
-                <div className="space-y-2">
-                  {editData.educations?.map((edu, idx) => (
-                    <div key={edu.id || idx} className="flex flex-col gap-2 p-2 bg-white/5 rounded border border-white/10">
-                      <input
-                        value={edu.college || edu.institution}
-                        onChange={e => handleArrayChange('educations', idx, { ...edu, college: e.target.value, institution: e.target.value })}
-                        placeholder="Institution"
-                        className="bg-white/10 text-white rounded px-2 py-1"
-                      />
-                      <input
-                        value={edu.degree}
-                        onChange={e => handleArrayChange('educations', idx, { ...edu, degree: e.target.value })}
-                        placeholder="Degree"
-                        className="bg-white/10 text-white rounded px-2 py-1"
-                      />
-                      <input
-                        value={edu.year}
-                        onChange={e => handleArrayChange('educations', idx, { ...edu, year: e.target.value })}
-                        placeholder="Year"
-                        className="bg-white/10 text-white rounded px-2 py-1"
-                      />
-                      <button
-                        onClick={() => handleRemoveItem('educations', idx)}
-                        className="bg-red-500/20 hover:bg-red-500/30 px-2 py-1 rounded text-red-300 text-sm self-end"
-                      >
-                        Remove
-                      </button>
-                    </div>
-                  ))}
-                  <button
-                    onClick={() => handleAddItem('educations', { id: Date.now(), college: '', degree: '', year: '' })}
-                    className="bg-green-500/20 hover:bg-green-500/30 px-2 py-1 rounded text-green-300 text-sm"
-                  >
-                    Add Education
-                  </button>
-                </div>
-              ) : (
-                profileData.educations?.map((edu) => (
-                  <div key={edu.id} className="flex flex-col">
-                    <span className="text-white">{edu.college || edu.institution}</span>
-                    <span className="text-white/60 text-sm">{edu.degree} ({edu.year})</span>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-
-
-          {/* Experiences */}
-          <div className="p-4 bg-white/5 rounded-lg border border-white/10 hover:bg-white/10 transition-colors">
-            <span className="text-white/80">Experiences:</span>
-            <div className="space-y-2 mt-2">
-              {isEditing ? (
-                <div className="space-y-2">
-                  {editData.experiences?.map((exp, idx) => (
-                    <div key={exp.id || idx} className="flex flex-col gap-2 p-2 bg-white/5 rounded border border-white/10">
-                      <input
-                        value={exp.company}
-                        onChange={e => handleArrayChange('experiences', idx, { ...exp, company: e.target.value })}
-                        placeholder="Company"
-                        className="bg-white/10 text-white rounded px-2 py-1"
-                      />
-                      <input
-                        value={exp.position || exp.role}
-                        onChange={e => handleArrayChange('experiences', idx, { ...exp, position: e.target.value, role: e.target.value })}
-                        placeholder="Position"
-                        className="bg-white/10 text-white rounded px-2 py-1"
-                      />
-                      <div className="flex gap-2">
+                )}
+              </div>
+              <div className="flex flex-wrap gap-3">
+                {isEditing ? (
+                  <div className="w-full space-y-2">
+                    {editData.skills?.map((skill, idx) => (
+                      <div key={skill.id || idx} className="flex gap-2 items-center">
                         <input
-                          value={exp.start_date}
-                          onChange={e => handleArrayChange('experiences', idx, { ...exp, start_date: e.target.value })}
-                          placeholder="Start Date"
-                          className="bg-white/10 text-white rounded px-2 py-1 flex-1"
+                          value={skill.name}
+                          onChange={e => handleArrayChange('skills', idx, { ...skill, name: e.target.value })}
+                          className="flex-1 bg-white/10 text-white rounded-lg px-3 py-2 border border-white/20 focus:border-purple-500/50 focus:outline-none"
+                          placeholder="Skill name"
                         />
-                        <input
-                          value={exp.end_date}
-                          onChange={e => handleArrayChange('experiences', idx, { ...exp, end_date: e.target.value })}
-                          placeholder="End Date"
-                          className="bg-white/10 text-white rounded px-2 py-1 flex-1"
-                        />
+                        <button
+                          onClick={() => handleRemoveItem('skills', idx)}
+                          className="bg-red-500/20 hover:bg-red-500/30 p-2 rounded-lg text-red-300 transition-colors"
+                        >
+                          <Trash2 size={14} />
+                        </button>
                       </div>
-                      <button
-                        onClick={() => handleRemoveItem('experiences', idx)}
-                        className="bg-red-500/20 hover:bg-red-500/30 px-2 py-1 rounded text-red-300 text-sm self-end"
-                      >
-                        Remove
-                      </button>
-                    </div>
-                  ))}
-                  <button
-                    onClick={() => handleAddItem('experiences', { id: Date.now(), company: '', position: '', start_date: '', end_date: '' })}
-                    className="bg-green-500/20 hover:bg-green-500/30 px-2 py-1 rounded text-green-300 text-sm"
-                  >
-                    Add Experience
-                  </button>
-                </div>
-              ) : (
-                profileData.experiences?.map((exp) => (
-                  <div key={exp.id} className="flex flex-col">
-                    <span className="text-white">{exp.company}</span>
-                    <span className="text-white/60 text-sm">
-                      {exp.position || exp.role} (
-                      {new Date(exp.start_date).getFullYear()}–
-                      {exp.end_date ? new Date(exp.end_date).getFullYear() : 'Present'}
-                      )
-                    </span>
+                    ))}
                   </div>
-                ))
-              )}
+                ) : (
+                  profileData.skills?.map((skill, idx) => (
+                    <span
+                      key={skill.id || idx}
+                      className="px-4 py-2 bg-gradient-to-r from-purple-500/20 to-blue-500/20 rounded-full text-purple-300 text-sm font-medium border border-purple-500/30"
+                    >
+                      {skill.name}
+                    </span>
+                  ))
+                )}
+              </div>
             </div>
-          </div>
-
-
-          {/* Languages */}
-          <div className="p-4 bg-white/5 rounded-lg border border-white/10 hover:bg-white/10 transition-colors">
-            <span className="text-white/80">Languages:</span>
-            <div className="flex flex-wrap gap-2 mt-2">
-              {isEditing ? (
-                <div className="w-full">
-                  {editData.languages?.map((lang, idx) => (
-                    <div key={idx} className="flex gap-2 mb-2 items-center">
+            {/* Languages */}
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xl font-semibold text-white flex items-center gap-2">
+                  <Globe className="text-blue-400" size={20} />
+                  Languages
+                </h3>
+                {isEditing && (
+                  <button
+                    onClick={() => handleAddItem('languages', { id: Date.now(), name: '', proficiency: '' })}
+                    className="flex items-center gap-1 bg-green-500/20 hover:bg-green-500/30 px-3 py-1 rounded-lg text-green-300 text-sm transition-colors"
+                  >
+                    <Plus size={14} />
+                    Add Language
+                  </button>
+                )}
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {isEditing ? (
+                  editData.languages?.map((lang, idx) => (
+                    <div key={lang.id || idx} className="flex gap-2 items-center p-3 bg-white/5 rounded-xl border border-white/10">
                       <input
-                        value={lang.language}
-                        onChange={e => handleArrayChange('languages', idx, { ...lang, language: e.target.value })}
+                        value={lang.name}
+                        onChange={e => handleArrayChange('languages', idx, { ...lang, name: e.target.value })}
+                        className="flex-1 bg-white/10 text-white rounded-lg px-3 py-2 border border-white/20 focus:border-purple-500/50 focus:outline-none"
                         placeholder="Language"
-                        className="bg-white/10 text-white rounded px-2 py-1 flex-1"
                       />
                       <input
                         value={lang.proficiency}
                         onChange={e => handleArrayChange('languages', idx, { ...lang, proficiency: e.target.value })}
+                        className="flex-1 bg-white/10 text-white rounded-lg px-3 py-2 border border-white/20 focus:border-purple-500/50 focus:outline-none"
                         placeholder="Proficiency"
-                        className="bg-white/10 text-white rounded px-2 py-1 flex-1"
                       />
                       <button
                         onClick={() => handleRemoveItem('languages', idx)}
-                        className="bg-red-500/20 hover:bg-red-500/30 px-2 py-1 rounded text-red-300 text-sm"
+                        className="bg-red-500/20 hover:bg-red-500/30 p-2 rounded-lg text-red-300 transition-colors"
                       >
-                        Remove
+                        <Trash2 size={14} />
                       </button>
                     </div>
-                  ))}
-                  <button
-                    onClick={() => handleAddItem('languages', { language: '', proficiency: '' })}
-                    className="bg-green-500/20 hover:bg-green-500/30 px-2 py-1 rounded text-green-300 text-sm mt-2"
-                  >
-                    Add Language
-                  </button>
-                </div>
+                  ))
+                ) : (
+                  profileData.languages?.map((lang, idx) => (
+                    <span
+                      key={lang.id || idx}
+                      className="px-4 py-2 bg-blue-500/20 rounded-full text-blue-300 text-sm font-medium border border-blue-500/30"
+                    >
+                      {lang.name} ({lang.proficiency})
+                    </span>
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'experience' && (
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-semibold text-white flex items-center gap-2">
+                <Briefcase className="text-yellow-400" size={20} />
+                Experience
+              </h3>
+              {isEditing && (
+                <button
+                  onClick={() => handleAddItem('experiences', { id: Date.now(), company: '', role: '', start_date: '', end_date: '', description: '', certificate: '' })}
+                  className="flex items-center gap-1 bg-green-500/20 hover:bg-green-500/30 px-3 py-1 rounded-lg text-green-300 text-sm transition-colors"
+                >
+                  <Plus size={14} />
+                  Add Experience
+                </button>
+              )}
+            </div>
+            <div className="space-y-4">
+              {isEditing ? (
+                editData.experiences?.map((exp, idx) => (
+                  <div key={exp.id || idx} className="p-4 bg-white/5 rounded-xl border border-white/10 flex flex-col gap-2">
+                    <input
+                      value={exp.company}
+                      onChange={e => handleArrayChange('experiences', idx, { ...exp, company: e.target.value })}
+                      placeholder="Company"
+                      className="bg-white/10 text-white rounded-lg px-3 py-2 border border-white/20 focus:border-purple-500/50 focus:outline-none"
+                    />
+                    <input
+                      value={exp.role}
+                      onChange={e => handleArrayChange('experiences', idx, { ...exp, role: e.target.value })}
+                      placeholder="Role"
+                      className="bg-white/10 text-white rounded-lg px-3 py-2 border border-white/20 focus:border-purple-500/50 focus:outline-none"
+                    />
+                    <div className="flex gap-2">
+                      <input
+                        value={exp.start_date}
+                        onChange={e => handleArrayChange('experiences', idx, { ...exp, start_date: e.target.value })}
+                        placeholder="Start Date (YYYY-MM-DD)"
+                        className="flex-1 bg-white/10 text-white rounded-lg px-3 py-2 border border-white/20 focus:border-purple-500/50 focus:outline-none"
+                      />
+                      <input
+                        value={exp.end_date}
+                        onChange={e => handleArrayChange('experiences', idx, { ...exp, end_date: e.target.value })}
+                        placeholder="End Date (YYYY-MM-DD)"
+                        className="flex-1 bg-white/10 text-white rounded-lg px-3 py-2 border border-white/20 focus:border-purple-500/50 focus:outline-none"
+                      />
+                    </div>
+                    <textarea
+                      value={exp.description}
+                      onChange={e => handleArrayChange('experiences', idx, { ...exp, description: e.target.value })}
+                      placeholder="Description"
+                      className="bg-white/10 text-white rounded-lg px-3 py-2 border border-white/20 focus:border-purple-500/50 focus:outline-none resize-none"
+                      rows={2}
+                    />
+                    {exp.certificate && (
+                      <a href={exp.certificate} target="_blank" rel="noopener noreferrer" className="text-purple-300 underline flex items-center gap-1">
+                        <FileText size={14} /> Certificate
+                      </a>
+                    )}
+                    <button
+                      onClick={() => handleRemoveItem('experiences', idx)}
+                      className="bg-red-500/20 hover:bg-red-500/30 px-2 py-1 rounded text-red-300 text-sm self-end"
+                    >
+                      <Trash2 size={14} /> Remove
+                    </button>
+                  </div>
+                ))
               ) : (
-                profileData.languages?.map((lang, idx) => (
-                  <span key={idx} className="px-3 py-1 bg-blue-500/20 rounded-full text-blue-300 text-sm">
-                    {lang.language} ({lang.proficiency})
-                  </span>
+                profileData.experiences?.map((exp, idx) => (
+                  <div key={exp.id || idx} className="p-4 bg-white/5 rounded-xl border border-white/10 flex flex-col gap-2">
+                    <div className="flex items-center gap-2">
+                      <Briefcase size={18} className="text-yellow-400" />
+                      <span className="text-white font-medium">{exp.role}</span>
+                      <span className="text-white/70">at</span>
+                      <span className="text-white">{exp.company}</span>
+                    </div>
+                    <div className="text-white/60 text-sm">
+                      {exp.start_date} – {exp.end_date || 'Present'}
+                    </div>
+                    <div className="text-white/80">{exp.description}</div>
+                    {exp.certificate && (
+                      <a href={exp.certificate} target="_blank" rel="noopener noreferrer" className="text-purple-300 underline flex items-center gap-1">
+                        <FileText size={14} /> Certificate
+                      </a>
+                    )}
+                  </div>
                 ))
               )}
             </div>
           </div>
+        )}
 
-          {/* Portfolios */}
-          <div className="p-4 bg-white/5 rounded-lg border border-white/10 hover:bg-white/10 transition-colors">
-            <span className="text-white/80">Portfolios:</span>
-            <div className="space-y-2 mt-2">
+        {activeTab === 'education' && (
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-semibold text-white flex items-center gap-2">
+                <GraduationCap className="text-green-400" size={20} />
+                Education
+              </h3>
+              {isEditing && (
+                <button
+                  onClick={() => handleAddItem('educations', { id: Date.now(), college: '', degree: '', year: '', certificate: '' })}
+                  className="flex items-center gap-1 bg-green-500/20 hover:bg-green-500/30 px-3 py-1 rounded-lg text-green-300 text-sm transition-colors"
+                >
+                  <Plus size={14} />
+                  Add Education
+                </button>
+              )}
+            </div>
+            <div className="space-y-4">
               {isEditing ? (
-                <div className="space-y-2">
-                  {editData.portfolios?.map((pf, idx) => (
-                    <div key={idx} className="flex flex-col gap-2 p-2 bg-white/5 rounded border border-white/10">
-                      <input
-                        value={pf.title}
-                        onChange={e => handleArrayChange('portfolios', idx, { ...pf, title: e.target.value })}
-                        placeholder="Title"
-                        className="bg-white/10 text-white rounded px-2 py-1"
-                      />
-                      <input
-                        value={pf.link}
-                        onChange={e => handleArrayChange('portfolios', idx, { ...pf, link: e.target.value })}
-                        placeholder="Link"
-                        className="bg-white/10 text-white rounded px-2 py-1"
-                      />
-                      <button
-                        onClick={() => handleRemoveItem('portfolios', idx)}
-                        className="bg-red-500/20 hover:bg-red-500/30 px-2 py-1 rounded text-red-300 text-sm self-end"
-                      >
-                        Remove
-                      </button>
+                editData.educations?.map((edu, idx) => (
+                  <div key={edu.id || idx} className="p-4 bg-white/5 rounded-xl border border-white/10 flex flex-col gap-2">
+                    <input
+                      value={edu.college}
+                      onChange={e => handleArrayChange('educations', idx, { ...edu, college: e.target.value })}
+                      placeholder="College"
+                      className="bg-white/10 text-white rounded-lg px-3 py-2 border border-white/20 focus:border-purple-500/50 focus:outline-none"
+                    />
+                    <input
+                      value={edu.degree}
+                      onChange={e => handleArrayChange('educations', idx, { ...edu, degree: e.target.value })}
+                      placeholder="Degree"
+                      className="bg-white/10 text-white rounded-lg px-3 py-2 border border-white/20 focus:border-purple-500/50 focus:outline-none"
+                    />
+                    <input
+                      value={edu.year}
+                      onChange={e => handleArrayChange('educations', idx, { ...edu, year: e.target.value })}
+                      placeholder="Year"
+                      className="bg-white/10 text-white rounded-lg px-3 py-2 border border-white/20 focus:border-purple-500/50 focus:outline-none"
+                    />
+                    {edu.certificate && (
+                      <a href={edu.certificate} target="_blank" rel="noopener noreferrer" className="text-purple-300 underline flex items-center gap-1">
+                        <FileText size={14} /> Certificate
+                      </a>
+                    )}
+                    <button
+                      onClick={() => handleRemoveItem('educations', idx)}
+                      className="bg-red-500/20 hover:bg-red-500/30 px-2 py-1 rounded text-red-300 text-sm self-end"
+                    >
+                      <Trash2 size={14} /> Remove
+                    </button>
+                  </div>
+                ))
+              ) : (
+                profileData.educations?.map((edu, idx) => (
+                  <div key={edu.id || idx} className="p-4 bg-white/5 rounded-xl border border-white/10 flex flex-col gap-2">
+                    <div className="flex items-center gap-2">
+                      <GraduationCap size={18} className="text-green-400" />
+                      <span className="text-white font-medium">{edu.degree}</span>
+                      <span className="text-white/70">at</span>
+                      <span className="text-white">{edu.college}</span>
                     </div>
-                  ))}
-                  <button
-                    onClick={() => handleAddItem('portfolios', { title: '', link: '' })}
-                    className="bg-green-500/20 hover:bg-green-500/30 px-2 py-1 rounded text-green-300 text-sm"
-                  >
-                    Add Portfolio
-                  </button>
-                </div>
+                    <div className="text-white/60 text-sm">{edu.year}</div>
+                    {edu.certificate && (
+                      <a href={edu.certificate} target="_blank" rel="noopener noreferrer" className="text-purple-300 underline flex items-center gap-1">
+                        <FileText size={14} /> Certificate
+                      </a>
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'portfolio' && (
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-semibold text-white flex items-center gap-2">
+                <Award className="text-orange-400" size={20} />
+                Portfolio
+              </h3>
+              {isEditing && (
+                <button
+                  onClick={() => handleAddItem('portfolios', { id: Date.now(), title: '', description: '', project_link: '' })}
+                  className="flex items-center gap-1 bg-green-500/20 hover:bg-green-500/30 px-3 py-1 rounded-lg text-green-300 text-sm transition-colors"
+                >
+                  <Plus size={14} />
+                  Add Project
+                </button>
+              )}
+            </div>
+            <div className="space-y-4">
+              {isEditing ? (
+                editData.portfolios?.map((pf, idx) => (
+                  <div key={pf.id || idx} className="p-4 bg-white/5 rounded-xl border border-white/10 flex flex-col gap-2">
+                    <input
+                      value={pf.title}
+                      onChange={e => handleArrayChange('portfolios', idx, { ...pf, title: e.target.value })}
+                      placeholder="Project Title"
+                      className="bg-white/10 text-white rounded-lg px-3 py-2 border border-white/20 focus:border-purple-500/50 focus:outline-none"
+                    />
+                    <textarea
+                      value={pf.description}
+                      onChange={e => handleArrayChange('portfolios', idx, { ...pf, description: e.target.value })}
+                      placeholder="Description"
+                      className="bg-white/10 text-white rounded-lg px-3 py-2 border border-white/20 focus:border-purple-500/50 focus:outline-none resize-none"
+                      rows={2}
+                    />
+                    <input
+                      value={pf.project_link}
+                      onChange={e => handleArrayChange('portfolios', idx, { ...pf, project_link: e.target.value })}
+                      placeholder="Project Link"
+                      className="bg-white/10 text-white rounded-lg px-3 py-2 border border-white/20 focus:border-purple-500/50 focus:outline-none"
+                    />
+                    <button
+                      onClick={() => handleRemoveItem('portfolios', idx)}
+                      className="bg-red-500/20 hover:bg-red-500/30 px-2 py-1 rounded text-red-300 text-sm self-end"
+                    >
+                      <Trash2 size={14} /> Remove
+                    </button>
+                  </div>
+                ))
               ) : (
                 profileData.portfolios?.map((pf, idx) => (
-                  <a key={idx} href={pf.link} target="_blank" rel="noopener noreferrer" className="text-purple-400 hover:text-purple-300 text-sm">
-                    {pf.title || pf.link}
-                  </a>
-                ))
-              )}
-            </div>
-          </div>
-
-          {/* Social Links */}
-          <div className="p-4 bg-white/5 rounded-lg border border-white/10 hover:bg-white/10 transition-colors">
-            <span className="text-white/80">Social Links:</span>
-            <div className="flex flex-wrap gap-2 mt-2">
-              {isEditing ? (
-                <div className="w-full">
-                  {editData.social_links?.map((social, idx) => (
-                    <div key={idx} className="flex gap-2 mb-2 items-center">
-                      <input
-                        value={social.platform}
-                        onChange={e => handleArrayChange('social_links', idx, { ...social, platform: e.target.value })}
-                        placeholder="Platform"
-                        className="bg-white/10 text-white rounded px-2 py-1 flex-1"
-                      />
-                      <input
-                        value={social.link}
-                        onChange={e => handleArrayChange('social_links', idx, { ...social, link: e.target.value })}
-                        placeholder="Link"
-                        className="bg-white/10 text-white rounded px-2 py-1 flex-1"
-                      />
-                      <button
-                        onClick={() => handleRemoveItem('social_links', idx)}
-                        className="bg-red-500/20 hover:bg-red-500/30 px-2 py-1 rounded text-red-300 text-sm"
-                      >
-                        Remove
-                      </button>
+                  <div key={pf.id || idx} className="p-4 bg-white/5 rounded-xl border border-white/10 flex flex-col gap-2">
+                    <div className="flex items-center gap-2">
+                      <Award size={18} className="text-orange-400" />
+                      <span className="text-white font-medium">{pf.title}</span>
+                      <a href={pf.project_link} target="_blank" rel="noopener noreferrer" className="text-blue-300 underline flex items-center gap-1">
+                        <ExternalLink size={14} /> View
+                      </a>
                     </div>
-                  ))}
-                  <button
-                    onClick={() => handleAddItem('social_links', { platform: '', link: '' })}
-                    className="bg-green-500/20 hover:bg-green-500/30 px-2 py-1 rounded text-green-300 text-sm mt-2"
-                  >
-                    Add Social Link
-                  </button>
-                </div>
-              ) : (
-                profileData.social_links?.map((social, idx) => (
-                  <a key={idx} href={social.link} target="_blank" rel="noopener noreferrer" className="px-3 py-1 bg-green-500/20 rounded-full text-green-300 text-sm">
-                    {social.platform}
-                  </a>
+                    <div className="text-white/80">{pf.description}</div>
+                  </div>
                 ))
               )}
             </div>
           </div>
-
-          {/* Verifications */}
-          <div className="p-4 bg-white/5 rounded-lg border border-white/10 hover:bg-white/10 transition-colors">
-            <span className="text-white/80">Verifications:</span>
-            <div className="flex flex-wrap gap-2 mt-2">
-              <span className={`px-3 py-1 ${profileData.email_verified ? 'bg-green-500/20 text-green-300' : 'bg-gray-500/20 text-gray-400'} rounded-full text-sm`}>
-                Email {profileData.email_verified ? '✓' : '✗'}
-              </span>
-              <span className={`px-3 py-1 ${profileData.phone_verified ? 'bg-green-500/20 text-green-300' : 'bg-gray-500/20 text-gray-400'} rounded-full text-sm`}>
-                Phone {profileData.phone_verified ? '✓' : '✗'}
-              </span>
-              <span className={`px-3 py-1 ${profileData.id_verified ? 'bg-green-500/20 text-green-300' : 'bg-gray-500/20 text-gray-400'} rounded-full text-sm`}>
-                ID {profileData.id_verified ? '✓' : '✗'}
-              </span>
-              <span className={`px-3 py-1 ${profileData.video_verified ? 'bg-green-500/20 text-green-300' : 'bg-gray-500/20 text-gray-400'} rounded-full text-sm`}>
-                Video {profileData.video_verified ? '✓' : '✗'}
-              </span>
-            </div>
-          </div>
-        </div>
+        )}
       </div>
     </div>
   );
-
-
-
 };
 
 export default ProfileSection;
