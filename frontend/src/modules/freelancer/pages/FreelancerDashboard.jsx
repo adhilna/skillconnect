@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import {Home, Briefcase, ShoppingCart, MessageCircle, Search, BarChart3, User, Settings,
   Bell, Menu, X, DollarSign, Star, TrendingUp, Clock, Eye, Plus, Filter, Calendar, 
   CheckCircle, AlertCircle, Users, Target, Award, Activity} from 'lucide-react';
@@ -10,11 +10,13 @@ import RequestSection from '../components/freelancerDashboard/RequestSection';
 import AnalyticsSection from '../components/freelancerDashboard/AnalyticsSection';
 import ProfileSection from '../components/freelancerDashboard/ProfileSection';
 import SettingsSection from '../components/freelancerDashboard/SettingsSection';
-import FreelancerProfileSetup from './FreelancerProfileSetup ';
+import { AuthContext } from '../../../context/AuthContext';
+
 
 const FreelancerDashboard = () => {
   const [activeSection, setActiveSection] = useState('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { user, userRole } = useContext(AuthContext);
 
   const navigationItems = [
     { id: 'dashboard', label: 'Dashboard', icon: Home },
@@ -152,8 +154,12 @@ const FreelancerDashboard = () => {
                   <User size={20} className="text-white" />
                 </div>
                 <div className="hidden sm:block">
-                  <p className="text-white font-medium">John Doe</p>
-                  <p className="text-white/60 text-xs">Pro Freelancer</p>
+                  <p className="text-white font-medium">
+                  {user?.first_name} {user?.last_name}
+                  </p>
+                  <p className="text-white/60 text-xs">
+                  {userRole === 'freelancer' ? 'Freelancer' : 'Client'}
+                  </p>
                 </div>
               </div>
             </div>
