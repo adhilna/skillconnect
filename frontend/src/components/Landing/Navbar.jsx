@@ -8,7 +8,7 @@ export const Navbar = () => (
         </div>
         <div className="hidden md:flex space-x-6">
             <a href="/explore" className="hover:text-purple-300 transition-colors">Explore</a>
-            <a href="#" className="hover:text-purple-300 transition-colors">How it Works</a>
+            <a href="/how-it-works" className="hover:text-purple-300 transition-colors">How it Works</a>
             <a href="#" className="hover:text-purple-300 transition-colors">Enterprise</a>
         </div>
         <div className="space-x-4">
