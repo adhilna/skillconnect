@@ -26,6 +26,7 @@ import {
     Target,
     Rocket
 } from 'lucide-react';
+import { Navbar } from '../components/Landing/Navbar';
 
 const BackgroundBlobs = () => (
     <div className="absolute inset-0 overflow-hidden">
@@ -244,6 +245,7 @@ const HowItWorksPage = () => {
     return (
         <div className="relative min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
             <BackgroundBlobs />
+            <Navbar />
 
             <div className="relative z-10 px-6 py-20">
                 <div className="max-w-7xl mx-auto">
@@ -270,29 +272,32 @@ const HowItWorksPage = () => {
                     <FloatingCard delay={200}>
                         <div className="flex justify-center mb-16">
                             <div className="bg-white/10 backdrop-blur-lg rounded-3xl p-3 border border-white/20 shadow-2xl">
-                                <button
-                                    onClick={() => setActiveTab('client')}
-                                    className={`px-10 py-4 rounded-2xl font-semibold transition-all duration-500 flex items-center gap-3 ${activeTab === 'client'
-                                            ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-2xl transform scale-105'
-                                            : 'text-purple-200 hover:text-white hover:bg-white/10'
-                                        }`}
-                                >
-                                    <Target size={20} />
-                                    I&apos;m a Client
-                                </button>
-                                <button
-                                    onClick={() => setActiveTab('freelancer')}
-                                    className={`px-10 py-4 rounded-2xl font-semibold transition-all duration-500 flex items-center gap-3 ${activeTab === 'freelancer'
-                                            ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-2xl transform scale-105'
-                                            : 'text-purple-200 hover:text-white hover:bg-white/10'
-                                        }`}
-                                >
-                                    <Rocket size={20} />
-                                    I&apos;m a Freelancer
-                                </button>
+                                <div className="flex space-x-3"> {/* Add this flex container */}
+                                    <button
+                                        onClick={() => setActiveTab('client')}
+                                        className={`px-10 py-4 rounded-2xl font-semibold transition-all duration-500 flex items-center gap-3 ${activeTab === 'client'
+                                                ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-2xl transform scale-105'
+                                                : 'text-purple-200 hover:text-white hover:bg-white/10'
+                                            }`}
+                                    >
+                                        <Target size={20} />
+                                        I&apos;m a Client
+                                    </button>
+                                    <button
+                                        onClick={() => setActiveTab('freelancer')}
+                                        className={`px-10 py-4 rounded-2xl font-semibold transition-all duration-500 flex items-center gap-3 ${activeTab === 'freelancer'
+                                                ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-2xl transform scale-105'
+                                                : 'text-purple-200 hover:text-white hover:bg-white/10'
+                                            }`}
+                                    >
+                                        <Rocket size={20} />
+                                        I&apos;m a Freelancer
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </FloatingCard>
+
 
                     {/* Enhanced Steps Timeline */}
                     <FloatingCard delay={400}>
@@ -304,16 +309,16 @@ const HowItWorksPage = () => {
                                         <div
                                             key={index}
                                             className={`group relative flex items-start space-x-6 p-8 rounded-3xl cursor-pointer transition-all duration-500 transform hover:scale-102 ${activeStep === index
-                                                    ? 'bg-gradient-to-r from-purple-500/30 to-blue-500/30 border-2 border-purple-400/50 shadow-2xl'
-                                                    : 'bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20'
+                                                ? 'bg-gradient-to-r from-purple-500/30 to-blue-500/30 border-2 border-purple-400/50 shadow-2xl'
+                                                : 'bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20'
                                                 }`}
                                             onClick={() => setActiveStep(index)}
                                         >
                                             <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 to-blue-500/10 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
 
                                             <div className={`relative z-10 flex-shrink-0 p-4 rounded-2xl transition-all duration-500 ${activeStep === index
-                                                    ? `bg-gradient-to-r ${step.color} text-white shadow-lg`
-                                                    : 'bg-white/10 text-purple-300 group-hover:bg-white/20'
+                                                ? `bg-gradient-to-r ${step.color} text-white shadow-lg`
+                                                : 'bg-white/10 text-purple-300 group-hover:bg-white/20'
                                                 }`}>
                                                 {step.icon}
                                             </div>
@@ -324,8 +329,8 @@ const HowItWorksPage = () => {
                                                         {step.title}
                                                     </h3>
                                                     <span className={`text-sm px-4 py-2 rounded-full transition-all duration-300 ${activeStep === index
-                                                            ? 'bg-white/20 text-white'
-                                                            : 'bg-white/10 text-purple-300'
+                                                        ? 'bg-white/20 text-white'
+                                                        : 'bg-white/10 text-purple-300'
                                                         }`}>
                                                         {step.time}
                                                     </span>

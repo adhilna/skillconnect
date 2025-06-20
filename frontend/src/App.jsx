@@ -14,6 +14,7 @@ import ExplorePage from './pages/ExplorePage';
 import HowItWorksPage from './pages/HowItWorksPage';
 import FreelancerDashboard from './modules/freelancer/pages/FreelancerDashboard';
 import ClientDashboard from './modules/client/pages/ClientDashboard';
+import EnterprisePage from './pages/EnterprisePage';
 
 function App() {
   return (
@@ -31,6 +32,7 @@ function App() {
             <Route path='/client/profile' element={<ClientProfileSetup />} />
             <Route path='/explore' element={<ExplorePage />} />
             <Route path='/how-it-works' element={<HowItWorksPage />} />
+            <Route path='/enterprise' element={<EnterprisePage />} />
             <Route path='freelancer/dashboard' element={<FreelancerDashboard />} />
             <Route path='client/dashboard' element={<ClientDashboard />} />
           </Routes>

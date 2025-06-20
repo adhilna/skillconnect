@@ -7,9 +7,9 @@ export const Navbar = () => (
             Skill+Connect
         </div>
         <div className="hidden md:flex space-x-6">
-            <a href="/explore" className="hover:text-purple-300 transition-colors">Explore</a>
-            <a href="/how-it-works" className="hover:text-purple-300 transition-colors">How it Works</a>
-            <a href="#" className="hover:text-purple-300 transition-colors">Enterprise</a>
+            <a href="/explore" className="hover:text-purple-300 transition-colors text-white">Explore</a>
+            <a href="/how-it-works" className="hover:text-purple-300 transition-colors text-white">How it Works</a>
+            <a href="/enterprise" className="hover:text-purple-300 transition-colors text-white">Enterprise</a>
         </div>
         <div className="space-x-4">
             <Link to="/login">
