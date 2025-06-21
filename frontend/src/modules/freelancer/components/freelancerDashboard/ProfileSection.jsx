@@ -6,8 +6,9 @@ import {
 import axios from 'axios';
 import { AuthContext } from '../../../../context/AuthContext';
 
-const ProfileSection = () => {
+const ProfileSection = (props) => {
   const { token } = useContext(AuthContext);
+  const { onProfileUpdate } = props;
   const [profileData, setProfileData] = useState(null);
   const [editData, setEditData] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -25,12 +26,13 @@ const ProfileSection = () => {
         setProfileData(res.data[0]);
         setEditData(res.data[0]);
         setLoading(false);
+        if (onProfileUpdate) onProfileUpdate(res.data[0]);
       })
       .catch(err => {
         console.error('Error fetching profile:', err);
         setLoading(false);
       });
-  }, [token]);
+  }, [token, onProfileUpdate]);
 
   const handleInputChange = (field, value) => {
     setEditData(prev => ({ ...prev, [field]: value }));
