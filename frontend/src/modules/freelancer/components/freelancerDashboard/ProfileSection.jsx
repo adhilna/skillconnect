@@ -1,38 +1,28 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   User, Edit3, Save, X, Plus, Trash2, MapPin, Calendar, Briefcase, GraduationCap, Globe, Star,
   Award, Eye, EyeOff, Mail, Phone, Video, Shield, ExternalLink, FileText
 } from 'lucide-react';
-import axios from 'axios';
-import { AuthContext } from '../../../../context/AuthContext';
+
 
 const ProfileSection = (props) => {
-  const { token } = useContext(AuthContext);
-  const { onProfileUpdate } = props;
-  const [profileData, setProfileData] = useState(null);
-  const [editData, setEditData] = useState(null);
+  const { profileData } = props;
+  const [editData, setEditData] = useState(profileData || null);
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
 
+
   useEffect(() => {
-    if (!token) return;
-    setLoading(true);
-    axios.get('http://localhost:8000/api/v1/profiles/freelancer/profile-setup/', {
-      headers: { Authorization: `Bearer ${token}` }
-    })
-      .then(res => {
-        // If your backend returns an array, take the first item
-        setProfileData(res.data[0]);
-        setEditData(res.data[0]);
-        setLoading(false);
-        if (onProfileUpdate) onProfileUpdate(res.data[0]);
-      })
-      .catch(err => {
-        console.error('Error fetching profile:', err);
-        setLoading(false);
-      });
-  }, [token, onProfileUpdate]);
+    setEditData(profileData || null);
+  }, [profileData]);
+
+  // If you keep loading, make sure to set it to false when data is ready
+  useEffect(() => {
+    if (profileData) setLoading(false);
+  }, [profileData]);
+
+
 
   const handleInputChange = (field, value) => {
     setEditData(prev => ({ ...prev, [field]: value }));
@@ -60,7 +50,8 @@ const ProfileSection = (props) => {
   };
 
   const handleSave = async () => {
-    setProfileData(editData);
+    // Send editData to backend if needed
+    // Then call onUpdate to update the parent
     setIsEditing(false);
   };
 

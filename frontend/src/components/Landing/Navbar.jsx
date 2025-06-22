@@ -3,9 +3,11 @@ import { Link } from 'react-router-dom';
 
 export const Navbar = () => (
     <nav className="relative z-10 flex items-center justify-between px-6 py-4 lg:px-12">
-        <div onClick={() => window.location.href = '/'} className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">
-            Skill+Connect
-        </div>
+        <Link to="/" className="cursor-pointer">
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">
+                Skill+Connect
+            </h1>
+        </Link>
         <div className="hidden md:flex space-x-6">
             <a href="/explore" className="hover:text-purple-300 transition-colors text-white">Explore</a>
             <a href="/how-it-works" className="hover:text-purple-300 transition-colors text-white">How it Works</a>

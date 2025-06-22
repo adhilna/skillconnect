@@ -7,6 +7,7 @@ import { FaApple } from "react-icons/fa";
 import { GoogleLogin } from '@react-oauth/google';
 import axios from 'axios';
 import RoleSelection from '../components/Shared/RoleSelection.jsx';
+import { Link } from 'react-router-dom';
 
 
 export default function LoginPage() {
@@ -115,7 +116,11 @@ export default function LoginPage() {
       <div className="relative z-10 w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">Skill+Connect</h1>
+          <Link to="/" className="cursor-pointer">
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">
+              Skill+Connect
+            </h1>
+          </Link>
           <p className="text-purple-200 mt-2">Welcome back! Sign in to your account</p>
         </div>
 

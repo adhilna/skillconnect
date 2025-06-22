@@ -3,13 +3,14 @@ import { DollarSign, ShoppingCart, Briefcase, Star, TrendingUp, Plus, MessageCir
 import StatCard from './StatCard';
 import OrderItem from './OrderItem';
 
-const DashboardOverview = () => {
+const DashboardOverview = (props) => {
+  const { profileData } = props;
   return (
     <div className="space-y-6">
       <div className="bg-gradient-to-r from-purple-500/20 to-pink-500/20 backdrop-blur-lg rounded-2xl border border-purple-500/30 p-6">
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="text-2xl font-bold text-white mb-2">Good Morning, John! 🌟</h3>
+            <h3 className="text-2xl font-bold text-white mb-2">Here&apos;s your dashboard {profileData?.first_name} 🌟</h3>
             <p className="text-white/80">You have 3 pending orders and 2 new messages waiting for you.</p>
           </div>
           <div className="hidden md:block">

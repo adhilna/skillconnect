@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import {Home, Briefcase, ShoppingCart, MessageCircle, Search, BarChart3, User, Settings,
   Bell, Menu, X, DollarSign, Star, TrendingUp, Clock, Eye, Plus, Filter, Calendar, 
   CheckCircle, AlertCircle, Users, Target, Award, Activity} from 'lucide-react';
@@ -10,12 +10,34 @@ import RequestSection from '../components/freelancerDashboard/RequestSection';
 import AnalyticsSection from '../components/freelancerDashboard/AnalyticsSection';
 import ProfileSection from '../components/freelancerDashboard/ProfileSection';
 import SettingsSection from '../components/freelancerDashboard/SettingsSection';
+import { AuthContext } from '../../../context/AuthContext';
+import axios from 'axios';
 
 
 const FreelancerDashboard = () => {
+  const { token } = useContext(AuthContext);
   const [activeSection, setActiveSection] = useState('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [profileData, setProfileData] = useState(null);
+
+  useEffect(() => {
+    if (!token) return;
+    axios.get('http://localhost:8000/api/v1/profiles/freelancer/profile-setup/', {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+      .then(res => {
+        // If your backend returns an array, take the first item
+        setProfileData(res.data[0]);
+      })
+      .catch(err => {
+        console.error('Error fetching profile:', err);
+      });
+  }, [token]);
+
+  const handleProfileUpdate = (updatedData) => {
+    setProfileData(updatedData);
+    // Optionally, send updatedData to backend here
+  };
 
   const firstLetter = profileData?.first_name?.charAt(0)?.toUpperCase() || 'U';
 
@@ -34,7 +56,7 @@ const FreelancerDashboard = () => {
   const getCurrentSectionContent = () => {
     switch (activeSection) {
       case 'dashboard':
-        return <DashboardOverview />;
+        return <DashboardOverview profileData={profileData}/>;
       case 'gigs':
         return <GigsSection />;
       case 'orders':
@@ -46,7 +68,7 @@ const FreelancerDashboard = () => {
       case 'analytics':
         return <AnalyticsSection />;
       case 'profile':
-        return <ProfileSection onProfileUpdate={setProfileData}/>;
+        return <ProfileSection profileData={profileData} onUpdate={handleProfileUpdate}/>;
       case 'settings':
         return <SettingsSection />;
       default:
@@ -136,7 +158,7 @@ const FreelancerDashboard = () => {
                 <h2 className="text-xl font-semibold text-white capitalize">
                   {activeSection === 'dashboard' ? 'Dashboard Overview' : activeSection.replace(/([A-Z])/g, ' $1')}
                 </h2>
-                <p className="text-white/60 text-sm">Welcome back, John!</p>
+                <p className="text-white/60 text-sm">Welcome back, {profileData?.first_name}</p>
               </div>
             </div>
             
