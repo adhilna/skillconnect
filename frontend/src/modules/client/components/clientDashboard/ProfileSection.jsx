@@ -1,32 +1,12 @@
-import React, { useState } from 'react';
-import { User, Briefcase, DollarSign, Shield, Target, Users, CreditCard,
-    Edit3, Save, X, Plus, Award } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import {
+    User, Briefcase, DollarSign, Shield, Target, Users, CreditCard,
+    Edit3, Save, X, Plus, Award
+} from 'lucide-react';
 
-const ProfileSection = () => {
+const ProfileSection = (props) => {
     const [isEditing, setIsEditing] = useState(false);
-    const [profileData, setProfileData] = useState({
-        firstName: 'John',
-        lastName: 'Smith',
-        companyName: 'TechCorp',
-        accountType: 'business',
-        industry: 'Technology',
-        companySize: 'Medium company (51-200)',
-        website: 'https://techcorp.com',
-        location: 'San Francisco, CA',
-        companyDescription: 'Leading technology solutions provider specializing in enterprise software development and digital transformation.',
-        projectTypes: ['Web Development', 'Mobile App Development', 'UI/UX Design'],
-        budgetRange: '$10,000 - $25,000',
-        projectFrequency: 'Monthly',
-        preferredCommunication: ['Email', 'Slack', 'Zoom'],
-        workingHours: 'EST 9AM-6PM',
-        businessGoals: ['Scale business operations', 'Digital transformation', 'Improve efficiency'],
-        currentChallenges: ['Finding reliable freelancers', 'Project management', 'Quality control'],
-        paymentMethod: 'credit-card',
-        monthlyBudget: '15000',
-        projectBudget: '5000',
-        paymentTiming: 'milestone-based'
-    });
-
+    const { profileData } = props;
     const [editData, setEditData] = useState({ ...profileData });
     const [newProjectType, setNewProjectType] = useState('');
     const [newCommunicationMethod, setNewCommunicationMethod] = useState('');
@@ -41,6 +21,10 @@ const ProfileSection = () => {
     const projectFrequencies = ['Weekly', 'Bi-weekly', 'Monthly', 'Quarterly', 'As needed'];
     const paymentMethods = ['credit-card', 'bank-transfer', 'paypal', 'cryptocurrency'];
     const paymentTimings = ['upfront', 'milestone-based', 'monthly', 'project-completion'];
+
+    useEffect(() => {
+        setEditData(profileData || null);
+    }, [profileData]);
 
     const handleInputChange = (field, value) => {
         setEditData(prev => ({ ...prev, [field]: value }));
@@ -64,7 +48,7 @@ const ProfileSection = () => {
     };
 
     const handleSave = () => {
-        setProfileData({ ...editData });
+        props.onUpdate?.(editData);
         setIsEditing(false);
     };
 
@@ -138,7 +122,7 @@ const ProfileSection = () => {
                 <div>
                     <label className="text-white/70 text-sm">{label}</label>
                     <div className="flex flex-wrap gap-2 mt-2">
-                        {items.map((item, index) => (
+                        {items?.map((item, index) => (
                             <span key={index} className="bg-blue-500/20 text-blue-400 px-3 py-1 rounded-full text-sm border border-blue-500/30">
                                 {item}
                             </span>
@@ -244,7 +228,7 @@ const ProfileSection = () => {
                             <div className="flex items-center space-x-2">
                                 <User size={16} className="text-white/50" />
                                 <span className="text-white text-sm">
-                                    {isEditing ? `${editData.firstName} ${editData.lastName}` : `${profileData.firstName} ${profileData.lastName}`}
+                                    {isEditing ? `${editData.first_name} ${editData.last_name}` : `${profileData.first_name} ${profileData.last_name}`}
                                 </span>
                             </div>
                             <div className="flex items-center space-x-2">
@@ -253,11 +237,11 @@ const ProfileSection = () => {
                             </div>
                             <div className="flex items-center space-x-2">
                                 <Users size={16} className="text-white/50" />
-                                <span className="text-white text-sm">{isEditing ? editData.companySize : profileData.companySize}</span>
+                                <span className="text-white text-sm">{isEditing ? editData.company_size : profileData.company_size}</span>
                             </div>
                             <div className="flex items-center space-x-2">
                                 <DollarSign size={16} className="text-white/50" />
-                                <span className="text-white text-sm">{isEditing ? editData.budgetRange : profileData.budgetRange}</span>
+                                <span className="text-white text-sm">{isEditing ? editData.budget_range : profileData.budget_range}</span>
                             </div>
                         </div>
                     </div>
@@ -272,19 +256,19 @@ const ProfileSection = () => {
                             <span>Basic Information</span>
                         </h5>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <EditableField label="First Name" value={profileData.firstName} field="firstName" />
-                            <EditableField label="Last Name" value={profileData.lastName} field="lastName" />
-                            <EditableField label="Company Name" value={profileData.companyName} field="companyName" />
-                            <EditableField label="Account Type" value={profileData.accountType} field="accountType" options={accountTypes} />
+                            <EditableField label="First Name" value={profileData.first_name} field="first_name" />
+                            <EditableField label="Last Name" value={profileData.last_name} field="last_name" />
+                            <EditableField label="Company Name" value={profileData.company_name} field="company_name" />
+                            <EditableField label="Account Type" value={profileData.account_type} field="account_type" options={accountTypes} />
                             <EditableField label="Industry" value={profileData.industry} field="industry" options={industries} />
-                            <EditableField label="Company Size" value={profileData.companySize} field="companySize" options={companySizes} />
+                            <EditableField label="Company Size" value={profileData.company_size} field="company_size" options={companySizes} />
                             <EditableField label="Location" value={profileData.location} field="location" />
                             <EditableField label="Website" value={profileData.website} field="website" type="url" />
                             <div className="md:col-span-2">
                                 <EditableField
                                     label="Company Description"
-                                    value={profileData.companyDescription}
-                                    field="companyDescription"
+                                    value={profileData.company_description}
+                                    field="company_description"
                                     isTextarea={true}
                                 />
                             </div>
@@ -300,21 +284,21 @@ const ProfileSection = () => {
                         <div className="space-y-4">
                             <EditableArrayField
                                 label="Project Types"
-                                field="projectTypes"
-                                items={profileData.projectTypes}
+                                field="project_types"
+                                items={profileData.project_types}
                                 newValue={newProjectType}
                                 setNewValue={setNewProjectType}
                                 placeholder="Add project type"
                             />
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <EditableField label="Budget Range" value={profileData.budgetRange} field="budgetRange" options={budgetRanges} />
-                                <EditableField label="Project Frequency" value={profileData.projectFrequency} field="projectFrequency" options={projectFrequencies} />
-                                <EditableField label="Working Hours" value={profileData.workingHours} field="workingHours" />
+                                <EditableField label="Budget Range" value={profileData.budget_range} field="budget_range" options={budgetRanges} />
+                                <EditableField label="Project Frequency" value={profileData.project_frequency} field="project_frequency" options={projectFrequencies} />
+                                <EditableField label="Working Hours" value={profileData.working_hours} field="working_hours" />
                             </div>
                             <EditableArrayField
                                 label="Preferred Communication"
-                                field="preferredCommunication"
-                                items={profileData.preferredCommunication}
+                                field="preferred_communications"
+                                items={profileData.preferred_communications}
                                 newValue={newCommunicationMethod}
                                 setNewValue={setNewCommunicationMethod}
                                 placeholder="Add communication method"
@@ -332,8 +316,8 @@ const ProfileSection = () => {
                             <div>
                                 <EditableArrayField
                                     label="Business Goals"
-                                    field="businessGoals"
-                                    items={profileData.businessGoals}
+                                    field="business_goals"
+                                    items={profileData.business_goals}
                                     newValue={newBusinessGoal}
                                     setNewValue={setNewBusinessGoal}
                                     placeholder="Add business goal"
@@ -342,8 +326,8 @@ const ProfileSection = () => {
                             <div>
                                 <EditableArrayField
                                     label="Current Challenges"
-                                    field="currentChallenges"
-                                    items={profileData.currentChallenges}
+                                    field="current_challenges"
+                                    items={profileData.current_challenges}
                                     newValue={newChallenge}
                                     setNewValue={setNewChallenge}
                                     placeholder="Add challenge"
@@ -359,10 +343,10 @@ const ProfileSection = () => {
                             <span>Payment & Budget</span>
                         </h5>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <EditableField label="Payment Method" value={profileData.paymentMethod} field="paymentMethod" options={paymentMethods} />
-                            <EditableField label="Monthly Budget" value={profileData.monthlyBudget} field="monthlyBudget" type="number" />
-                            <EditableField label="Project Budget" value={profileData.projectBudget} field="projectBudget" type="number" />
-                            <EditableField label="Payment Timing" value={profileData.paymentTiming} field="paymentTiming" options={paymentTimings} />
+                            <EditableField label="Payment Method" value={profileData.payment_method} field="payment_method" options={paymentMethods} />
+                            <EditableField label="Monthly Budget" value={profileData.monthly_budget} field="monthly_budget" type="number" />
+                            <EditableField label="Project Budget" value={profileData.project_budget} field="project_budget" type="number" />
+                            <EditableField label="Payment Timing" value={profileData.payment_timing} field="payment_timing" options={paymentTimings} />
                         </div>
                     </div>
                 </div>

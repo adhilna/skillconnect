@@ -5,14 +5,15 @@ import ProjectItem from './ProjectItem';
 import ActivityItem from './ActivityItem';
 import FreelancerCard from './FreelancerCard';
 
-const DashboardOverview = () => {
+const DashboardOverview = (props) => {
+    const { profileData } = props;
     return (
         <div className="space-y-6">
             {/* Welcome Section */}
             <div className="bg-gradient-to-r from-blue-500/20 to-cyan-500/20 backdrop-blur-lg rounded-2xl border border-blue-500/30 p-6">
                 <div className="flex items-center justify-between">
                     <div>
-                        <h3 className="text-2xl font-bold text-white mb-2">Welcome back, TechCorp! 🚀</h3>
+                        <h3 className="text-2xl font-bold text-white mb-2">Here&apos;s your dashboard {profileData?.first_name} 🌟</h3>
                         <p className="text-white/80">You have 3 active projects and 5 new freelancer proposals to review.</p>
                     </div>
                     <div className="hidden md:block">

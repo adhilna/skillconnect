@@ -48,11 +48,12 @@ export default function LoginPage() {
       });
       const userData = userResponse.data;
 
+
       // Step 3: Call login in AuthContext
       login(userData, access, refresh);
 
       // Step 4: Redirect based on role
-      const dashboardPath = userData.role === 'client' ? '/client/dashboard' : '/freelancer/dashboard';
+      const dashboardPath = userData.role.toLowerCase() === 'client' ? '/client/dashboard' : '/freelancer/dashboard';
       navigate(dashboardPath);
 
     } catch (err) {

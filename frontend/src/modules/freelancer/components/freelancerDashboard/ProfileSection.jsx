@@ -18,9 +18,9 @@ const ProfileSection = (props) => {
   }, [profileData]);
 
   // If you keep loading, make sure to set it to false when data is ready
-  useEffect(() => {
-    if (profileData) setLoading(false);
-  }, [profileData]);
+    useEffect(() => {
+      if (profileData) setLoading(false);
+    }, [profileData]);
 
 
 

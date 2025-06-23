@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import {
     Home, Search, MessageCircle, Users, BarChart3,
     User, Settings, Briefcase, CreditCard,
@@ -14,11 +14,33 @@ import InvoicesSection from '../components/clientDashboard/InvoicesSection';
 import AnalyticsSection from '../components/clientDashboard/AnalyticsSection';
 import ProfileSection from '../components/clientDashboard/ProfileSection';
 import SettingsSection from '../components/clientDashboard/SettingsSection';
+import { AuthContext } from '../../../context/AuthContext';
+import axios from 'axios';
 
 const ClientDashboard = () => {
+    const { token } = useContext(AuthContext);
     const [activeSection, setActiveSection] = useState('dashboard');
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [profileData, setProfileData] = useState(null);
+
+    useEffect(() => {
+        if (!token) return;
+        axios.get('http://localhost:8000/api/v1/profiles/client/profile-setup/', {
+            headers: { Authorization: `Bearer ${token}` }
+        })
+            .then(res => {
+                // If your backend returns an array, take the first item
+                setProfileData(res.data[0]);
+            })
+            .catch(err => {
+                console.error('Error fetching profile:', err);
+            });
+    }, [token]);
+
+    const handleProfileUpdate = (updatedData) => {
+        setProfileData(updatedData);
+        // Optionally, send updatedData to backend here
+    };
 
     const firstLetter = profileData?.first_name?.charAt(0)?.toUpperCase() || 'C';
 
@@ -51,7 +73,7 @@ const ClientDashboard = () => {
             case 'analytics':
                 return <AnalyticsSection />;
             case 'profile':
-                return <ProfileSection profileData={profileData} onUpdate={setProfileData} />;
+                return <ProfileSection profileData={profileData} onUpdate={handleProfileUpdate} />;
             case 'settings':
                 return <SettingsSection />;
             default:
