@@ -22,6 +22,10 @@ const ClientDashboard = () => {
     const [activeSection, setActiveSection] = useState('dashboard');
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [profileData, setProfileData] = useState(null);
+    const [isEditing, setIsEditing] = useState(false);
+    const [editData, setEditData] = useState(null);
+    const [profileId, setProfileId] = useState(null);
+
 
     useEffect(() => {
         if (!token) return;
@@ -29,18 +33,75 @@ const ClientDashboard = () => {
             headers: { Authorization: `Bearer ${token}` }
         })
             .then(res => {
-                // If your backend returns an array, take the first item
-                setProfileData(res.data[0]);
+                // Handle both array and object responses
+                const profile = Array.isArray(res.data) ? res.data[0] : res.data;
+                if (profile) {
+                    setProfileData(profile);
+                    setProfileId(profile.id);
+                } else {
+                    // No profile exists for this user
+                    setProfileData(null);
+                    setProfileId(null);
+                }
             })
             .catch(err => {
                 console.error('Error fetching profile:', err);
+                setProfileData(null);
+                setProfileId(null);
             });
     }, [token]);
 
-    const handleProfileUpdate = (updatedData) => {
-        setProfileData(updatedData);
-        // Optionally, send updatedData to backend here
+    useEffect(() => {
+        if (profileData) {
+            setEditData({ ...profileData });
+        }
+    }, [profileData]);
+
+    const handleInputChange = (field, value) => {
+        setEditData(prev => ({ ...prev, [field]: value }));
     };
+
+    const handleArrayAdd = (field, value, setter) => {
+        if (value.trim()) {
+            setEditData(prev => ({
+                ...prev,
+                [field]: [...(prev[field] || []), value.trim()]
+            }));
+            setter('');
+        }
+    };
+
+    const handleArrayRemove = (field, index) => {
+        setEditData(prev => ({
+            ...prev,
+            [field]: (prev[field] || []).filter((_, i) => i !== index)
+        }));
+    };
+
+    const handleSave = async () => {
+        console.log('editData:', editData);
+        if (!profileId) return;
+        const cleanedEditData = { ...editData };
+        delete cleanedEditData.verification;
+        try {
+            const response = await axios.put(
+                `http://localhost:8000/api/v1/profiles/client/profile-setup/${profileId}/`,
+                cleanedEditData,
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+            setProfileData(response.data);
+            setIsEditing(false);
+        } catch (err) {
+            console.error('Full error response:', err.response.data);
+        }
+    };
+
+    const handleCancel = () => {
+        setEditData({ ...profileData });
+        setIsEditing(false);
+    };
+
+
 
     const firstLetter = profileData?.first_name?.charAt(0)?.toUpperCase() || 'C';
 
@@ -73,7 +134,15 @@ const ClientDashboard = () => {
             case 'analytics':
                 return <AnalyticsSection />;
             case 'profile':
-                return <ProfileSection profileData={profileData} onUpdate={handleProfileUpdate} />;
+                return <ProfileSection
+                    profileData={isEditing ? editData : profileData}
+                    isEditing={isEditing}
+                    onInputChange={handleInputChange}
+                    onArrayAdd={handleArrayAdd}
+                    onArrayRemove={handleArrayRemove}
+                    onEdit={() => setIsEditing(true)}
+                    onCancel={handleCancel}
+                    onSave={handleSave} />;
             case 'settings':
                 return <SettingsSection />;
             default:
