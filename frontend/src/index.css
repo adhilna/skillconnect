@@ -6,6 +6,15 @@ input:-webkit-autofill {
   transition: background-color 5000s ease-in-out 0s;
 }
 
+@keyframes boldness {
+  0% { font-weight: 900; }
+  100% { font-weight: 400; }
+}
+
+.animate-boldness {
+  animation: boldness 2s ease-in-out infinite alternate;
+}
+
 
 body {
   margin: 0;
