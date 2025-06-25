@@ -8,23 +8,7 @@ import {
   BarChart3,
   User,
   Settings,
-  Bell,
-  Menu,
   X,
-  DollarSign,
-  Star,
-  TrendingUp,
-  Clock,
-  Eye,
-  Plus,
-  Filter,
-  Calendar,
-  CheckCircle,
-  AlertCircle,
-  Users,
-  Target,
-  Award,
-  Activity,
 } from "lucide-react";
 import Sidebar from "../components/freelancerDashboard/Sidebar";
 import Header from "../components/freelancerDashboard/Header";
@@ -38,6 +22,7 @@ import ProfileSection from "../components/freelancerDashboard/ProfileSection";
 import SettingsSection from "../components/freelancerDashboard/SettingsSection";
 import { AuthContext } from "../../../context/AuthContext";
 import axios from "axios";
+import { toast } from "react-toastify";
 
 const FreelancerDashboard = () => {
   const { token } = useContext(AuthContext);
@@ -47,6 +32,22 @@ const FreelancerDashboard = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState(null);
   const [profileId, setProfileId] = useState(null);
+  const [errors, setErrors] = useState(null);
+  const [fieldErrors, setFieldErrors] = useState({});
+
+  // Deep update function for nested fields
+  const updateNestedField = (obj, path, value) => {
+    const keys = path.includes(":") ? path.split(":") : path.split(".");
+    let current = { ...obj };
+    let parent = current;
+    for (let i = 0; i < keys.length - 1; i++) {
+      const key = isNaN(keys[i]) ? keys[i] : parseInt(keys[i]);
+      parent[key] = Array.isArray(parent[key]) ? [...parent[key]] : { ...parent[key] };
+      parent = parent[key];
+    }
+    parent[keys[keys.length - 1]] = value;
+    return current;
+  };
 
   // Fetch profile data
   useEffect(() => {
@@ -56,11 +57,19 @@ const FreelancerDashboard = () => {
         headers: { Authorization: `Bearer ${token}` },
       })
       .then((res) => {
+        console.log('API Response:', res.data);
         const profile = Array.isArray(res.data) ? res.data[0] : res.data;
         if (profile) {
-          setProfileData(profile);
+          const normalizedProfile = {
+            ...profile,
+            educations: (profile.educations || []).map((edu) => ({
+              ...edu,
+              year: String(edu.year || ""),
+            })),
+          };
+          setProfileData(normalizedProfile);
           setProfileId(profile.id);
-          setEditData({ ...profile });
+          setEditData({ ...normalizedProfile });
         } else {
           setProfileData(null);
           setProfileId(null);
@@ -72,6 +81,7 @@ const FreelancerDashboard = () => {
         setProfileData(null);
         setProfileId(null);
         setEditData(null);
+        toast.error("Failed to fetch profile data.");
       });
   }, [token]);
 
@@ -83,59 +93,236 @@ const FreelancerDashboard = () => {
   }, [profileData]);
 
   const handleInputChange = (field, value) => {
-    setEditData((prev) => ({ ...prev, [field]: value }));
+    setEditData((prev) => updateNestedField(prev, field, value));
+    setFieldErrors((prev) => ({ ...prev, [field]: null }));
   };
 
-  const handleArrayChange = (field, index, value) => {
-    setEditData((prev) => ({
-      ...prev,
-      [field]: prev[field].map((item, i) => (i === index ? value : item)),
-    }));
+  const handleArrayAdd = (field, value, setter) => {
+    if (value && typeof value === "string" && value.trim()) {
+      setEditData((prev) => ({
+        ...prev,
+        [field]: [...(prev[field] || []), { id: null, name: value.trim() }],
+      }));
+      setter("");
+    } else if (value && typeof value === "object") {
+      setEditData((prev) => ({
+        ...prev,
+        [field]: [...(prev[field] || []), { id: null, ...value }],
+      }));
+    }
+    setFieldErrors((prev) => ({ ...prev, [field]: null }));
   };
 
-  const handleAddItem = (field, newItem) => {
+  const handleArrayRemove = (field, index) => {
     setEditData((prev) => ({
       ...prev,
-      [field]: [...(prev[field] || []), newItem],
+      [field]: (prev[field] || []).filter((_, i) => i !== index),
     }));
+    setFieldErrors((prev) => ({ ...prev, [field]: null }));
   };
 
-  const handleRemoveItem = (field, index) => {
-    setEditData((prev) => ({
-      ...prev,
-      [field]: prev[field].filter((_, i) => i !== index),
-    }));
+  // Map frontend to backend format
+  const mapFrontendToBackend = (frontendData) => {
+    return {
+      first_name: String(frontendData.first_name || ""),
+      last_name: String(frontendData.last_name || ""),
+      about: String(frontendData.about || ""),
+      location: String(frontendData.location || ""),
+      age: frontendData.age ? parseInt(frontendData.age) : null,
+      is_available: !!frontendData.is_available,
+      skills: (frontendData.skills || []).map((skill) => ({
+        name: String(skill.name || ""),
+      })).filter((skill) => skill.name.trim()),
+      educations: (frontendData.educations || []).map((edu) => ({
+        college: String(edu.college || ""),
+        degree: String(edu.degree || ""),
+        year: String(edu.year || ""),
+        certificate: null, // Handled separately
+      })).filter((edu) => edu.college.trim() || edu.degree.trim() || edu.year.trim()),
+      experiences: (frontendData.experiences || []).map((exp) => ({
+        role: String(exp.role || ""),
+        company: String(exp.company || ""),
+        start_date: String(exp.start_date || ""),
+        end_date: exp.end_date ? String(exp.end_date) : null,
+        description: String(exp.description || ""),
+        certificate: null, // Handled separately
+      })).filter((exp) => exp.role.trim() || exp.company.trim()),
+      languages: (frontendData.languages || []).map((lang) => ({
+        name: String(lang.name || ""),
+        proficiency: String(lang.proficiency || ""),
+      })).filter((lang) => lang.name.trim()),
+      portfolios: (frontendData.portfolios || []).map((item) => ({
+        title: String(item.title || ""),
+        description: String(item.description || ""),
+        project_link: String(item.project_link || ""),
+      })).filter((item) => item.title.trim() || item.project_link.trim()),
+    };
+  };
+
+  // Validate required fields
+  const validateData = (data) => {
+    const errors = {};
+    if (!data.first_name?.trim()) errors.first_name = "First name is required";
+    if (!data.last_name?.trim()) errors.last_name = "Last name is required";
+    if (!data.location?.trim()) errors.location = "Location is required";
+    if (!data.skills?.length || data.skills.some((s) => !s.name?.trim())) {
+      errors.skills = "At least one valid skill is required";
+    }
+    if (!data.educations?.length || data.educations.some((e) => !e.college?.trim() || !e.degree?.trim() || !e.year?.trim())) {
+      errors.educations = "At least one valid education entry is required";
+      data.educations.forEach((edu, idx) => {
+        if (!edu.college?.trim()) errors[`educations:${idx}:college`] = "College is required";
+        if (!edu.degree?.trim()) errors[`educations:${idx}:degree`] = "Degree is required";
+        if (!edu.year?.trim()) errors[`educations:${idx}:year`] = "Year is required";
+      });
+    }
+    if (!data.experiences?.length || data.experiences.some((e) => !e.company?.trim() || !e.role?.trim() || !e.start_date?.trim())) {
+      errors.experiences = "At least one valid experience entry is required";
+      data.experiences.forEach((exp, idx) => {
+        if (!exp.company?.trim()) errors[`experiences:${idx}:company`] = "Company is required";
+        if (!exp.role?.trim()) errors[`experiences:${idx}:role`] = "Role is required";
+        if (!exp.start_date?.trim()) errors[`experiences:${idx}:start_date`] = "Start date is required";
+      });
+    }
+    if (!data.languages?.length || data.languages.some((l) => !l.name?.trim() || !l.proficiency?.trim())) {
+      errors.languages = "At least one valid language is required";
+      data.languages.forEach((lang, idx) => {
+        if (!lang.name?.trim()) errors[`languages:${idx}:name`] = "Language name is required";
+        if (!lang.proficiency?.trim()) errors[`languages:${idx}:proficiency`] = "Proficiency is required";
+      });
+    }
+    if (!data.portfolios?.length || data.portfolios.some((p) => !p.title?.trim() || !p.project_link?.trim())) {
+      errors.portfolios = "At least one valid portfolio is required";
+      data.portfolios.forEach((pf, idx) => {
+        if (!pf.title?.trim()) errors[`portfolios:${idx}:title`] = "Project title is required";
+        if (!pf.project_link?.trim()) errors[`portfolios:${idx}:project_link`] = "Project link is required";
+      });
+    }
+    console.log("Validating editData:", data);
+    return errors;
   };
 
   const handleSave = async () => {
-    if (!profileId || !editData) return;
-    const cleanedEditData = { ...editData };
-    // Remove fields that shouldn't be sent to the backend
-    delete cleanedEditData.verification;
-    console.log("Sending data:", cleanedEditData);
+    if (!profileId || !editData) {
+      toast.error("Profile data is missing.");
+      return;
+    }
+    setErrors(null);
+    setFieldErrors({});
+
+    // Validate data
+    const validationErrors = validateData(editData);
+    if (Object.keys(validationErrors).length) {
+      setFieldErrors(validationErrors);
+      toast.error("Please fill in all required fields.");
+      return;
+    }
+
     try {
-      const response = await axios.put(
-        `http://localhost:8000/api/v1/profiles/freelancer/profile-setup/${profileId}/`,
-        cleanedEditData,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      setProfileData(response.data);
+      const backendData = mapFrontendToBackend(editData);
+      const hasFiles =
+        editData.profile_picture instanceof File ||
+        editData.educations.some((edu) => edu.certificate instanceof File) ||
+        editData.experiences.some((exp) => exp.certificate instanceof File);
+
+      let response;
+      if (hasFiles) {
+        // Use FormData for file uploads
+        const formData = new FormData();
+        formData.append("data", JSON.stringify(backendData));
+
+
+        if (editData.profile_picture instanceof File) {
+          formData.append("profile_picture", editData.profile_picture);
+        }
+        editData.educations.forEach((edu, index) => {
+          if (edu.certificate instanceof File) {
+            formData.append(`education_certificate_${index}`, edu.certificate);
+          }
+        });
+        editData.experiences.forEach((exp, index) => {
+          if (exp.certificate instanceof File) {
+            formData.append(`experience_certificate_${index}`, exp.certificate);
+          }
+        });
+
+        // Log FormData
+        const formDataDebug = {};
+        for (let [key, value] of formData.entries()) {
+          formDataDebug[key] = value instanceof File ? value.name : value;
+        }
+        console.log("FormData payload:", formDataDebug);
+
+        response = await axios.put(
+          `http://localhost:8000/api/v1/profiles/freelancer/profile-setup/${profileId}/`,
+          formData,
+          { headers: { Authorization: `Bearer ${token}`, "Content-Type": "multipart/form-data" } }
+        );
+      } else {
+        // Use JSON for non-file updates
+        console.log("JSON payload:", backendData);
+        response = await axios.put(
+          `http://localhost:8000/api/v1/profiles/freelancer/profile-setup/${profileId}/`,
+          backendData,
+          { headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" } }
+        );
+      }
+
+      const normalizedResponse = {
+        ...response.data,
+        educations: (response.data.educations || []).map((edu) => ({
+          ...edu,
+          year: String(edu.year || ""),
+          certificate: edu.certificate || null
+        })),
+        experiences: (response.data.experiences || []).map((exp) => ({
+          ...exp,
+          certificate: exp.certificate || null
+        })),
+      };
+      setProfileData(normalizedResponse);
       setIsEditing(false);
+      toast.success("Profile updated successfully!");
     } catch (err) {
       console.error("Error updating profile:", err.response?.data || err);
+      console.log("Raw backend errors:", err.response?.data);
+      if (err.response?.data) {
+        const backendErrors = {};
+        Object.keys(err.response.data).forEach((key) => {
+          if (Array.isArray(err.response.data[key])) {
+            backendErrors[key] = err.response.data[key][0];
+          } else if (typeof err.response.data[key] === "object") {
+            Object.keys(err.response.data[key]).forEach((subKey) => {
+              const errorKey = Array.isArray(err.response.data[key][subKey])
+                ? `${key}:${subKey}`
+                : `${key}:${subKey}`;
+              backendErrors[errorKey] = Array.isArray(err.response.data[key][subKey])
+                ? err.response.data[key][subKey][0]
+                : err.response.data[key][subKey];
+            });
+          } else {
+            backendErrors[key] = err.response.data[key];
+          }
+        });
+        console.log("Backend validation errors:", backendErrors);
+        setFieldErrors(backendErrors);
+        setErrors("Failed to update profile. Please check the errors.");
+        toast.error("Failed to update profile. Please check the errors.");
+      } else {
+        setErrors("Something went wrong. Please try again.");
+        toast.error("Something went wrong. Please try again.");
+      }
     }
   };
 
   const handleCancel = () => {
     setEditData({ ...profileData });
     setIsEditing(false);
+    setErrors(null);
+    setFieldErrors({});
   };
 
-  const handleEdit = () => {
-    setIsEditing(true);
-  };
-
-  const firstLetter = profileData?.first_name?.charAt(0)?.toUpperCase() || "U";
+  const firstLetter = profileData?.first_name?.charAt(0)?.toUpperCase() || "F";
 
   const navigationItems = [
     { id: "dashboard", label: "Dashboard", icon: Home },
@@ -169,12 +356,13 @@ const FreelancerDashboard = () => {
             editData={editData}
             isEditing={isEditing}
             onInputChange={handleInputChange}
-            onArrayChange={handleArrayChange}
-            onAddItem={handleAddItem}
-            onRemoveItem={handleRemoveItem}
-            onEdit={handleEdit}
+            onArrayAdd={handleArrayAdd}
+            onArrayRemove={handleArrayRemove}
+            onEdit={() => setIsEditing(true)}
             onSave={handleSave}
             onCancel={handleCancel}
+            errors={errors}
+            fieldErrors={fieldErrors}
           />
         );
       case "settings":
@@ -186,15 +374,12 @@ const FreelancerDashboard = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
-      {/* Mobile Sidebar Overlay */}
       {sidebarOpen && (
         <div
           className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 lg:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
-
-      {/* Sidebar */}
       <Sidebar
         sidebarOpen={sidebarOpen}
         setSidebarOpen={setSidebarOpen}
@@ -202,18 +387,13 @@ const FreelancerDashboard = () => {
         activeSection={activeSection}
         setActiveSection={setActiveSection}
       />
-
-      {/* Main Content */}
       <div className="lg:ml-64">
-        {/* Top Header */}
         <Header
           activeSection={activeSection}
           setSidebarOpen={setSidebarOpen}
           profileData={profileData}
           firstLetter={firstLetter}
         />
-
-        {/* Page Content */}
         <main className="p-6">{getCurrentSectionContent()}</main>
       </div>
     </div>
