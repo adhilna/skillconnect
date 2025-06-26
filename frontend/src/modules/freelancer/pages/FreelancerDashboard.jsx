@@ -65,11 +65,11 @@ const FreelancerDashboard = () => {
             educations: (profile.educations || []).map((edu) => ({
               ...edu,
               year: String(edu.year || ""),
-              certificate: edu.certificate || null,
+              certificate: null,
             })),
             experiences: (profile.experiences || []).map(exp => ({
               ...exp,
-              certificate: exp.certificate || null,
+              certificate: null,
             })),
           };
           setProfileData(normalizedProfile);
@@ -142,7 +142,7 @@ const FreelancerDashboard = () => {
         college: String(edu.college || ""),
         degree: String(edu.degree || ""),
         year: String(edu.year || ""),
-        certificate: null, // Handled separately
+        certificate: null,
       })).filter((edu) => edu.college.trim() || edu.degree.trim() || edu.year.trim()),
       experiences: (frontendData.experiences || []).map((exp) => ({
         role: String(exp.role || ""),
@@ -150,7 +150,7 @@ const FreelancerDashboard = () => {
         start_date: String(exp.start_date || ""),
         end_date: exp.end_date ? String(exp.end_date) : null,
         description: String(exp.description || ""),
-        certificate: null, // Handled separately
+        certificate: null,
       })).filter((exp) => exp.role.trim() || exp.company.trim()),
       languages: (frontendData.languages || []).map((lang) => ({
         name: String(lang.name || ""),
@@ -161,8 +161,26 @@ const FreelancerDashboard = () => {
         description: String(item.description || ""),
         project_link: String(item.project_link || ""),
       })).filter((item) => item.title.trim() || item.project_link.trim()),
+      social_links: {
+        github_url: frontendData.social_links?.github_url || "",
+        linkedin_url: frontendData.social_links?.linkedin_url || "",
+        twitter_url: frontendData.social_links?.twitter_url || "",
+        facebook_url: frontendData.social_links?.facebook_url || "",
+        instagram_url: frontendData.social_links?.instagram_url || ""
+      }
+
     };
   };
+
+  function isValidUrl(url) {
+    if (!url) return true; // Allow empty strings
+    try {
+      new URL(url);
+      return true;
+    } catch {
+      return false;
+    }
+  }
 
   // Validate required fields
   const validateData = (data) => {
@@ -203,6 +221,21 @@ const FreelancerDashboard = () => {
         if (!pf.project_link?.trim()) errors[`portfolios:${idx}:project_link`] = "Project link is required";
       });
     }
+    if (data.social_links) {
+      const socialKeys = [
+        'github_url',
+        'linkedin_url',
+        'twitter_url',
+        'facebook_url',
+        'instagram_url'
+      ];
+      socialKeys.forEach(key => {
+        const value = data.social_links[key];
+        if (value && !isValidUrl(value)) {
+          errors[`social_links.${key}`] = "Please enter a valid URL.";
+        }
+      });
+    }
     console.log("Validating editData:", data);
     return errors;
   };
@@ -238,7 +271,6 @@ const FreelancerDashboard = () => {
         // Use FormData for file uploads
         const formData = new FormData();
         formData.append("data", jsonString);
-
 
         if (editData.profile_picture instanceof File) {
           formData.append("profile_picture", editData.profile_picture);
@@ -276,6 +308,9 @@ const FreelancerDashboard = () => {
         );
       }
 
+      console.log("Response data:", response.data);
+      console.log("Experiences:", response.data.experiences);
+
       const normalizedResponse = {
         ...response.data,
         educations: (response.data.educations || []).map((edu) => ({
@@ -287,8 +322,16 @@ const FreelancerDashboard = () => {
           ...exp,
           certificate: exp.certificate || null
         })),
+        social_links: response.data.social_links || {
+          github_url: "",
+          linkedin_url: "",
+          twitter_url: "",
+          facebook_url: "",
+          instagram_url: ""
+        }
       };
       setProfileData(normalizedResponse);
+      setEditData(normalizedResponse);
       setIsEditing(false);
       toast.success("Profile updated successfully!");
     } catch (err) {
@@ -300,13 +343,8 @@ const FreelancerDashboard = () => {
           if (Array.isArray(err.response.data[key])) {
             backendErrors[key] = err.response.data[key][0];
           } else if (typeof err.response.data[key] === "object") {
-            Object.keys(err.response.data[key]).forEach((subKey) => {
-              const errorKey = Array.isArray(err.response.data[key][subKey])
-                ? `${key}:${subKey}`
-                : `${key}:${subKey}`;
-              backendErrors[errorKey] = Array.isArray(err.response.data[key][subKey])
-                ? err.response.data[key][subKey][0]
-                : err.response.data[key][subKey];
+            Object.entries(err.response.data[key]).forEach(([subKey, value]) => {
+              backendErrors[`${key}:${subKey}`] = Array.isArray(value) ? value[0] : value;
             });
           } else {
             backendErrors[key] = err.response.data[key];
@@ -322,6 +360,7 @@ const FreelancerDashboard = () => {
       }
     }
   };
+
 
   const handleCancel = () => {
     setEditData({ ...profileData });

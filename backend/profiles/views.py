@@ -7,6 +7,7 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework.decorators import action
 import json
+from rest_framework.parsers import JSONParser
 
 CITIES = [
     # Andhra Pradesh (20 cities)
@@ -250,33 +251,29 @@ class FreelancerProfileViewSet(viewsets.ModelViewSet):
         print("request.headers:", request.headers)
 
         try:
-            data_str = request.POST.get('data')
-            if not data_str:
-                print("No data field in request.POST")
-                return Response({'error': 'No data field in request'}, status=400)
-            print("Raw data string:", data_str)
-            data = json.loads(data_str)
-            print("Parsed data:", data)
+            if request.content_type == 'application/json':
+                data = request.data.copy()
+            else:
+                data_str = request.POST.get('data')
+                if not data_str:
+                    print("No data field in request.POST")
+                    return Response({'error': 'No data field in request'}, status=400)
+                data = json.loads(data_str)
 
-            # Attach files
+            # Attach files (if any)
             if 'profile_picture' in request.FILES:
                 data['profile_picture'] = request.FILES['profile_picture']
 
+            # Only update certificates if new files are uploaded
             for i, edu in enumerate(data.get('educations', [])):
                 cert_key = f'education_certificate_{i}'
                 if cert_key in request.FILES:
                     edu['certificate'] = request.FILES[cert_key]
-                else:
-                    edu['certificate'] = None
 
             for i, exp in enumerate(data.get('experiences', [])):
                 cert_key = f'experience_certificate_{i}'
                 if cert_key in request.FILES:
                     exp['certificate'] = request.FILES[cert_key]
-                else:
-                    exp['certificate'] = None
-
-            print("Data after attaching files:", data)
 
             instance = self.get_object()
             serializer = self.get_serializer(instance, data=data, partial=kwargs.pop('partial', False))
@@ -285,12 +282,10 @@ class FreelancerProfileViewSet(viewsets.ModelViewSet):
             return Response(serializer.data)
 
         except json.JSONDecodeError as e:
-            print("JSON decode error:", e)
-            print("Data string:", data_str)
             return Response({'error': 'Invalid JSON data'}, status=400)
         except Exception as e:
-            print("Error:", e)
             return Response({'error': str(e)}, status=400)
+
 
     def partial_update(self, request, *args, **kwargs):
         kwargs['partial'] = True

@@ -20,11 +20,13 @@ class VerificationSerializer(serializers.ModelSerializer):
         fields = ['id', 'email_verified', 'phone_verified', 'id_verified', 'video_verified']
 
 class EducationSerializer(serializers.ModelSerializer):
+    certificate = serializers.FileField(required=False, allow_null=True)
     class Meta:
         model = Education
         fields = ['id', 'college', 'degree', 'year', 'certificate']
 
 class ExperienceSerializer(serializers.ModelSerializer):
+    certificate = serializers.FileField(required=False, allow_null=True)
     profile = serializers.PrimaryKeyRelatedField(read_only=True)
     class Meta:
         model = Experience

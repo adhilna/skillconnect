@@ -523,107 +523,113 @@ const ProfileSection = ({
               )}
             </div>
             <div className="space-y-4">
-              {(isEditing ? editData.experiences : profileData.experiences || []).map((exp, idx) => (
-                <div
-                  key={exp.id || idx}
-                  className="p-3 sm:p-4 bg-white/5 rounded-xl border border-white/10 flex flex-col gap-2"
-                >
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <EditableField
-                      label="Company"
-                      value={exp.company}
-                      field={`experiences:${idx}:company`}
-                      isEditing={isEditing}
-                      onChange={onInputChange}
-                      error={fieldErrors[`experiences:${idx}:company`]}
-                    />
-                    <EditableField
-                      label="Role"
-                      value={exp.role}
-                      field={`experiences:${idx}:role`}
-                      isEditing={isEditing}
-                      onChange={onInputChange}
-                      error={fieldErrors[`experiences:${idx}:role`]}
-                    />
-                    <EditableField
-                      label="Start Date (YYYY-MM-DD)"
-                      value={exp.start_date}
-                      field={`experiences:${idx}:start_date`}
-                      isEditing={isEditing}
-                      onChange={onInputChange}
-                    />
-                    <EditableField
-                      label="End Date (YYYY-MM-DD)"
-                      value={exp.end_date}
-                      field={`experiences:${idx}:end_date`}
-                      isEditing={isEditing}
-                      onChange={onInputChange}
-                    />
-                    <div className="md:col-span-2">
+              {(isEditing ? editData.experiences : profileData.experiences || []).map((exp, idx) => {
+                // Log each experience before rendering
+                console.log("Rendering experience:", exp);
+                return (
+                  <div
+                    key={exp.id || idx}
+                    className="p-3 sm:p-4 bg-white/5 rounded-xl border border-white/10 flex flex-col gap-2"
+                  >
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       <EditableField
-                        label="Description"
-                        value={exp.description}
-                        field={`experiences:${idx}:description`}
-                        isTextarea={true}
+                        label="Company"
+                        value={exp.company}
+                        field={`experiences:${idx}:company`}
+                        isEditing={isEditing}
+                        onChange={onInputChange}
+                        error={fieldErrors[`experiences:${idx}:company`]}
+                      />
+                      <EditableField
+                        label="Role"
+                        value={exp.role}
+                        field={`experiences:${idx}:role`}
+                        isEditing={isEditing}
+                        onChange={onInputChange}
+                        error={fieldErrors[`experiences:${idx}:role`]}
+                      />
+                      <EditableField
+                        label="Start Date (YYYY-MM-DD)"
+                        value={exp.start_date}
+                        field={`experiences:${idx}:start_date`}
                         isEditing={isEditing}
                         onChange={onInputChange}
                       />
-                    </div>
-                    <div className="md:col-span-2">
-                      <div className="flex flex-col gap-2">
-                        <label className="text-white/70 text-sm mb-1 block">Certificate</label>
-                        {isEditing ? (
-                          <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-center">
-                            <input
-                              type="file"
-                              accept=".pdf,.doc,.docx"
-                              onChange={(e) => onInputChange(`experiences:${idx}:certificate`, e.target.files[0])}
-                              className="bg-white/10 text-white rounded-lg px-3 py-2 border border-white/20 focus:border-purple-500/50 focus:outline-none text-sm sm:text-base file:bg-purple-600/30 file:border-0 file:text-white file:px-3 file:py-1 file:rounded file:cursor-pointer file:hover:bg-purple-600/40"
-                            />
-                            {exp.certificate && (
-                              <button
-                                onClick={() => onInputChange(`experiences:${idx}:certificate`, null)}
-                                className="bg-red-600/30 hover:bg-red-600/40 px-3 py-1 rounded text-red-300 text-xs sm:text-sm flex items-center gap-1"
-                              >
-                                <Trash2 size={12} /> Remove
-                              </button>
-                            )}
-                          </div>
-                        ) : exp.certificate && typeof exp.certificate === "string" ? (
-                          <a
-                            href={exp.certificate}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 px-3 py-1.5 bg-gradient-to-r from-purple-600/30 to-blue-600/30 hover:from-purple-600/40 hover:to-blue-600/40 rounded-lg text-purple-300 text-xs sm:text-sm font-medium border border-purple-500/30 transition-all duration-200"
-                          >
-                            <FileText size={14} /> View Certificate
-                          </a>
-                        ) : exp.certificate instanceof File ? (
-                          <span className="text-white/60 text-xs sm:text-sm">
-                            Selected: {exp.certificate.name}
-                          </span>
-                        ) : (
-                          <span className="text-white/60 text-sm">No certificate</span>
-                        )}
-                        {exp.certificate && isEditing && (
-                          <span className="text-white/60 text-xs sm:text-sm">
-                            Selected: {typeof exp.certificate === "string" ? exp.certificate.split("/").pop() : exp.certificate.name}
-                          </span>
-                        )}
+                      <EditableField
+                        label="End Date (YYYY-MM-DD)"
+                        value={exp.end_date}
+                        field={`experiences:${idx}:end_date`}
+                        isEditing={isEditing}
+                        onChange={onInputChange}
+                      />
+                      <div className="md:col-span-2">
+                        <EditableField
+                          label="Description"
+                          value={exp.description}
+                          field={`experiences:${idx}:description`}
+                          isTextarea={true}
+                          isEditing={isEditing}
+                          onChange={onInputChange}
+                        />
+                      </div>
+                      <div className="md:col-span-2">
+                        <div className="flex flex-col gap-2">
+                          <label className="text-white/70 text-sm mb-1 block">Certificate</label>
+                          {isEditing ? (
+                            <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-center">
+                              <input
+                                type="file"
+                                accept=".pdf,.doc,.docx"
+                                onChange={(e) => onInputChange(`experiences:${idx}:certificate`, e.target.files[0])}
+                                className="bg-white/10 text-white rounded-lg px-3 py-2 border border-white/20 focus:border-purple-500/50 focus:outline-none text-sm sm:text-base file:bg-purple-600/30 file:border-0 file:text-white file:px-3 file:py-1 file:rounded file:cursor-pointer file:hover:bg-purple-600/40"
+                              />
+                              {exp.certificate && (
+                                <button
+                                  onClick={() => onInputChange(`experiences:${idx}:certificate`, null)}
+                                  className="bg-red-600/30 hover:bg-red-600/40 px-3 py-1 rounded text-red-300 text-xs sm:text-sm flex items-center gap-1"
+                                >
+                                  <Trash2 size={12} /> Remove
+                                </button>
+                              )}
+                            </div>
+                          ) : exp.certificate && typeof exp.certificate === "string" ? (
+                            <a
+                              href={exp.certificate}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 px-3 py-1.5 bg-gradient-to-r from-purple-600/30 to-blue-600/30 hover:from-purple-600/40 hover:to-blue-600/40 rounded-lg text-purple-300 text-xs sm:text-sm font-medium border border-purple-500/30 transition-all duration-200"
+                            >
+                              <FileText size={14} /> View Certificate
+                            </a>
+                          ) : (
+                            <span className="text-white/60 text-sm">No certificate</span>
+                          )}
+                          {isEditing && exp.certificate && (
+                            <span className="text-white/60 text-xs sm:text-sm">
+                              Selected:{" "}
+                              {exp.certificate instanceof File
+                                ? exp.certificate.name
+                                : typeof exp.certificate === "string"
+                                  ? exp.certificate.split("/").pop()
+                                  : "No certificate"}
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
+                    {isEditing && (
+                      <button
+                        onClick={() => onArrayRemove("experiences", idx)}
+                        className="bg-red-600/30 hover:bg-red-600/40 px-3 py-1 rounded text-red-300 text-xs sm:text-sm flex items-center gap-1 mt-2 ml-auto"
+                      >
+                        <Trash2 size={12} /> Remove
+                      </button>
+                    )}
                   </div>
-                  {isEditing && (
-                    <button
-                      onClick={() => onArrayRemove("experiences", idx)}
-                      className="bg-red-600/30 hover:bg-red-600/40 px-3 py-1 rounded text-red-300 text-xs sm:text-sm flex items-center gap-1 mt-2 ml-auto"
-                    >
-                      <Trash2 size={12} /> Remove
-                    </button>
-                  )}
-                </div>
-              ))}
+                );
+              })}
             </div>
+
           </div>
         )}
 
