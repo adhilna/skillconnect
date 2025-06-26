@@ -195,33 +195,39 @@ class FreelancerProfileViewSet(viewsets.ModelViewSet):
         serializer.save(user=self.request.user)
     
     def create(self, request, *args, **kwargs):
-        try:
-             # 1. Parse the JSON data
-            data = json.loads(request.POST.get('data'))
+        print("View is being called!")
+        print("request.FILES:", request.FILES)
+        print("request.headers:", request.headers) # Should show your file uploads
 
-            # 2. Attach profile picture if present
+        try:
+            data_str = request.POST.get('data')
+            if not data_str:
+                print("No data field in request.POST")
+                return Response({'error': 'No data field in request'}, status=400)
+            print("Raw data string:", data_str)
+            data = json.loads(data_str)
+            print("Parsed data:", data)
+
+    # Attach files
             if 'profile_picture' in request.FILES:
                 data['profile_picture'] = request.FILES['profile_picture']
 
-            # 3. Attach certificate files to educations and experiences
             for i, edu in enumerate(data.get('educations', [])):
                 cert_key = f'education_certificate_{i}'
                 if cert_key in request.FILES:
                     edu['certificate'] = request.FILES[cert_key]
                 else:
-                    edu['certificate'] = None 
+                    edu['certificate'] = None
 
             for i, exp in enumerate(data.get('experiences', [])):
                 cert_key = f'experience_certificate_{i}'
                 if cert_key in request.FILES:
                     exp['certificate'] = request.FILES[cert_key]
                 else:
-                    exp['certificate'] = None 
+                    exp['certificate'] = None
 
-            # print("Data before serializer:", data)
+            print("Data after attaching files:", data)
 
-
-            # 4. Use your serializer to create the profile and nested objects
             serializer = self.get_serializer(data=data)
             if not serializer.is_valid():
                 print("Serializer errors:", serializer.errors)
@@ -229,9 +235,68 @@ class FreelancerProfileViewSet(viewsets.ModelViewSet):
             self.perform_create(serializer)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-        
+        except json.JSONDecodeError as e:
+            print("JSON decode error:", e)
+            print("Data string:", data_str)
+            return Response({'error': 'Invalid JSON data'}, status=400)
         except Exception as e:
-            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+            print("Error:", e)
+            return Response({'error': str(e)}, status=400)
+        
+    def update(self, request, *args, **kwargs):
+        print("Update view is being called!")
+        print("request.method:", request.method)
+        print("request.FILES:", request.FILES)
+        print("request.headers:", request.headers)
+
+        try:
+            data_str = request.POST.get('data')
+            if not data_str:
+                print("No data field in request.POST")
+                return Response({'error': 'No data field in request'}, status=400)
+            print("Raw data string:", data_str)
+            data = json.loads(data_str)
+            print("Parsed data:", data)
+
+            # Attach files
+            if 'profile_picture' in request.FILES:
+                data['profile_picture'] = request.FILES['profile_picture']
+
+            for i, edu in enumerate(data.get('educations', [])):
+                cert_key = f'education_certificate_{i}'
+                if cert_key in request.FILES:
+                    edu['certificate'] = request.FILES[cert_key]
+                else:
+                    edu['certificate'] = None
+
+            for i, exp in enumerate(data.get('experiences', [])):
+                cert_key = f'experience_certificate_{i}'
+                if cert_key in request.FILES:
+                    exp['certificate'] = request.FILES[cert_key]
+                else:
+                    exp['certificate'] = None
+
+            print("Data after attaching files:", data)
+
+            instance = self.get_object()
+            serializer = self.get_serializer(instance, data=data, partial=kwargs.pop('partial', False))
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+            return Response(serializer.data)
+
+        except json.JSONDecodeError as e:
+            print("JSON decode error:", e)
+            print("Data string:", data_str)
+            return Response({'error': 'Invalid JSON data'}, status=400)
+        except Exception as e:
+            print("Error:", e)
+            return Response({'error': str(e)}, status=400)
+
+    def partial_update(self, request, *args, **kwargs):
+        kwargs['partial'] = True
+        return self.update(request, *args, **kwargs)
+
+
 
 class ClientProfileViewSet(viewsets.ModelViewSet):
     serializer_class = ClientProfileSerializer

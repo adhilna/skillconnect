@@ -65,6 +65,11 @@ const FreelancerDashboard = () => {
             educations: (profile.educations || []).map((edu) => ({
               ...edu,
               year: String(edu.year || ""),
+              certificate: edu.certificate || null,
+            })),
+            experiences: (profile.experiences || []).map(exp => ({
+              ...exp,
+              certificate: exp.certificate || null,
             })),
           };
           setProfileData(normalizedProfile);
@@ -220,6 +225,9 @@ const FreelancerDashboard = () => {
 
     try {
       const backendData = mapFrontendToBackend(editData);
+      const jsonString = JSON.stringify(backendData);
+      console.log("JSON string:", jsonString);
+
       const hasFiles =
         editData.profile_picture instanceof File ||
         editData.educations.some((edu) => edu.certificate instanceof File) ||
@@ -229,7 +237,7 @@ const FreelancerDashboard = () => {
       if (hasFiles) {
         // Use FormData for file uploads
         const formData = new FormData();
-        formData.append("data", JSON.stringify(backendData));
+        formData.append("data", jsonString);
 
 
         if (editData.profile_picture instanceof File) {

@@ -25,7 +25,7 @@ import {
   Facebook,
   Instagram,
 } from "lucide-react";
-import {  ToastContainer } from "react-toastify";
+import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
 const EditableField = ({
@@ -350,11 +350,10 @@ const ProfileSection = ({
           <button
             key={id}
             onClick={() => setActiveTab(id)}
-            className={`flex items-center gap-1 px-2 sm:px-3 py-1.5 sm:py-2 rounded-xl transition-all duration-200 text-xs sm:text-sm ${
-              activeTab === id
-                ? "bg-gradient-to-r from-purple-600/40 to-blue-600/40 text-white border border-purple-500/30"
-                : "text-white/60 hover:text-white/80 hover:bg-white/5"
-            }`}
+            className={`flex items-center gap-1 px-2 sm:px-3 py-1.5 sm:py-2 rounded-xl transition-all duration-200 text-xs sm:text-sm ${activeTab === id
+              ? "bg-gradient-to-r from-purple-600/40 to-blue-600/40 text-white border border-purple-500/30"
+              : "text-white/60 hover:text-white/80 hover:bg-white/5"
+              }`}
           >
             <Icon size={12} />
             <span className="font-medium">{label}</span>
@@ -477,18 +476,18 @@ const ProfileSection = ({
                       { key: "instagram_url", label: "Instagram", icon: Instagram },
                     ].map(({ key, label, icon: Icon }) => (
                       <div key={key} className="flex items-center gap-2">
-                          <Icon size={16} className="text-white/50" />
-                          <EditableField
-                            label={label}
-                            value={isEditing ? editData.social_links?.[key] : profileData.social_links?.[key]}
-                            field={`social_links.${key}`}
-                            type="url"
-                            isEditing={isEditing}
-                            onChange={onInputChange}
-                            error={fieldErrors[`social_links.${key}`]}
-                          />
-                        </div>
-                      ))}
+                        <Icon size={16} className="text-white/50" />
+                        <EditableField
+                          label={label}
+                          value={isEditing ? editData.social_links?.[key] : profileData.social_links?.[key]}
+                          field={`social_links.${key}`}
+                          type="url"
+                          isEditing={isEditing}
+                          onChange={onInputChange}
+                          error={fieldErrors[`social_links.${key}`]}
+                        />
+                      </div>
+                    ))}
                   </div>
                 </div>
               </div>
@@ -585,12 +584,12 @@ const ProfileSection = ({
                               <button
                                 onClick={() => onInputChange(`experiences:${idx}:certificate`, null)}
                                 className="bg-red-600/30 hover:bg-red-600/40 px-3 py-1 rounded text-red-300 text-xs sm:text-sm flex items-center gap-1"
-                                >
+                              >
                                 <Trash2 size={12} /> Remove
                               </button>
                             )}
                           </div>
-                        ) : exp.certificate ? (
+                        ) : exp.certificate && typeof exp.certificate === "string" ? (
                           <a
                             href={exp.certificate}
                             target="_blank"
@@ -599,6 +598,10 @@ const ProfileSection = ({
                           >
                             <FileText size={14} /> View Certificate
                           </a>
+                        ) : exp.certificate instanceof File ? (
+                          <span className="text-white/60 text-xs sm:text-sm">
+                            Selected: {exp.certificate.name}
+                          </span>
                         ) : (
                           <span className="text-white/60 text-sm">No certificate</span>
                         )}
@@ -613,7 +616,7 @@ const ProfileSection = ({
                   {isEditing && (
                     <button
                       onClick={() => onArrayRemove("experiences", idx)}
-                      className="bg-red-500/20 hover:bg-red-600/30 px-2 py-1 rounded text-right text-red-600 text-sm mt-2"
+                      className="bg-red-600/30 hover:bg-red-600/40 px-3 py-1 rounded text-red-300 text-xs sm:text-sm flex items-center gap-1 mt-2 ml-auto"
                     >
                       <Trash2 size={12} /> Remove
                     </button>
@@ -695,7 +698,7 @@ const ProfileSection = ({
                               <button
                                 onClick={() => onInputChange(`educations:${idx}:certificate`, null)}
                                 className="bg-red-600/30 hover:bg-red-600/40 px-3 py-1 rounded text-red-300 text-xs sm:text-sm flex items-center gap-1"
-                                >
+                              >
                                 <Trash2 size={12} /> Remove
                               </button>
                             )}
@@ -723,7 +726,7 @@ const ProfileSection = ({
                   {isEditing && (
                     <button
                       onClick={() => onArrayRemove("educations", idx)}
-                      className="bg-red-500/20 hover:bg-red-600/30 px-2 py-1 rounded text-right text-red-600 text-sm mt-2"
+                      className="bg-red-600/30 hover:bg-red-600/40 px-3 py-1 rounded text-red-300 text-xs sm:text-sm flex items-center gap-1 mt-2 ml-auto"
                     >
                       <Trash2 size={12} /> Remove
                     </button>
@@ -797,7 +800,7 @@ const ProfileSection = ({
                   {isEditing && (
                     <button
                       onClick={() => onArrayRemove("portfolios", idx)}
-                      className="bg-red-500/20 hover:bg-red-600/30 px-2 py-1 rounded text-right text-red-600 text-sm mt-2"
+                      className="bg-red-600/30 hover:bg-red-600/40 px-3 py-1 rounded text-red-300 text-xs sm:text-sm flex items-center gap-1 mt-2 ml-auto"
                     >
                       <Trash2 size={12} /> Remove
                     </button>
@@ -904,11 +907,10 @@ const ProfileSection = ({
             </div>
             <div className="p-3 sm:p-4 bg-white/5 rounded-xl border border-white/10 flex flex-col items-center gap-4">
               <div
-                className={`w-12 h-12 sm:w-16 sm:h-16 rounded-full flex items-center justify-center ${
-                  (isEditing ? editData.is_available : profileData.is_available)
-                    ? "bg-green-500/20 border-2 border-green-500"
-                    : "bg-red-500/20 border-2 border-red-500"
-                }`}
+                className={`w-12 h-12 sm:w-16 sm:h-16 rounded-full flex items-center justify-center ${(isEditing ? editData.is_available : profileData.is_available)
+                  ? "bg-green-500/20 border-2 border-green-500"
+                  : "bg-red-500/20 border-2 border-red-500"
+                  }`}
               >
                 <CheckCircle
                   size={24}
