@@ -196,9 +196,9 @@ class FreelancerProfileViewSet(viewsets.ModelViewSet):
         serializer.save(user=self.request.user)
     
     def create(self, request, *args, **kwargs):
-        print("View is being called!")
+        print("Create view is being called!")
         print("request.FILES:", request.FILES)
-        print("request.headers:", request.headers) # Should show your file uploads
+        print("request.headers:", request.headers)
 
         try:
             data_str = request.POST.get('data')
@@ -209,7 +209,7 @@ class FreelancerProfileViewSet(viewsets.ModelViewSet):
             data = json.loads(data_str)
             print("Parsed data:", data)
 
-    # Attach files
+            # Attach files
             if 'profile_picture' in request.FILES:
                 data['profile_picture'] = request.FILES['profile_picture']
 
@@ -217,15 +217,13 @@ class FreelancerProfileViewSet(viewsets.ModelViewSet):
                 cert_key = f'education_certificate_{i}'
                 if cert_key in request.FILES:
                     edu['certificate'] = request.FILES[cert_key]
-                else:
-                    edu['certificate'] = None
+                # Preserve existing certificate URL or null
 
             for i, exp in enumerate(data.get('experiences', [])):
                 cert_key = f'experience_certificate_{i}'
                 if cert_key in request.FILES:
                     exp['certificate'] = request.FILES[cert_key]
-                else:
-                    exp['certificate'] = None
+                # Preserve existing certificate URL or null
 
             print("Data after attaching files:", data)
 
@@ -251,40 +249,60 @@ class FreelancerProfileViewSet(viewsets.ModelViewSet):
         print("request.headers:", request.headers)
 
         try:
-            if request.content_type == 'application/json':
-                data = request.data.copy()
-            else:
-                data_str = request.POST.get('data')
-                if not data_str:
-                    print("No data field in request.POST")
-                    return Response({'error': 'No data field in request'}, status=400)
-                data = json.loads(data_str)
+            # Parse JSON data from FormData
+            data_str = request.POST.get('data')
+            if not data_str:
+                print("No data field in request.POST")
+                return Response({'error': 'No data field in request'}, status=status.HTTP_400_BAD_REQUEST)
+            data = json.loads(data_str)
+            print("Parsed data:", data)
 
-            # Attach files (if any)
-            if 'profile_picture' in request.FILES:
-                data['profile_picture'] = request.FILES['profile_picture']
-
-            # Only update certificates if new files are uploaded
+            # Attach files for educations
             for i, edu in enumerate(data.get('educations', [])):
                 cert_key = f'education_certificate_{i}'
                 if cert_key in request.FILES:
+                    print(f"Attaching {cert_key}:", request.FILES[cert_key].name)
                     edu['certificate'] = request.FILES[cert_key]
+                elif isinstance(edu.get('certificate'), str) and edu['certificate']:
+                    print(f"Preserving education certificate URL {i}:", edu['certificate'])
+                else:
+                    edu['certificate'] = None
+                print(f"Education {i} certificate:", edu.get('certificate'), type(edu.get('certificate')))
 
+            # Attach files for experiences
             for i, exp in enumerate(data.get('experiences', [])):
                 cert_key = f'experience_certificate_{i}'
                 if cert_key in request.FILES:
+                    print(f"Attaching {cert_key}:", request.FILES[cert_key].name)
                     exp['certificate'] = request.FILES[cert_key]
+                elif isinstance(exp.get('certificate'), str) and exp['certificate']:
+                    print(f"Preserving experience certificate URL {i}:", exp['certificate'])
+                else:
+                    exp['certificate'] = None
+                print(f"Experience {i} certificate:", exp.get('certificate'), type(exp.get('certificate')))
+
+            # Attach profile picture
+            if 'profile_picture' in request.FILES:
+                print("Attaching profile_picture:", request.FILES['profile_picture'].name)
+                data['profile_picture'] = request.FILES['profile_picture']
+
+            print("Data after attaching files:", data)
 
             instance = self.get_object()
-            serializer = self.get_serializer(instance, data=data, partial=kwargs.pop('partial', False))
-            serializer.is_valid(raise_exception=True)
+            serializer = self.get_serializer(instance, data=data, partial=True)
+            if not serializer.is_valid():
+                print("Serializer errors:", serializer.errors)
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
             serializer.save()
-            return Response(serializer.data)
+            return Response(serializer.data, status=status.HTTP_200_OK)
 
         except json.JSONDecodeError as e:
-            return Response({'error': 'Invalid JSON data'}, status=400)
+            print("JSON decode error:", str(e))
+            return Response({'error': 'Invalid JSON data'}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
-            return Response({'error': str(e)}, status=400)
+            print("Error:", str(e))
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 
     def partial_update(self, request, *args, **kwargs):

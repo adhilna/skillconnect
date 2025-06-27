@@ -4,10 +4,38 @@ from .models import (
     FreelancerProfile, ClientProfile, Skill, Verification, Education,
     Experience, Language, Portfolio, SocialLinks
 )
+from django.core.files.uploadedfile import InMemoryUploadedFile, TemporaryUploadedFile
+from django.core.validators import URLValidator
+from rest_framework.exceptions import ValidationError
 
 # ----------------------------
 # SHARED / RELATED SERIALIZERS
 # ----------------------------
+
+# class CustomCertificateField(serializers.Field):
+#     def to_internal_value(self, data):
+#         print(f"CustomCertificateField to_internal_value: {data} ({type(data)})")
+#         if data is None:
+#             return None
+#         if isinstance(data, (InMemoryUploadedFile, TemporaryUploadedFile)):
+#             return data
+#         if isinstance(data, str):
+#             # Validate URL
+#             validator = URLValidator()
+#             try:
+#                 validator(data)
+#                 return data
+#             except ValidationError:
+#                 raise serializers.ValidationError({"certificate": "Invalid URL format"})
+#         raise serializers.ValidationError({"certificate": f"Invalid certificate value: {data}"})
+
+#     def to_representation(self, value):
+#         print(f"CustomCertificateField to_representation: {value} ({type(value)})")
+#         if isinstance(value, str):
+#             return value
+#         if value and hasattr(value, 'url'):
+#             return value.url
+#         return None
 
 class SkillSerializer(serializers.ModelSerializer):
     class Meta:
@@ -21,19 +49,45 @@ class VerificationSerializer(serializers.ModelSerializer):
 
 class EducationSerializer(serializers.ModelSerializer):
     certificate = serializers.FileField(required=False, allow_null=True)
+
     class Meta:
         model = Education
         fields = ['id', 'college', 'degree', 'year', 'certificate']
 
+    def to_internal_value(self, data):
+        print(f"Education data: {data}")
+        certificate = data.get('certificate')
+        print(f"Education certificate: {certificate} ({type(certificate)})")
+        if isinstance(certificate, (InMemoryUploadedFile, TemporaryUploadedFile)):
+            data['certificate'] = certificate
+        elif certificate is None or certificate == '':
+            data['certificate'] = None
+        elif isinstance(certificate, str):
+            data['certificate'] = certificate
+        else:
+            raise serializers.ValidationError({"certificate": f"Invalid certificate value: {certificate}"})
+        return super().to_internal_value(data)
+
 class ExperienceSerializer(serializers.ModelSerializer):
     certificate = serializers.FileField(required=False, allow_null=True)
-    profile = serializers.PrimaryKeyRelatedField(read_only=True)
+
     class Meta:
         model = Experience
-        fields = [
-            'id', 'profile', 'role', 'company', 'start_date', 'end_date',
-            'description', 'certificate'
-        ]
+        fields = ['id', 'company', 'role', 'start_date', 'end_date', 'description', 'certificate']
+
+    def to_internal_value(self, data):
+        print(f"Experience data: {data}")
+        certificate = data.get('certificate')
+        print(f"Experience certificate: {certificate} ({type(certificate)})")
+        if isinstance(certificate, (InMemoryUploadedFile, TemporaryUploadedFile)):
+            data['certificate'] = certificate
+        elif certificate is None or certificate == '':
+            data['certificate'] = None
+        elif isinstance(certificate, str):
+            data['certificate'] = certificate
+        else:
+            raise serializers.ValidationError({"certificate": f"Invalid certificate value: {certificate}"})
+        return super().to_internal_value(data)
 
 class LanguageSerializer(serializers.ModelSerializer):
     profile = serializers.PrimaryKeyRelatedField(read_only=True)
@@ -61,8 +115,8 @@ class SocialLinksSerializer(serializers.ModelSerializer):
 class FreelancerProfileSerializer(serializers.ModelSerializer):
     user = serializers.PrimaryKeyRelatedField(read_only=True)
     skills = SkillSerializer(many=True)
-    educations = EducationSerializer(many=True)
-    experiences = ExperienceSerializer(many=True)
+    educations = EducationSerializer(many=True, required=False)
+    experiences = ExperienceSerializer(many=True, required=False)
     languages = LanguageSerializer(many=True)
     portfolios = PortfolioSerializer(many=True)
     verifications = VerificationSerializer(read_only=True)
@@ -158,15 +212,29 @@ class FreelancerProfileSerializer(serializers.ModelSerializer):
             skill_obj, _ = Skill.objects.get_or_create(**skill)
             instance.skills.add(skill_obj)
 
-        # Update FK: Educations
-        instance.educations.all().delete()
-        for edu in educations_data:
-            Education.objects.create(profile=instance, **edu)
+        # Update educations
+        instance.educations.all().delete()  # Clear existing
+        for edu_data in educations_data:
+            certificate = edu_data.pop('certificate', None)
+            education = Education.objects.create(profile=instance, **edu_data)
+            if certificate and isinstance(certificate, (InMemoryUploadedFile, TemporaryUploadedFile)):
+                education.certificate = certificate
+                education.save()
+            elif isinstance(certificate, str):
+                education.certificate = certificate
+                education.save()
 
-        # Update FK: Experiences
-        instance.experiences.all().delete()
-        for exp in experiences_data:
-            Experience.objects.create(profile=instance, **exp)
+        # Update experiences
+        instance.experiences.all().delete()  # Clear existing
+        for exp_data in experiences_data:
+            certificate = exp_data.pop('certificate', None)
+            experience = Experience.objects.create(profile=instance, **exp_data)
+            if certificate and isinstance(certificate, (InMemoryUploadedFile, TemporaryUploadedFile)):
+                experience.certificate = certificate
+                experience.save()
+            elif isinstance(certificate, str):
+                experience.certificate = certificate
+                experience.save()
 
         # Update FK: Languages
         instance.languages.all().delete()
@@ -182,6 +250,9 @@ class FreelancerProfileSerializer(serializers.ModelSerializer):
         if social_links_data:
             SocialLinks.objects.update_or_create(profile=instance, defaults=social_links_data)
 
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
         return instance
 
 class ClientProfileSerializer(serializers.ModelSerializer):

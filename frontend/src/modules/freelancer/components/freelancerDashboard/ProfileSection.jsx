@@ -192,6 +192,50 @@ const EditableArrayField = ({
   );
 };
 
+// New renderCertificate function to handle certificates consistently
+const renderCertificate = (certificate, idx, fieldPrefix, isEditing, onInputChange, fieldErrors) => {
+  if (isEditing) {
+    return (
+      <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-center">
+        <input
+          type="file"
+          accept=".pdf,.doc,.docx"
+          onChange={(e) => onInputChange(`${fieldPrefix}:${idx}:certificate`, e.target.files[0] || null)}
+          className="bg-white/10 text-white rounded-lg px-3 py-2 border border-white/20 focus:border-purple-500/50 focus:outline-none text-sm sm:text-base file:bg-purple-600/30 file:border-0 file:text-white file:px-3 file:py-1 file:rounded file:cursor-pointer file:hover:bg-purple-600/40"
+        />
+        {certificate && (
+          <button
+            onClick={() => onInputChange(`${fieldPrefix}:${idx}:certificate`, null)}
+            className="bg-red-600/30 hover:bg-red-600/40 px-3 py-1 rounded text-red-300 text-xs sm:text-sm flex items-center gap-1"
+          >
+            <Trash2 size={12} /> Remove
+          </button>
+        )}
+        {certificate && (
+          <span className="text-white/60 text-xs sm:text-sm">
+            Selected: {typeof certificate === "string" ? certificate.split("/").pop() : certificate?.name || "None"}
+          </span>
+        )}
+        {fieldErrors[`${fieldPrefix}:${idx}:certificate`] && (
+          <p className="text-red-400 text-xs mt-1">{fieldErrors[`${fieldPrefix}:${idx}:certificate`]}</p>
+        )}
+      </div>
+    );
+  }
+  return certificate && typeof certificate === "string" ? (
+    <a
+      href={certificate}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="inline-flex items-center gap-1 px-3 py-1.5 bg-gradient-to-r from-purple-600/30 to-blue-600/30 hover:from-purple-600/40 hover:to-blue-600/40 rounded-lg text-purple-300 text-xs sm:text-sm font-medium border border-purple-500/30 transition-all duration-200"
+    >
+      <FileText size={14} /> View Certificate
+    </a>
+  ) : (
+    <span className="text-white/60 text-sm">No certificate</span>
+  );
+};
+
 const ProfileSection = ({
   profileData = {},
   editData = {},
@@ -202,7 +246,6 @@ const ProfileSection = ({
   onEdit,
   onCancel,
   onSave,
-  // errors,
   fieldErrors,
 }) => {
   const [activeTab, setActiveTab] = useState("overview");
@@ -351,8 +394,8 @@ const ProfileSection = ({
             key={id}
             onClick={() => setActiveTab(id)}
             className={`flex items-center gap-1 px-2 sm:px-3 py-1.5 sm:py-2 rounded-xl transition-all duration-200 text-xs sm:text-sm ${activeTab === id
-              ? "bg-gradient-to-r from-purple-600/40 to-blue-600/40 text-white border border-purple-500/30"
-              : "text-white/60 hover:text-white/80 hover:bg-white/5"
+                ? "bg-gradient-to-r from-purple-600/40 to-blue-600/40 text-white border border-purple-500/30"
+                : "text-white/60 hover:text-white/80 hover:bg-white/5"
               }`}
           >
             <Icon size={12} />
@@ -495,144 +538,6 @@ const ProfileSection = ({
           </div>
         )}
 
-        {activeTab === "experience" && (
-          <div>
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg sm:text-xl font-semibold text-white flex items-center gap-1">
-                <Briefcase className="text-yellow-400" size={16} />
-                Experience
-              </h3>
-              {isEditing && (
-                <button
-                  onClick={() =>
-                    onArrayAdd("experiences", {
-                      id: Date.now(),
-                      company: "",
-                      role: "",
-                      start_date: "",
-                      end_date: "",
-                      description: "",
-                      certificate: null,
-                    })
-                  }
-                  className="flex items-center gap-1 bg-green-500/20 hover:bg-green-500/30 px-2 sm:px-3 py-1 rounded-lg text-right text-green-300 text-xs sm:text-sm transition-colors"
-                >
-                  <Plus size={12} />
-                  Add Experience
-                </button>
-              )}
-            </div>
-            <div className="space-y-4">
-              {(isEditing ? editData.experiences : profileData.experiences || []).map((exp, idx) => {
-                // Log each experience before rendering
-                console.log("Rendering experience:", exp);
-                return (
-                  <div
-                    key={exp.id || idx}
-                    className="p-3 sm:p-4 bg-white/5 rounded-xl border border-white/10 flex flex-col gap-2"
-                  >
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      <EditableField
-                        label="Company"
-                        value={exp.company}
-                        field={`experiences:${idx}:company`}
-                        isEditing={isEditing}
-                        onChange={onInputChange}
-                        error={fieldErrors[`experiences:${idx}:company`]}
-                      />
-                      <EditableField
-                        label="Role"
-                        value={exp.role}
-                        field={`experiences:${idx}:role`}
-                        isEditing={isEditing}
-                        onChange={onInputChange}
-                        error={fieldErrors[`experiences:${idx}:role`]}
-                      />
-                      <EditableField
-                        label="Start Date (YYYY-MM-DD)"
-                        value={exp.start_date}
-                        field={`experiences:${idx}:start_date`}
-                        isEditing={isEditing}
-                        onChange={onInputChange}
-                      />
-                      <EditableField
-                        label="End Date (YYYY-MM-DD)"
-                        value={exp.end_date}
-                        field={`experiences:${idx}:end_date`}
-                        isEditing={isEditing}
-                        onChange={onInputChange}
-                      />
-                      <div className="md:col-span-2">
-                        <EditableField
-                          label="Description"
-                          value={exp.description}
-                          field={`experiences:${idx}:description`}
-                          isTextarea={true}
-                          isEditing={isEditing}
-                          onChange={onInputChange}
-                        />
-                      </div>
-                      <div className="md:col-span-2">
-                        <div className="flex flex-col gap-2">
-                          <label className="text-white/70 text-sm mb-1 block">Certificate</label>
-                          {isEditing ? (
-                            <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-center">
-                              <input
-                                type="file"
-                                accept=".pdf,.doc,.docx"
-                                onChange={(e) => onInputChange(`experiences:${idx}:certificate`, e.target.files[0])}
-                                className="bg-white/10 text-white rounded-lg px-3 py-2 border border-white/20 focus:border-purple-500/50 focus:outline-none text-sm sm:text-base file:bg-purple-600/30 file:border-0 file:text-white file:px-3 file:py-1 file:rounded file:cursor-pointer file:hover:bg-purple-600/40"
-                              />
-                              {exp.certificate && (
-                                <button
-                                  onClick={() => onInputChange(`experiences:${idx}:certificate`, null)}
-                                  className="bg-red-600/30 hover:bg-red-600/40 px-3 py-1 rounded text-red-300 text-xs sm:text-sm flex items-center gap-1"
-                                >
-                                  <Trash2 size={12} /> Remove
-                                </button>
-                              )}
-                            </div>
-                          ) : exp.certificate && typeof exp.certificate === "string" ? (
-                            <a
-                              href={exp.certificate}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="inline-flex items-center gap-1 px-3 py-1.5 bg-gradient-to-r from-purple-600/30 to-blue-600/30 hover:from-purple-600/40 hover:to-blue-600/40 rounded-lg text-purple-300 text-xs sm:text-sm font-medium border border-purple-500/30 transition-all duration-200"
-                            >
-                              <FileText size={14} /> View Certificate
-                            </a>
-                          ) : (
-                            <span className="text-white/60 text-sm">No certificate</span>
-                          )}
-                          {isEditing && exp.certificate && (
-                            <span className="text-white/60 text-xs sm:text-sm">
-                              Selected:{" "}
-                              {exp.certificate instanceof File
-                                ? exp.certificate.name
-                                : typeof exp.certificate === "string"
-                                  ? exp.certificate.split("/").pop()
-                                  : "No certificate"}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                    {isEditing && (
-                      <button
-                        onClick={() => onArrayRemove("experiences", idx)}
-                        className="bg-red-600/30 hover:bg-red-600/40 px-3 py-1 rounded text-red-300 text-xs sm:text-sm flex items-center gap-1 mt-2 ml-auto"
-                      >
-                        <Trash2 size={12} /> Remove
-                      </button>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-
-          </div>
-        )}
-
         {activeTab === "education" && (
           <div>
             <div className="flex items-center justify-between mb-4">
@@ -644,7 +549,7 @@ const ProfileSection = ({
                 <button
                   onClick={() =>
                     onArrayAdd("educations", {
-                      id: null,
+                      id: null, // Use null for new entries to align with backend
                       college: "",
                       degree: "",
                       year: "",
@@ -692,40 +597,7 @@ const ProfileSection = ({
                     <div className="md:col-span-2">
                       <div className="flex flex-col gap-2">
                         <label className="text-white/70 text-sm mb-1 block">Certificate</label>
-                        {isEditing ? (
-                          <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-center">
-                            <input
-                              type="file"
-                              accept=".pdf,.doc,.docx"
-                              onChange={(e) => onInputChange(`educations:${idx}:certificate`, e.target.files[0])}
-                              className="bg-white/10 text-white rounded-lg px-3 py-2 border border-white/20 focus:border-purple-500/50 focus:outline-none text-sm sm:text-base file:bg-purple-600/30 file:border-0 file:text-white file:px-3 file:py-1 file:rounded file:cursor-pointer file:hover:bg-purple-600/40"
-                            />
-                            {edu.certificate && (
-                              <button
-                                onClick={() => onInputChange(`educations:${idx}:certificate`, null)}
-                                className="bg-red-600/30 hover:bg-red-600/40 px-3 py-1 rounded text-red-300 text-xs sm:text-sm flex items-center gap-1"
-                              >
-                                <Trash2 size={12} /> Remove
-                              </button>
-                            )}
-                          </div>
-                        ) : edu.certificate ? (
-                          <a
-                            href={edu.certificate}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 px-3 py-1.5 bg-gradient-to-r from-purple-600/30 to-blue-600/30 hover:from-purple-600/40 hover:to-blue-600/40 rounded-lg text-purple-300 text-xs sm:text-sm font-medium border border-purple-500/30 transition-all duration-200"
-                          >
-                            <FileText size={14} /> View Certificate
-                          </a>
-                        ) : (
-                          <span className="text-white/60 text-sm">No certificate</span>
-                        )}
-                        {edu.certificate && isEditing && (
-                          <span className="text-white/60 text-xs sm:text-sm">
-                            Selected: {typeof edu.certificate === "string" ? edu.certificate.split("/").pop() : edu.certificate.name}
-                          </span>
-                        )}
+                        {renderCertificate(edu.certificate, idx, "educations", isEditing, onInputChange, fieldErrors)}
                       </div>
                     </div>
                   </div>
@@ -743,6 +615,108 @@ const ProfileSection = ({
           </div>
         )}
 
+        {activeTab === "experience" && (
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg sm:text-xl font-semibold text-white flex items-center gap-1">
+                <Briefcase className="text-yellow-400" size={16} />
+                Experience
+              </h3>
+              {isEditing && (
+                <button
+                  onClick={() =>
+                    onArrayAdd("experiences", {
+                      id: null, // Use null for new entries to align with backend
+                      company: "",
+                      role: "",
+                      start_date: "",
+                      end_date: "",
+                      description: "",
+                      certificate: null,
+                    })
+                  }
+                  className="flex items-center gap-1 bg-green-500/20 hover:bg-green-500/30 px-2 sm:px-3 py-1 rounded-lg text-right text-green-300 text-xs sm:text-sm transition-colors"
+                >
+                  <Plus size={12} />
+                  Add Experience
+                </button>
+              )}
+            </div>
+            <div className="space-y-4">
+              {(isEditing ? editData.experiences : profileData.experiences || []).map((exp, idx) => {
+                // Log each experience for debugging
+                console.log("Rendering experience:", exp);
+                return (
+                  <div
+                    key={exp.id || idx}
+                    className="p-3 sm:p-4 bg-white/5 rounded-xl border border-white/10 flex flex-col gap-2"
+                  >
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <EditableField
+                        label="Company"
+                        value={exp.company}
+                        field={`experiences:${idx}:company`}
+                        isEditing={isEditing}
+                        onChange={onInputChange}
+                        error={fieldErrors[`experiences:${idx}:company`]}
+                      />
+                      <EditableField
+                        label="Role"
+                        value={exp.role}
+                        field={`experiences:${idx}:role`}
+                        isEditing={isEditing}
+                        onChange={onInputChange}
+                        error={fieldErrors[`experiences:${idx}:role`]}
+                      />
+                      <EditableField
+                        label="Start Date (YYYY-MM-DD)"
+                        value={exp.start_date}
+                        field={`experiences:${idx}:start_date`}
+                        isEditing={isEditing}
+                        onChange={onInputChange}
+                        error={fieldErrors[`experiences:${idx}:start_date`]}
+                      />
+                      <EditableField
+                        label="End Date (YYYY-MM-DD)"
+                        value={exp.end_date}
+                        field={`experiences:${idx}:end_date`}
+                        isEditing={isEditing}
+                        onChange={onInputChange}
+                        error={fieldErrors[`experiences:${idx}:end_date`]}
+                      />
+                      <div className="md:col-span-2">
+                        <EditableField
+                          label="Description"
+                          value={exp.description}
+                          field={`experiences:${idx}:description`}
+                          isTextarea={true}
+                          isEditing={isEditing}
+                          onChange={onInputChange}
+                          error={fieldErrors[`experiences:${idx}:description`]}
+                        />
+                      </div>
+                      <div className="md:col-span-2">
+                        <div className="flex flex-col gap-2">
+                          <label className="text-white/70 text-sm mb-1 block">Certificate</label>
+                          {renderCertificate(exp.certificate, idx, "experiences", isEditing, onInputChange, fieldErrors)}
+                        </div>
+                      </div>
+                    </div>
+                    {isEditing && (
+                      <button
+                        onClick={() => onArrayRemove("experiences", idx)}
+                        className="bg-red-600/30 hover:bg-red-600/40 px-3 py-1 rounded text-red-300 text-xs sm:text-sm flex items-center gap-1 mt-2 ml-auto"
+                      >
+                        <Trash2 size={12} /> Remove
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         {activeTab === "portfolio" && (
           <div>
             <div className="flex items-center justify-between mb-4">
@@ -754,7 +728,7 @@ const ProfileSection = ({
                 <button
                   onClick={() =>
                     onArrayAdd("portfolios", {
-                      id: Date.now(),
+                      id: null, // Use null for new entries
                       title: "",
                       description: "",
                       project_link: "",

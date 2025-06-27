@@ -57,19 +57,25 @@ const FreelancerDashboard = () => {
         headers: { Authorization: `Bearer ${token}` },
       })
       .then((res) => {
-        console.log('API Response:', res.data);
+        console.log("API Response:", res.data);
         const profile = Array.isArray(res.data) ? res.data[0] : res.data;
         if (profile) {
           const normalizedProfile = {
             ...profile,
             educations: (profile.educations || []).map((edu) => ({
               ...edu,
+              id: edu.id || null,
               year: String(edu.year || ""),
-              certificate: null,
+              certificate: edu.certificate || null,
             })),
-            experiences: (profile.experiences || []).map(exp => ({
+            experiences: (profile.experiences || []).map((exp) => ({
               ...exp,
-              certificate: null,
+              id: exp.id || null,
+              certificate: exp.certificate || null,
+            })),
+            portfolios: (profile.portfolios || []).map((item) => ({
+              ...item,
+              id: item.id || null,
             })),
           };
           setProfileData(normalizedProfile);
@@ -128,7 +134,8 @@ const FreelancerDashboard = () => {
 
   // Map frontend to backend format
   const mapFrontendToBackend = (frontendData) => {
-    return {
+    const formData = new FormData();
+    const mappedData = {
       first_name: String(frontendData.first_name || ""),
       last_name: String(frontendData.last_name || ""),
       about: String(frontendData.about || ""),
@@ -139,37 +146,75 @@ const FreelancerDashboard = () => {
         name: String(skill.name || ""),
       })).filter((skill) => skill.name.trim()),
       educations: (frontendData.educations || []).map((edu) => ({
+        id: edu.id || null,
         college: String(edu.college || ""),
         degree: String(edu.degree || ""),
         year: String(edu.year || ""),
-        certificate: null,
+        certificate: typeof edu.certificate === "string" ? edu.certificate : null,
       })).filter((edu) => edu.college.trim() || edu.degree.trim() || edu.year.trim()),
       experiences: (frontendData.experiences || []).map((exp) => ({
+        id: exp.id || null,
         role: String(exp.role || ""),
         company: String(exp.company || ""),
         start_date: String(exp.start_date || ""),
         end_date: exp.end_date ? String(exp.end_date) : null,
         description: String(exp.description || ""),
-        certificate: null,
+        certificate: typeof exp.certificate === "string" ? exp.certificate : null,
       })).filter((exp) => exp.role.trim() || exp.company.trim()),
       languages: (frontendData.languages || []).map((lang) => ({
         name: String(lang.name || ""),
         proficiency: String(lang.proficiency || ""),
       })).filter((lang) => lang.name.trim()),
       portfolios: (frontendData.portfolios || []).map((item) => ({
+        id: item.id || null,
         title: String(item.title || ""),
         description: String(item.description || ""),
         project_link: String(item.project_link || ""),
       })).filter((item) => item.title.trim() || item.project_link.trim()),
       social_links: {
-        github_url: frontendData.social_links?.github_url || "",
-        linkedin_url: frontendData.social_links?.linkedin_url || "",
-        twitter_url: frontendData.social_links?.twitter_url || "",
-        facebook_url: frontendData.social_links?.facebook_url || "",
-        instagram_url: frontendData.social_links?.instagram_url || ""
-      }
-
+        github_url: String(frontendData.social_links?.github_url || ""),
+        linkedin_url: String(frontendData.social_links?.linkedin_url || ""),
+        twitter_url: String(frontendData.social_links?.twitter_url || ""),
+        facebook_url: String(frontendData.social_links?.facebook_url || ""),
+        instagram_url: String(frontendData.social_links?.instagram_url || ""),
+      },
     };
+
+    // Log mapped data
+    console.log("Mapped data:", JSON.stringify(mappedData, null, 2));
+
+    // Append JSON data
+    formData.append("data", JSON.stringify(mappedData));
+
+    // Append education certificates
+    frontendData.educations.forEach((edu, index) => {
+      if (edu.certificate instanceof File) {
+        console.log(`Appending education_certificate_${index}:`, edu.certificate.name);
+        formData.append(`education_certificate_${index}`, edu.certificate);
+      }
+    });
+
+    // Append experience certificates
+    frontendData.experiences.forEach((exp, index) => {
+      if (exp.certificate instanceof File) {
+        console.log(`Appending experience_certificate_${index}:`, exp.certificate.name);
+        formData.append(`experience_certificate_${index}`, exp.certificate);
+      }
+    });
+
+    // Append profile picture
+    if (frontendData.profile_picture instanceof File) {
+      console.log("Appending profile_picture:", frontendData.profile_picture.name);
+      formData.append("profile_picture", frontendData.profile_picture);
+    }
+
+    // Log FormData entries
+    console.log("FormData entries:");
+    for (let [key, value] of formData.entries()) {
+      console.log(`${key}: ${value instanceof File ? value.name : value}`);
+    }
+
+    return formData;
   };
 
   function isValidUrl(url) {
@@ -191,7 +236,10 @@ const FreelancerDashboard = () => {
     if (!data.skills?.length || data.skills.some((s) => !s.name?.trim())) {
       errors.skills = "At least one valid skill is required";
     }
-    if (!data.educations?.length || data.educations.some((e) => !e.college?.trim() || !e.degree?.trim() || !e.year?.trim())) {
+    if (
+      !data.educations?.length ||
+      data.educations.some((e) => !e.college?.trim() || !e.degree?.trim() || !e.year?.trim())
+    ) {
       errors.educations = "At least one valid education entry is required";
       data.educations.forEach((edu, idx) => {
         if (!edu.college?.trim()) errors[`educations:${idx}:college`] = "College is required";
@@ -199,7 +247,10 @@ const FreelancerDashboard = () => {
         if (!edu.year?.trim()) errors[`educations:${idx}:year`] = "Year is required";
       });
     }
-    if (!data.experiences?.length || data.experiences.some((e) => !e.company?.trim() || !e.role?.trim() || !e.start_date?.trim())) {
+    if (
+      !data.experiences?.length ||
+      data.experiences.some((e) => !e.company?.trim() || !e.role?.trim() || !e.start_date?.trim())
+    ) {
       errors.experiences = "At least one valid experience entry is required";
       data.experiences.forEach((exp, idx) => {
         if (!exp.company?.trim()) errors[`experiences:${idx}:company`] = "Company is required";
@@ -207,14 +258,20 @@ const FreelancerDashboard = () => {
         if (!exp.start_date?.trim()) errors[`experiences:${idx}:start_date`] = "Start date is required";
       });
     }
-    if (!data.languages?.length || data.languages.some((l) => !l.name?.trim() || !l.proficiency?.trim())) {
+    if (
+      !data.languages?.length ||
+      data.languages.some((l) => !l.name?.trim() || !l.proficiency?.trim())
+    ) {
       errors.languages = "At least one valid language is required";
       data.languages.forEach((lang, idx) => {
         if (!lang.name?.trim()) errors[`languages:${idx}:name`] = "Language name is required";
         if (!lang.proficiency?.trim()) errors[`languages:${idx}:proficiency`] = "Proficiency is required";
       });
     }
-    if (!data.portfolios?.length || data.portfolios.some((p) => !p.title?.trim() || !p.project_link?.trim())) {
+    if (
+      !data.portfolios?.length ||
+      data.portfolios.some((p) => !p.title?.trim() || !p.project_link?.trim())
+    ) {
       errors.portfolios = "At least one valid portfolio is required";
       data.portfolios.forEach((pf, idx) => {
         if (!pf.title?.trim()) errors[`portfolios:${idx}:title`] = "Project title is required";
@@ -223,13 +280,13 @@ const FreelancerDashboard = () => {
     }
     if (data.social_links) {
       const socialKeys = [
-        'github_url',
-        'linkedin_url',
-        'twitter_url',
-        'facebook_url',
-        'instagram_url'
+        "github_url",
+        "linkedin_url",
+        "twitter_url",
+        "facebook_url",
+        "instagram_url",
       ];
-      socialKeys.forEach(key => {
+      socialKeys.forEach((key) => {
         const value = data.social_links[key];
         if (value && !isValidUrl(value)) {
           errors[`social_links.${key}`] = "Please enter a valid URL.";
@@ -257,56 +314,19 @@ const FreelancerDashboard = () => {
     }
 
     try {
-      const backendData = mapFrontendToBackend(editData);
-      const jsonString = JSON.stringify(backendData);
-      console.log("JSON string:", jsonString);
+      const formData = mapFrontendToBackend(editData);
+      console.log("Sending FormData:", formData);
 
-      const hasFiles =
-        editData.profile_picture instanceof File ||
-        editData.educations.some((edu) => edu.certificate instanceof File) ||
-        editData.experiences.some((exp) => exp.certificate instanceof File);
-
-      let response;
-      if (hasFiles) {
-        // Use FormData for file uploads
-        const formData = new FormData();
-        formData.append("data", jsonString);
-
-        if (editData.profile_picture instanceof File) {
-          formData.append("profile_picture", editData.profile_picture);
+      const response = await axios.put(
+        `http://localhost:8000/api/v1/profiles/freelancer/profile-setup/${profileId}/`,
+        formData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "multipart/form-data",
+          },
         }
-        editData.educations.forEach((edu, index) => {
-          if (edu.certificate instanceof File) {
-            formData.append(`education_certificate_${index}`, edu.certificate);
-          }
-        });
-        editData.experiences.forEach((exp, index) => {
-          if (exp.certificate instanceof File) {
-            formData.append(`experience_certificate_${index}`, exp.certificate);
-          }
-        });
-
-        // Log FormData
-        const formDataDebug = {};
-        for (let [key, value] of formData.entries()) {
-          formDataDebug[key] = value instanceof File ? value.name : value;
-        }
-        console.log("FormData payload:", formDataDebug);
-
-        response = await axios.put(
-          `http://localhost:8000/api/v1/profiles/freelancer/profile-setup/${profileId}/`,
-          formData,
-          { headers: { Authorization: `Bearer ${token}`, "Content-Type": "multipart/form-data" } }
-        );
-      } else {
-        // Use JSON for non-file updates
-        console.log("JSON payload:", backendData);
-        response = await axios.put(
-          `http://localhost:8000/api/v1/profiles/freelancer/profile-setup/${profileId}/`,
-          backendData,
-          { headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" } }
-        );
-      }
+      );
 
       console.log("Response data:", response.data);
       console.log("Experiences:", response.data.experiences);
@@ -315,20 +335,26 @@ const FreelancerDashboard = () => {
         ...response.data,
         educations: (response.data.educations || []).map((edu) => ({
           ...edu,
+          id: edu.id || null,
           year: String(edu.year || ""),
-          certificate: edu.certificate || null
+          certificate: edu.certificate || null,
         })),
         experiences: (response.data.experiences || []).map((exp) => ({
           ...exp,
-          certificate: exp.certificate || null
+          id: exp.id || null,
+          certificate: exp.certificate || null,
+        })),
+        portfolios: (response.data.portfolios || []).map((item) => ({
+          ...item,
+          id: item.id || null,
         })),
         social_links: response.data.social_links || {
           github_url: "",
           linkedin_url: "",
           twitter_url: "",
           facebook_url: "",
-          instagram_url: ""
-        }
+          instagram_url: "",
+        },
       };
       setProfileData(normalizedResponse);
       setEditData(normalizedResponse);
@@ -341,8 +367,16 @@ const FreelancerDashboard = () => {
         const backendErrors = {};
         Object.keys(err.response.data).forEach((key) => {
           if (Array.isArray(err.response.data[key])) {
-            backendErrors[key] = err.response.data[key][0];
-          } else if (typeof err.response.data[key] === "object") {
+            err.response.data[key].forEach((item, index) => {
+              if (typeof item === "object" && item !== null) {
+                Object.entries(item).forEach(([subKey, value]) => {
+                  backendErrors[`${key}:${index}:${subKey}`] = Array.isArray(value) ? value[0] : value;
+                });
+              } else {
+                backendErrors[`${key}:${index}`] = item;
+              }
+            });
+          } else if (typeof err.response.data[key] === "object" && err.response.data[key] !== null) {
             Object.entries(err.response.data[key]).forEach(([subKey, value]) => {
               backendErrors[`${key}:${subKey}`] = Array.isArray(value) ? value[0] : value;
             });
@@ -360,7 +394,6 @@ const FreelancerDashboard = () => {
       }
     }
   };
-
 
   const handleCancel = () => {
     setEditData({ ...profileData });
