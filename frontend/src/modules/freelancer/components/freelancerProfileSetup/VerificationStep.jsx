@@ -22,9 +22,16 @@ export default function VerificationStep({
                         <div className="flex items-center">
                             <input
                                 type="checkbox"
-                                checked={freelancerData.emailVerified}
-                                onChange={(e) => setFreelancerData(prev => ({ ...prev, emailVerified: e.target.checked }))}
-                                className="w-4 h-4 text-blue-600 bg-white/10 border-white/20 rounded focus:ring-blue-500"
+                                checked={freelancerData?.verifications?.email_verified ?? false}
+                                onChange={(e) =>
+                                    setFreelancerData((prev) => ({
+                                        ...prev,
+                                        verifications: {
+                                            ...prev.verifications,
+                                            email_verified: e.target.checked,
+                                        },
+                                    }))
+                                }
                             />
                         </div>
                     </div>
@@ -39,8 +46,16 @@ export default function VerificationStep({
                         <div className="flex items-center">
                             <input
                                 type="checkbox"
-                                checked={freelancerData.phoneVerified}
-                                onChange={(e) => setFreelancerData(prev => ({ ...prev, phoneVerified: e.target.checked }))}
+                                checked={freelancerData?.verifications?.phone_verified || false}
+                                onChange={(e) =>
+                                    setFreelancerData((prev) => ({
+                                        ...prev,
+                                        verifications: {
+                                            ...prev.verifications,
+                                            phone_verified: e.target.checked,
+                                        },
+                                    }))
+                                }
                                 className="w-4 h-4 text-blue-600 bg-white/10 border-white/20 rounded focus:ring-blue-500"
                             />
                         </div>
@@ -56,8 +71,16 @@ export default function VerificationStep({
                         <div className="flex items-center">
                             <input
                                 type="checkbox"
-                                checked={freelancerData.idVerified}
-                                onChange={(e) => setFreelancerData(prev => ({ ...prev, idVerified: e.target.checked }))}
+                                checked={freelancerData?.verifications?.id_verified || false}
+                                onChange={(e) =>
+                                    setFreelancerData((prev) => ({
+                                        ...prev,
+                                        verifications: {
+                                            ...prev.verifications,
+                                            id_verified: e.target.checked,
+                                        },
+                                    }))
+                                }
                                 className="w-4 h-4 text-blue-600 bg-white/10 border-white/20 rounded focus:ring-blue-500"
                             />
                         </div>
@@ -73,8 +96,16 @@ export default function VerificationStep({
                         <div className="flex items-center">
                             <input
                                 type="checkbox"
-                                checked={freelancerData.videoVerified}
-                                onChange={(e) => setFreelancerData(prev => ({ ...prev, videoVerified: e.target.checked }))}
+                                checked={freelancerData?.verifications?.video_verified || false}
+                                onChange={(e) =>
+                                    setFreelancerData((prev) => ({
+                                        ...prev,
+                                        verifications: {
+                                            ...prev.verifications,
+                                            video_verified: e.target.checked,
+                                        },
+                                    }))
+                                }
                                 className="w-4 h-4 text-blue-600 bg-white/10 border-white/20 rounded focus:ring-blue-500"
                             />
                         </div>

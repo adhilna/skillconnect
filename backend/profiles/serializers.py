@@ -1,41 +1,15 @@
 from rest_framework import serializers
 from django.db import transaction
 from .models import (
-    FreelancerProfile, ClientProfile, Skill, Verification, Education,
+    FreelancerProfile, ClientProfile, Verification, Education,
     Experience, Language, Portfolio, SocialLinks
 )
+from core.models import Skill
 from django.core.files.uploadedfile import InMemoryUploadedFile, TemporaryUploadedFile
 from django.core.validators import URLValidator
 from rest_framework.exceptions import ValidationError
+from .constants import ALLOWED_INDUSTRIES, ALLOWED_COMPANY_SIZES
 
-# ----------------------------
-# SHARED / RELATED SERIALIZERS
-# ----------------------------
-
-# class CustomCertificateField(serializers.Field):
-#     def to_internal_value(self, data):
-#         print(f"CustomCertificateField to_internal_value: {data} ({type(data)})")
-#         if data is None:
-#             return None
-#         if isinstance(data, (InMemoryUploadedFile, TemporaryUploadedFile)):
-#             return data
-#         if isinstance(data, str):
-#             # Validate URL
-#             validator = URLValidator()
-#             try:
-#                 validator(data)
-#                 return data
-#             except ValidationError:
-#                 raise serializers.ValidationError({"certificate": "Invalid URL format"})
-#         raise serializers.ValidationError({"certificate": f"Invalid certificate value: {data}"})
-
-#     def to_representation(self, value):
-#         print(f"CustomCertificateField to_representation: {value} ({type(value)})")
-#         if isinstance(value, str):
-#             return value
-#         if value and hasattr(value, 'url'):
-#             return value.url
-#         return None
 
 class SkillSerializer(serializers.ModelSerializer):
     class Meta:
@@ -73,7 +47,7 @@ class ExperienceSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Experience
-        fields = ['id', 'company', 'role', 'start_date', 'end_date', 'description', 'certificate']
+        fields = ['id', 'company', 'role', 'start_date', 'end_date', 'ongoing', 'description', 'certificate']
 
     def to_internal_value(self, data):
         print(f"Experience data: {data}")
@@ -114,13 +88,42 @@ class SocialLinksSerializer(serializers.ModelSerializer):
 
 class FreelancerProfileSerializer(serializers.ModelSerializer):
     user = serializers.PrimaryKeyRelatedField(read_only=True)
-    skills = SkillSerializer(many=True)
+    skills = serializers.ListField(
+        child=serializers.CharField(),  # Accept list of skill names
+        write_only=True
+    )
     educations = EducationSerializer(many=True, required=False)
     experiences = ExperienceSerializer(many=True, required=False)
     languages = LanguageSerializer(many=True)
     portfolios = PortfolioSerializer(many=True)
-    verifications = VerificationSerializer(read_only=True)
-    social_links = SocialLinksSerializer(read_only=True)
+    verifications = VerificationSerializer()
+    social_links = SocialLinksSerializer()
+
+    def validate_first_name(self, value):
+        if not value.isalpha():
+            raise serializers.ValidationError("First name must contain only letters.")
+        return value
+
+    def validate_last_name(self, value):
+        if not value.isalpha():
+            raise serializers.ValidationError("Last name must contain only letters.")
+        return value
+
+    def validate_age(self, value):
+        if value is not None and (value < 18 or value > 120):
+            raise serializers.ValidationError("Age must be between 18 and 120.")
+        return value
+
+    def validate_social_links(self, value):
+        validator = URLValidator()
+        for field in ['github_url', 'linkedin_url']:
+            url = value.get(field)
+            if url:
+                try:
+                    validator(url)
+                except ValidationError:
+                    raise serializers.ValidationError({field: 'Invalid URL'})
+        return value
 
     class Meta:
         model = FreelancerProfile
@@ -145,17 +148,6 @@ class FreelancerProfileSerializer(serializers.ModelSerializer):
             'social_links'
         ]
 
-    ALLOWED_INDUSTRIES = [
-        'Technology', 'Healthcare', 'Finance', 'Education', 'E-commerce', 'Real Estate',
-        'Marketing & Advertising', 'Manufacturing', 'Food & Beverage', 'Fashion',
-        'Travel & Tourism', 'Non-profit', 'Entertainment', 'Consulting', 'Other'
-    ]
-
-    ALLOWED_COMPANY_SIZES = [
-        'Just me (1)', 'Small team (2-10)', 'Growing business (11-50)',
-        'Medium company (51-200)', 'Large enterprise (200+)'
-    ]
-
     @transaction.atomic
     def create(self, validated_data):
         skills_data = validated_data.pop('skills', [])
@@ -163,12 +155,19 @@ class FreelancerProfileSerializer(serializers.ModelSerializer):
         experiences_data = validated_data.pop('experiences', [])
         languages_data = validated_data.pop('languages', [])
         portfolios_data = validated_data.pop('portfolios', [])
-        social_links_data = validated_data.pop('social_links', None)
+        social_links_data = validated_data.pop('social_links', {})
+        verifications_data = validated_data.pop('verifications', {})
 
-        profile = FreelancerProfile.objects.create(**validated_data)
+        user = self.context['request'].user
+        profile = FreelancerProfile.objects.create(user=user, **validated_data)
+
+        SocialLinks.objects.create(user=user, **social_links_data)
+        verification = Verification.objects.create(**verifications_data)
+        profile.verification = verification
+        profile.save()
 
         for skill in skills_data:
-            skill_obj, _ = Skill.objects.get_or_create(**skill)
+            skill_obj, _ = Skill.objects.get_or_create(name=skill.strip())
             profile.skills.add(skill_obj)
 
         # FK: Educations
@@ -187,9 +186,6 @@ class FreelancerProfileSerializer(serializers.ModelSerializer):
         for port in portfolios_data:
             Portfolio.objects.create(profile=profile, **port)
 
-        if social_links_data:
-            SocialLinks.objects.create(profile=profile, **social_links_data)
-
         return profile
 
     @transaction.atomic
@@ -200,6 +196,7 @@ class FreelancerProfileSerializer(serializers.ModelSerializer):
         languages_data = validated_data.pop('languages', [])
         portfolios_data = validated_data.pop('portfolios', [])
         social_links_data = validated_data.pop('social_links', {})
+        verifications_data = validated_data.pop('verifications', {})
 
         # Update direct fields
         for attr, value in validated_data.items():
@@ -209,32 +206,18 @@ class FreelancerProfileSerializer(serializers.ModelSerializer):
         # Update ManyToMany: Skills
         instance.skills.clear()
         for skill in skills_data:
-            skill_obj, _ = Skill.objects.get_or_create(**skill)
+            skill_obj, _ = Skill.objects.get_or_create(name=skill.strip())
             instance.skills.add(skill_obj)
 
         # Update educations
-        instance.educations.all().delete()  # Clear existing
+        instance.educations.all().delete()
         for edu_data in educations_data:
-            certificate = edu_data.pop('certificate', None)
-            education = Education.objects.create(profile=instance, **edu_data)
-            if certificate and isinstance(certificate, (InMemoryUploadedFile, TemporaryUploadedFile)):
-                education.certificate = certificate
-                education.save()
-            elif isinstance(certificate, str):
-                education.certificate = certificate
-                education.save()
+            Education.objects.create(profile=instance, **edu_data)
 
         # Update experiences
-        instance.experiences.all().delete()  # Clear existing
+        instance.experiences.all().delete()
         for exp_data in experiences_data:
-            certificate = exp_data.pop('certificate', None)
-            experience = Experience.objects.create(profile=instance, **exp_data)
-            if certificate and isinstance(certificate, (InMemoryUploadedFile, TemporaryUploadedFile)):
-                experience.certificate = certificate
-                experience.save()
-            elif isinstance(certificate, str):
-                experience.certificate = certificate
-                experience.save()
+            Experience.objects.create(profile=instance, **exp_data)
 
         # Update FK: Languages
         instance.languages.all().delete()
@@ -250,9 +233,13 @@ class FreelancerProfileSerializer(serializers.ModelSerializer):
         if social_links_data:
             SocialLinks.objects.update_or_create(profile=instance, defaults=social_links_data)
 
-        for attr, value in validated_data.items():
-            setattr(instance, attr, value)
-        instance.save()
+        if verifications_data:
+            if instance.verification:
+                VerificationSerializer().update(instance.verification, verifications_data)
+            else:
+                verification = Verification.objects.create(**verifications_data)
+                instance.verification = verification
+                instance.save()
         return instance
 
 class ClientProfileSerializer(serializers.ModelSerializer):
@@ -322,17 +309,13 @@ class ClientProfileSerializer(serializers.ModelSerializer):
         return value
 
     def validate_industry(self, value):
-        if value not in ClientProfileSerializer.ALLOWED_INDUSTRIES:
-            raise serializers.ValidationError(
-                f"Industry must be one of: {', '.join(ClientProfileSerializer.ALLOWED_INDUSTRIES)}"
-            )
+        if value not in ALLOWED_INDUSTRIES:
+            raise serializers.ValidationError(f"Industry must be one of: {', '.join(ALLOWED_INDUSTRIES)}")
         return value
 
     def validate_company_size(self, value):
-        if value not in ClientProfileSerializer.ALLOWED_COMPANY_SIZES:
-            raise serializers.ValidationError(
-                f"Company size must be one of: {', '.join(ClientProfileSerializer.ALLOWED_COMPANY_SIZES)}"
-            )
+        if value not in ALLOWED_COMPANY_SIZES:
+            raise serializers.ValidationError(f"Company size must be one of: {', '.join(ALLOWED_COMPANY_SIZES)}")
         return value
 
 
@@ -373,16 +356,6 @@ class ClientProfileSerializer(serializers.ModelSerializer):
 
         read_only_fields = ['created_at', 'updated_at']
 
-    ALLOWED_INDUSTRIES = [
-        'Technology', 'Healthcare', 'Finance', 'Education', 'E-commerce', 'Real Estate',
-        'Marketing & Advertising', 'Manufacturing', 'Food & Beverage', 'Fashion',
-        'Travel & Tourism', 'Non-profit', 'Entertainment', 'Consulting', 'Other'
-    ]
-
-    ALLOWED_COMPANY_SIZES = [
-        'Just me (1)', 'Small team (2-10)', 'Growing business (11-50)',
-        'Medium company (51-200)', 'Large enterprise (200+)'
-    ]
 
     @transaction.atomic
     def create(self, validated_data):
@@ -401,5 +374,10 @@ class ClientProfileSerializer(serializers.ModelSerializer):
             setattr(instance, attr, value)
         instance.save()
         if verification_data:
-            Verification.objects.update_or_create(profile=instance, defaults=verification_data)
+            if instance.verification:
+                VerificationSerializer().update(instance.verification, verification_data)
+            else:
+                verification = Verification.objects.create(**verification_data)
+                instance.verification = verification
+                instance.save()
         return instance

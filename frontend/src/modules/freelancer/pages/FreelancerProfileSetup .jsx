@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { User, Target, Code, Globe, CheckCircle, Shield, Link } from 'lucide-react';
@@ -46,8 +46,6 @@ function mapFrontendToBackend(frontendData) {
             title: item.title,
             description: item.description,
             project_link: item.link,
-            github_url: item.github_url || '',
-            linkedin_url: item.linkedin_url || ''
         })),
         social_links: {
             github_url: frontendData.social_links?.github_url || '',
@@ -81,6 +79,7 @@ export default function FreelancerProfileSetup() {
         age: '',
         about: '',
         profile_picture: null,
+        profile_picture_preview: null,
 
         // Professional Details
         skills: [],
@@ -103,10 +102,12 @@ export default function FreelancerProfileSetup() {
         },
 
         // Verification
-        emailVerified: false,
-        phoneVerified: false,
-        idVerified: false,
-        videoVerified: false,
+        verifications: {
+            email_verified: false,
+            phone_verified: false,
+            id_verified: false,
+            video_verified: false,
+        },
 
         // Availability
         isAvailable: true
@@ -152,7 +153,7 @@ export default function FreelancerProfileSetup() {
         } else {
             setFreelancerData(prev => ({
                 ...prev,
-                [name]: type === 'checkbox' ? checked : value
+                [name]: type === 'checkbox' ? checked : name === 'age' ? Number(value) || value : value
             }));
         }
     };
@@ -263,8 +264,18 @@ export default function FreelancerProfileSetup() {
     const handleImageUpload = (e) => {
         const file = e.target.files?.[0];
         if (file) {
+            if (file.size > 5 * 1024 * 1024) {
+                setErrors({ profile_picture: 'File size must be less than 5MB' });
+                return;
+            }
+            if (!['image/jpeg', 'image/png'].includes(file.type)) {
+                setErrors({ profile_picture: 'Only JPEG or PNG files are allowed' });
+                return;
+            }
+            if (freelancerData.profile_picture_preview) {
+                URL.revokeObjectURL(freelancerData.profile_picture_preview);
+            }
             const previewUrl = URL.createObjectURL(file);
-
             setFreelancerData(prev => ({
                 ...prev,
                 profile_picture: file,
@@ -274,22 +285,50 @@ export default function FreelancerProfileSetup() {
     };
 
     const handleEducationCertificateUpload = (index, file) => {
-        setFreelancerData(prev => ({
-            ...prev,
-            education: prev.education.map((edu, i) =>
-                i === index ? { ...edu, certificate: file } : edu
-            )
-        }));
+        if (file) {
+            if (file.size > 5 * 1024 * 1024) {
+                setErrors({ [`education_certificate_${index}`]: 'File size must be less than 5MB' });
+                return;
+            }
+            if (!['application/pdf', 'image/jpeg', 'image/png'].includes(file.type)) {
+                setErrors({ [`education_certificate_${index}`]: 'Only PDF, JPEG, or PNG files are allowed' });
+                return;
+            }
+            setFreelancerData(prev => ({
+                ...prev,
+                education: prev.education.map((edu, i) =>
+                    i === index ? { ...edu, certificate: file } : edu
+                )
+            }));
+        }
     };
 
     const handleExperienceCertificateUpload = (index, file) => {
-        setFreelancerData(prev => ({
-            ...prev,
-            experience: prev.experience.map((exp, i) =>
-                i === index ? { ...exp, certificate: file } : exp
-            )
-        }));
+        if (file) {
+            if (file.size > 5 * 1024 * 1024) {
+                setErrors({ [`experience_certificate_${index}`]: 'File size must be less than 5MB' });
+                return;
+            }
+            if (!['application/pdf', 'image/jpeg', 'image/png'].includes(file.type)) {
+                setErrors({ [`experience_certificate_${index}`]: 'Only PDF, JPEG, or PNG files are allowed' });
+                return;
+            }
+            setFreelancerData(prev => ({
+                ...prev,
+                experience: prev.experience.map((exp, i) =>
+                    i === index ? { ...exp, certificate: file } : exp
+                )
+            }));
+        }
     };
+
+    useEffect(() => {
+        return () => {
+            if (freelancerData.profile_picture_preview) {
+                URL.revokeObjectURL(freelancerData.profile_picture_preview);
+            }
+        };
+    }, [freelancerData.profile_picture_preview]);
 
 
     const nextStep = () => setFormStep(prev => prev + 1);
@@ -297,15 +336,14 @@ export default function FreelancerProfileSetup() {
 
     const validateStep = () => {
         const newErrors = {};
-        console.log('Validating step:', formStep);
 
         switch (formStep) {
             case 0:
                 if (!freelancerData.first_name) newErrors.first_name = 'First name is required';
                 if (!freelancerData.last_name) newErrors.last_name = 'Last name is required';
                 if (!freelancerData.location) newErrors.location = 'Location is required';
-                if (!freelancerData.age || isNaN(freelancerData.age)) {
-                    newErrors.age = 'Valid age is required';
+                if (!freelancerData.age || isNaN(freelancerData.age) || freelancerData.age < 18) {
+                    newErrors.age = 'Valid age (18 or older) is required';
                 }
                 if (!freelancerData.about) newErrors.about = 'Bio is required';
                 break;
@@ -314,6 +352,18 @@ export default function FreelancerProfileSetup() {
                 if (!freelancerData.skills || freelancerData.skills.length === 0) {
                     newErrors.skills = 'Select at least one skill';
                 }
+                freelancerData.experience.forEach((exp, index) => {
+                    if (!exp.role) newErrors[`experience_${index}_role`] = 'Role is required';
+                    if (!exp.company) newErrors[`experience_${index}_company`] = 'Company is required';
+                    if (!exp.start_date) newErrors[`experience_${index}_start_date`] = 'Start date is required';
+                    if (!exp.ongoing && !exp.end_date) newErrors[`experience_${index}_end_date`] = 'End date is required unless ongoing';
+                    if (exp.ongoing && exp.end_date) newErrors[`experience_${index}_end_date`] = 'End date should not be set if ongoing';
+                });
+                freelancerData.education.forEach((edu, index) => {
+                    if (!edu.degree) newErrors[`education_${index}_degree`] = 'Degree is required';
+                    if (!edu.college) newErrors[`education_${index}_college`] = 'College is required';
+                    if (!edu.year || isNaN(edu.year)) newErrors[`education_${index}_year`] = 'Valid year is required';
+                });
                 break;
 
             case 2:
@@ -321,22 +371,26 @@ export default function FreelancerProfileSetup() {
                     newErrors.languages = 'Add at least one language';
                 } else {
                     freelancerData.languages.forEach((lang, index) => {
-                        if (!lang.name) {
-                            newErrors[`language_${index}_name`] = 'Language name is required';
-                        }
-                        if (!lang.proficiency) {
-                            newErrors[`language_${index}_proficiency`] = 'Proficiency level is required';
-                        }
+                        if (!lang.name) newErrors[`language_${index}_name`] = 'Language name is required';
+                        if (!lang.proficiency) newErrors[`language_${index}_proficiency`] = 'Proficiency level is required';
                     });
                 }
                 break;
 
+
             case 5:
-                if (!freelancerData.emailVerified) newErrors.emailVerified = 'Email verification is required';
+                if (!freelancerData.verifications.email_verified) {
+                    newErrors.email_verified = 'Email verification is required';
+                }
+                break;
+
+            case 6:
+                if (typeof freelancerData.isAvailable !== 'boolean') {
+                    newErrors.isAvailable = 'Availability status is required';
+                }
                 break;
 
             default:
-                // Optionally handle unknown steps
                 break;
         }
 
@@ -345,31 +399,91 @@ export default function FreelancerProfileSetup() {
     };
 
 
+    console.log("formStep:", formStep, "steps.length:", steps.length);
+    console.log("HANDLE NEXT -- formStep:", formStep, "/", steps.length - 1);
+
 
     const handleNext = () => {
-        if (validateStep()) {
+        const isValid = validateStep();
+        console.log("validateStep result:", isValid);
+
+        if (isValid) {
             if (formStep < steps.length - 1) {
                 nextStep();
             } else {
+                console.log("Calling handleSubmit...");
                 handleSubmit();
             }
+        } else {
+            console.warn("Step validation failed. Submission stopped.");
         }
     };
+
 
     const handleSubmit = async () => {
         setLoading(true);
         setErrors(null);
         setFieldErrors({});
 
+        console.log("Starting submission...");
+
         try {
             const backendData = mapFrontendToBackend(freelancerData);
+            console.log("Mapped backendData:", backendData);
+
+            // Prepare education and experience data (excluding certificates)
             // eslint-disable-next-line no-unused-vars
-            const educationsData = backendData.educations.map(({ certificate, ...rest }) => rest);
+            const educationsData = backendData.educations.map(({ certificate, ...rest }) => ({
+                ...rest,
+                year: parseInt(rest.year, 10) || rest.year, // Ensure year is an integer if valid
+            }));
             // eslint-disable-next-line no-unused-vars
             const experiencesData = backendData.experiences.map(({ certificate, ...rest }) => rest);
 
-            const formData = new FormData();
+            // Build payload object
+            const payload = {
+                first_name: backendData.first_name,
+                last_name: backendData.last_name,
+                about: backendData.about,
+                age: backendData.age,
+                location: backendData.location,
+                is_available: backendData.is_available,
+                skills: backendData.skills.map(skill => {
+                    if (typeof skill === 'string') return { name: skill };
+                    if (skill && typeof skill.name === 'string') return { name: skill.name };
+                    return {}; // fallback (or filter invalid ones separately)
+                }),
+                educations: educationsData,
+                experiences: experiencesData,
+                languages: backendData.languages.map(lang => ({
+                    ...lang,
+                    proficiency: lang.proficiency?.toLowerCase() || '',
+                })),
+                portfolios: backendData.portfolios.map(port => ({
+                    title: port.title,
+                    description: port.description,
+                    project_link: port.project_link
+                })),
+                social_links: backendData.social_links,
+                verifications: {
+                    email_verified: backendData.verifications.email_verified,
+                    phone_verified: backendData.verifications.phone_verified,
+                    id_verified: backendData.verifications.id_verified,
+                    video_verified: backendData.verifications.video_verified,
+                }
+            };
+            console.log("Payload ready:", payload);
+            console.log("Final skills payload:", payload.skills);
+            payload.skills.forEach((s, i) => {
+                console.log(`Skill ${i}:`, s, "typeof name:", typeof s.name);
+            });
 
+
+            // Construct FormData
+            const formData = new FormData();
+            formData.append('data', JSON.stringify(payload));
+
+            // Append profile picture if exists
             if (backendData.profile_picture) {
                 formData.append('profile_picture', backendData.profile_picture);
             }
@@ -387,64 +501,49 @@ export default function FreelancerProfileSetup() {
                     formData.append(`experience_certificate_${index}`, exp.certificate);
                 }
             });
-            const payload = {
-                first_name: backendData.first_name,
-                last_name: backendData.last_name,
-                about: backendData.about,
-                age: backendData.age,
-                location: backendData.location,
-                is_available: backendData.is_available,
-                skills: backendData.skills,
-                educations: educationsData.map(edu => ({
-                    ...edu,
-                    year: parseInt(edu.year) || edu.year, // Convert year to integer if possible
-                })),
-                experiences: experiencesData,
-                languages: backendData.languages.map(lang => ({
-                    ...lang,
-                    proficiency: lang.proficiency.toLowerCase(), // Convert proficiency to lowercase
-                })),
-                portfolios: backendData.portfolios,
-                social_links: backendData.social_links,
-                email_verified: backendData.verifications.email_verified,
-                phone_verified: backendData.verifications.phone_verified,
-                id_verified: backendData.verifications.id_verified,
-                video_verified: backendData.verifications.video_verified,
-            };
 
-            formData.append('data', JSON.stringify(payload));
+            // Optional: Debug log FormData (remove in production)
+            // for (let [key, value] of formData.entries()) {
+            //     console.log(`${key}:`, value);
+            // }
 
-
-            // Debug: log FormData entries
-            for (let pair of formData.entries()) {
-                console.log(pair[0] + ':', pair[1]);
-            }
-
-            // Retrieve authtoken from localStorage or context as needed
+            // API call
             const authtoken = localStorage.getItem('access');
 
-            await axios.post('http://localhost:8000/api/v1/profiles/freelancer/profile-setup/', formData, {
+            console.log("Auth token:", authtoken);
+
+            if (!authtoken) {
+                setErrors({ submit: 'User is not authenticated. Please log in.' });
+                setLoading(false);
+                return;
+            }
+            console.log("Sending API request...");
+            await axios.post(`http://localhost:8000/api/v1/profiles/freelancer/profile-setup/`, formData, {
                 headers: {
                     'Content-Type': 'multipart/form-data',
                     ...(authtoken && { Authorization: `Bearer ${authtoken}` }),
                 },
             });
 
-
+            // Success: clear errors and mark as completed
             setErrors(null);
             setFieldErrors({});
+            console.log('Profile submitted successfully');
             setIsCompleted(true);
+
         } catch (error) {
-            if (error.response && error.response.data) {
-                setFieldErrors(error.response.data);
-                setErrors('Failed to submit profile. ' + (error.message || 'Unknown error'));
+            console.log("Server response data:", error.response?.data);
+            const responseData = error.response?.data || {};
+            const errorMessage = error.response?.data?.detail || error.message || 'Unknown error';
 
+            setFieldErrors(responseData);
+            setErrors({ submit: `Failed to submit profile. ${errorMessage}` });
 
-            }
         } finally {
             setLoading(false);
         }
     };
+
 
 
 
@@ -502,33 +601,61 @@ export default function FreelancerProfileSetup() {
                         isAvailable: e.target.checked
                     }))
                 }
+                onComplete={() => setIsCompleted(true)}
             />;
             default: return null;
         }
     };
+    // console.log("isCompleted:", isCompleted);
 
     if (isCompleted) {
+        console.log("Rendering CompletionStep...");
         return (
             <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center p-4">
                 <div className="w-full max-w-4xl">
                     <CompletionStep
                         freelancerData={freelancerData}
                         onRestart={() => {
-                            setIsCompleted(false);
-                            setFormStep(0);
-                            setFreelancerData({
-                                fullName: '', locationName: '', latitude: '', longitude: '', bio: '',
-                                skills: [], experience: [], education: [], certifications: [],
-                                languages: [], portfolio: [],
-                                emailVerified: false, phoneVerified: false, idVerified: false, videoVerified: false,
-                                isAvailable: true
-                            });
+                            if (window.confirm('Are you sure you want to restart? All data will be lost.')) {
+                                setIsCompleted(false);
+                                setFormStep(0);
+                                setFreelancerData({
+                                    first_name: '',
+                                    last_name: '',
+                                    location: '',
+                                    age: '',
+                                    about: '',
+                                    profile_picture: null,
+                                    profile_picture_preview: null,
+                                    skills: [],
+                                    experience: [],
+                                    education: [],
+                                    languages: [],
+                                    portfolio: [],
+                                    social_links: {
+                                        github_url: '',
+                                        linkedin_url: '',
+                                        twitter_url: '',
+                                        facebook_url: '',
+                                        instagram_url: '',
+                                    },
+                                    verifications: {
+                                        email_verified: false,
+                                        phone_verified: false,
+                                        id_verified: false,
+                                        video_verified: false,
+                                    },
+                                    is_available: true
+                                });
+                            }
                         }}
-                        onDashboard={() => navigate('/freelancer/dashboard')} />
+                        onDashboard={() => navigate('/freelancer/dashboard')}
+                    />
                 </div>
             </div>
         );
     }
+
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900

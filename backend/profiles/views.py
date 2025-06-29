@@ -8,6 +8,9 @@ from rest_framework.response import Response
 from rest_framework.decorators import action
 import json
 from rest_framework.parsers import JSONParser
+from rest_framework import generics
+from core.models import Skill
+from .serializers import SkillSerializer
 
 CITIES = [
     # Andhra Pradesh (20 cities)
@@ -173,6 +176,12 @@ def city_autocomplete(request):
     ]
     return Response(results)
 
+@api_view(['GET'])
+def get_skills(request):
+    skills = Skill.objects.all()
+    serializer = SkillSerializer(skills, many=True)
+    return Response(serializer.data)
+
 class IsOwnerOrReadOnly(permissions.BasePermission):
     """
     Custom permission to only allow owners of an object to edit it.
@@ -217,13 +226,19 @@ class FreelancerProfileViewSet(viewsets.ModelViewSet):
                 cert_key = f'education_certificate_{i}'
                 if cert_key in request.FILES:
                     edu['certificate'] = request.FILES[cert_key]
-                # Preserve existing certificate URL or null
+                elif isinstance(edu.get('certificate'), str) and edu['certificate']:
+                    pass  # Preserve existing certificate URL
+                else:
+                    edu['certificate'] = None
 
             for i, exp in enumerate(data.get('experiences', [])):
                 cert_key = f'experience_certificate_{i}'
                 if cert_key in request.FILES:
                     exp['certificate'] = request.FILES[cert_key]
-                # Preserve existing certificate URL or null
+                elif isinstance(exp.get('certificate'), str) and exp['certificate']:
+                    pass  # Preserve existing certificate URL
+                else:
+                    exp['certificate'] = None
 
             print("Data after attaching files:", data)
 
@@ -264,6 +279,7 @@ class FreelancerProfileViewSet(viewsets.ModelViewSet):
                     print(f"Attaching {cert_key}:", request.FILES[cert_key].name)
                     edu['certificate'] = request.FILES[cert_key]
                 elif isinstance(edu.get('certificate'), str) and edu['certificate']:
+                    pass
                     print(f"Preserving education certificate URL {i}:", edu['certificate'])
                 else:
                     edu['certificate'] = None
@@ -277,6 +293,7 @@ class FreelancerProfileViewSet(viewsets.ModelViewSet):
                     exp['certificate'] = request.FILES[cert_key]
                 elif isinstance(exp.get('certificate'), str) and exp['certificate']:
                     print(f"Preserving experience certificate URL {i}:", exp['certificate'])
+                    pass
                 else:
                     exp['certificate'] = None
                 print(f"Experience {i} certificate:", exp.get('certificate'), type(exp.get('certificate')))
@@ -320,3 +337,54 @@ class ClientProfileViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         return ClientProfile.objects.filter(user=self.request.user)
+
+    def create(self, request, *args, **kwargs):
+        try:
+            data_str = request.POST.get('data')
+            if not data_str:
+                return Response({'error': 'No data field in request'}, status=400)
+            data = json.loads(data_str)
+
+            # Attach profile picture
+            if 'profile_picture' in request.FILES:
+                data['profile_picture'] = request.FILES['profile_picture']
+
+            serializer = self.get_serializer(data=data)
+            if not serializer.is_valid():
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            self.perform_create(serializer)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+        except json.JSONDecodeError:
+            return Response({'error': 'Invalid JSON data'}, status=400)
+        except Exception as e:
+            return Response({'error': str(e)}, status=400)
+
+    def update(self, request, *args, **kwargs):
+        try:
+            data_str = request.POST.get('data')
+            if not data_str:
+                return Response({'error': 'No data field in request'}, status=status.HTTP_400_BAD_REQUEST)
+            data = json.loads(data_str)
+
+            # Attach profile picture
+            if 'profile_picture' in request.FILES:
+                data['profile_picture'] = request.FILES['profile_picture']
+
+            instance = self.get_object()
+            serializer = self.get_serializer(instance, data=data, partial=True)
+            if not serializer.is_valid():
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+        except json.JSONDecodeError:
+            return Response({'error': 'Invalid JSON data'}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+    def partial_update(self, request, *args, **kwargs):
+        kwargs['partial'] = True
+        return self.update(request, *args, **kwargs)
+

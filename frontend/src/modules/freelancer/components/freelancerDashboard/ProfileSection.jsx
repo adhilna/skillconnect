@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import PropTypes from "prop-types";
 import {
   User,
   Briefcase,
@@ -28,6 +29,7 @@ import {
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
+// Reusable EditableField Component
 const EditableField = ({
   label,
   value,
@@ -44,7 +46,9 @@ const EditableField = ({
       <div>
         <label className="text-white/70 text-sm">{label}</label>
         <p className="text-white font-medium mt-1">
-          {type === "currency" ? `$${parseInt(value || 0).toLocaleString()}` : value || "N/A"}
+          {type === "currency"
+            ? `$${parseInt(value || 0).toLocaleString()}`
+            : value || "N/A"}
         </p>
         {error && <p className="text-red-400 text-xs mt-1">{error}</p>}
       </div>
@@ -59,7 +63,9 @@ const EditableField = ({
           onChange={(e) => onChange(field, e.target.value)}
           className="w-full bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-500/50"
         >
-          <option value="" className="bg-gray-800">Select...</option>
+          <option value="" className="bg-gray-800">
+            Select...
+          </option>
           {options.map((option) => (
             <option key={option} value={option} className="bg-gray-800">
               {option}
@@ -98,6 +104,7 @@ const EditableField = ({
   );
 };
 
+// Reusable EditableArrayField Component
 const EditableArrayField = ({
   label,
   field,
@@ -126,6 +133,9 @@ const EditableArrayField = ({
               {isLanguage ? `${item.name} (${item.proficiency})` : item.name}
             </span>
           ))}
+          {(items || []).length === 0 && (
+            <span className="text-white/50 text-sm">No entries added</span>
+          )}
         </div>
         {error && <p className="text-red-400 text-xs mt-1">{error}</p>}
       </div>
@@ -141,7 +151,9 @@ const EditableArrayField = ({
               key={index}
               className="bg-purple-500/20 text-purple-300 px-3 py-1 rounded-full text-sm border border-purple-500/30 flex items-center space-x-2"
             >
-              <span>{isLanguage ? `${item.name} (${item.proficiency})` : item.name}</span>
+              <span>
+                {isLanguage ? `${item.name} (${item.proficiency})` : item.name}
+              </span>
               <button
                 onClick={() => onArrayRemove(field, index)}
                 className="text-red-300 hover:text-red-200"
@@ -159,8 +171,17 @@ const EditableArrayField = ({
             placeholder={placeholder}
             className="flex-1 bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-500/50"
             onKeyPress={(e) => {
-              if (e.key === "Enter" && (!isLanguage || newProficiency)) {
-                onArrayAdd(field, isLanguage ? { name: newValue, proficiency: newProficiency } : newValue, setNewValue);
+              if (
+                e.key === "Enter" &&
+                (!isLanguage || newProficiency)
+              ) {
+                onArrayAdd(
+                  field,
+                  isLanguage
+                    ? { id: null, name: newValue, proficiency: newProficiency }
+                    : { id: null, name: newValue },
+                  setNewValue
+                );
                 if (isLanguage) setNewProficiency("");
               }
             }}
@@ -177,7 +198,13 @@ const EditableArrayField = ({
           <button
             onClick={() => {
               if (!isLanguage || newProficiency) {
-                onArrayAdd(field, isLanguage ? { name: newValue, proficiency: newProficiency } : newValue, setNewValue);
+                onArrayAdd(
+                  field,
+                  isLanguage
+                    ? { id: null, name: newValue, proficiency: newProficiency }
+                    : { id: null, name: newValue },
+                  setNewValue
+                );
                 if (isLanguage) setNewProficiency("");
               }
             }}
@@ -192,20 +219,34 @@ const EditableArrayField = ({
   );
 };
 
-// New renderCertificate function to handle certificates consistently
-const renderCertificate = (certificate, idx, fieldPrefix, isEditing, onInputChange, fieldErrors) => {
+// Reusable Certificate Field
+const renderCertificate = (
+  certificate,
+  idx,
+  fieldPrefix,
+  isEditing,
+  onInputChange,
+  fieldErrors
+) => {
   if (isEditing) {
     return (
       <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-center">
         <input
           type="file"
           accept=".pdf,.doc,.docx"
-          onChange={(e) => onInputChange(`${fieldPrefix}:${idx}:certificate`, e.target.files[0] || null)}
+          onChange={(e) =>
+            onInputChange(
+              `${fieldPrefix}:${idx}:certificate`,
+              e.target.files[0] || null
+            )
+          }
           className="bg-white/10 text-white rounded-lg px-3 py-2 border border-white/20 focus:border-purple-500/50 focus:outline-none text-sm sm:text-base file:bg-purple-600/30 file:border-0 file:text-white file:px-3 file:py-1 file:rounded file:cursor-pointer file:hover:bg-purple-600/40"
         />
         {certificate && (
           <button
-            onClick={() => onInputChange(`${fieldPrefix}:${idx}:certificate`, null)}
+            onClick={() =>
+              onInputChange(`${fieldPrefix}:${idx}:certificate`, null)
+            }
             className="bg-red-600/30 hover:bg-red-600/40 px-3 py-1 rounded text-red-300 text-xs sm:text-sm flex items-center gap-1"
           >
             <Trash2 size={12} /> Remove
@@ -213,11 +254,16 @@ const renderCertificate = (certificate, idx, fieldPrefix, isEditing, onInputChan
         )}
         {certificate && (
           <span className="text-white/60 text-xs sm:text-sm">
-            Selected: {typeof certificate === "string" ? certificate.split("/").pop() : certificate?.name || "None"}
+            Selected:{" "}
+            {typeof certificate === "string"
+              ? certificate.split("/").pop()
+              : certificate?.name || "None"}
           </span>
         )}
         {fieldErrors[`${fieldPrefix}:${idx}:certificate`] && (
-          <p className="text-red-400 text-xs mt-1">{fieldErrors[`${fieldPrefix}:${idx}:certificate`]}</p>
+          <p className="text-red-400 text-xs mt-1">
+            {fieldErrors[`${fieldPrefix}:${idx}:certificate`]}
+          </p>
         )}
       </div>
     );
@@ -236,6 +282,7 @@ const renderCertificate = (certificate, idx, fieldPrefix, isEditing, onInputChan
   );
 };
 
+// Main ProfileSection Component
 const ProfileSection = ({
   profileData = {},
   editData = {},
@@ -263,7 +310,9 @@ const ProfileSection = ({
     return data?.is_available ? (
       <div className="flex items-center gap-1 px-2 py-1 bg-green-500/20 rounded-full">
         <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-        <span className="text-green-300 text-xs sm:text-sm font-medium">Available</span>
+        <span className="text-green-300 text-xs sm:text-sm font-medium">
+          Available
+        </span>
       </div>
     ) : (
       <div className="flex items-center gap-1 px-2 py-1 bg-red-500/20 rounded-full">
@@ -277,8 +326,12 @@ const ProfileSection = ({
     return (
       <div className="bg-gradient-to-br from-purple-900/20 to-blue-900/20 backdrop-blur-lg rounded-3xl border border-white/10 p-4 sm:p-6 md:p-8 text-center">
         <div className="animate-spin w-10 h-10 sm:w-12 sm:h-12 border-4 border-purple-500/30 border-t-purple-500 rounded-full mx-auto mb-4"></div>
-        <h4 className="text-lg sm:text-xl font-semibold text-white mb-2">Loading Profile...</h4>
-        <p className="text-white/50 text-sm">Please wait while we fetch your data.</p>
+        <h4 className="text-lg sm:text-xl font-semibold text-white mb-2">
+          Loading Profile...
+        </h4>
+        <p className="text-white/50 text-sm">
+          Please wait while we fetch your data.
+        </p>
       </div>
     );
   }
@@ -287,7 +340,9 @@ const ProfileSection = ({
     return (
       <div className="bg-gradient-to-br from-purple-900/20 to-blue-900/20 backdrop-blur-lg rounded-3xl border border-white/10 p-4 sm:p-6 md:p-8 text-center">
         <User size={40} className="text-white/30 mx-auto mb-4" />
-        <h4 className="text-lg sm:text-xl font-semibold text-white mb-2">Profile Not Found</h4>
+        <h4 className="text-lg sm:text-xl font-semibold text-white mb-2">
+          Profile Not Found
+        </h4>
         <p className="text-white/50 text-sm">Unable to load profile data.</p>
       </div>
     );
@@ -300,6 +355,8 @@ const ProfileSection = ({
     { id: "portfolio", label: "Portfolio", icon: Star },
     { id: "verification", label: "Verification", icon: Shield },
     { id: "availability", label: "Availability", icon: CheckCircle },
+    { id: "skills", label: "Skills", icon: null },
+    { id: "languages", label: "Languages", icon: null },
   ];
 
   return (
@@ -333,11 +390,15 @@ const ProfileSection = ({
               <div className="flex flex-wrap items-center gap-2 mb-3">
                 <div className="flex items-center gap-0.5 text-white/70">
                   <MapPin size={14} />
-                  <span className="text-xs sm:text-sm">{profileData.location || "N/A"}</span>
+                  <span className="text-xs sm:text-sm">
+                    {profileData.location || "N/A"}
+                  </span>
                 </div>
                 <div className="flex items-center gap-0.5 text-white/70">
                   <Calendar size={14} />
-                  <span className="text-xs sm:text-sm">{profileData.age || "N/A"} years old</span>
+                  <span className="text-xs sm:text-sm">
+                    {profileData.age || "N/A"} years old
+                  </span>
                 </div>
                 {getAvailabilityStatus()}
               </div>
@@ -365,6 +426,7 @@ const ProfileSection = ({
               <button
                 onClick={onEdit}
                 className="flex items-center gap-1 bg-gradient-to-r from-purple-600/30 to-blue-600/30 hover:from-purple-600/40 hover:to-blue-600/40 px-2 sm:px-3 py-1.5 rounded-xl text-white transition-all duration-200 border border-purple-500/30 text-xs sm:text-sm"
+                aria-label="Edit Profile"
               >
                 <Edit3 size={12} />
                 Edit Profile
@@ -372,9 +434,12 @@ const ProfileSection = ({
             )}
           </div>
         </div>
+
         {/* About Section */}
         <div className="bg-white/5 rounded-2xl p-4 border border-white/10">
-          <h3 className="text-base sm:text-lg font-semibold text-white mb-3">About</h3>
+          <h3 className="text-base sm:text-lg font-semibold text-white mb-3">
+            About
+          </h3>
           <EditableField
             label="About"
             value={isEditing ? editData.about : profileData.about}
@@ -394,11 +459,12 @@ const ProfileSection = ({
             key={id}
             onClick={() => setActiveTab(id)}
             className={`flex items-center gap-1 px-2 sm:px-3 py-1.5 sm:py-2 rounded-xl transition-all duration-200 text-xs sm:text-sm ${activeTab === id
-                ? "bg-gradient-to-r from-purple-600/40 to-blue-600/40 text-white border border-purple-500/30"
-                : "text-white/60 hover:text-white/80 hover:bg-white/5"
+              ? "bg-gradient-to-r from-purple-600/40 to-blue-600/40 text-white border border-purple-500/30"
+              : "text-white/60 hover:text-white/80 hover:bg-white/5"
               }`}
+            aria-label={label}
           >
-            <Icon size={12} />
+            {Icon && <Icon size={12} />}
             <span className="font-medium">{label}</span>
           </button>
         ))}
@@ -431,7 +497,9 @@ const ProfileSection = ({
                   <h4 className="text-xl font-semibold text-white">
                     {profileData.first_name} {profileData.last_name}
                   </h4>
-                  <p className="text-white/70 text-sm">{profileData.location || "N/A"}</p>
+                  <p className="text-white/70 text-sm">
+                    {profileData.location || "N/A"}
+                  </p>
                   <div className="flex items-center justify-center space-x-1 mt-2">
                     {getAvailabilityStatus()}
                   </div>
@@ -439,12 +507,16 @@ const ProfileSection = ({
                 <div className="space-y-3">
                   <div className="flex items-center space-x-2">
                     <Calendar size={16} className="text-white/50" />
-                    <span className="text-white text-sm">{profileData.age || "N/A"} years old</span>
+                    <span className="text-white text-sm">
+                      {profileData.age || "N/A"} years old
+                    </span>
                   </div>
                   <div className="flex items-center space-x-2">
                     <Globe size={16} className="text-white/50" />
                     <span className="text-white text-sm">
-                      {(profileData.languages || []).map((lang) => lang.name).join(", ") || "N/A"}
+                      {(profileData.languages || [])
+                        .map((lang) => lang.name)
+                        .join(", ") || "N/A"}
                     </span>
                   </div>
                 </div>
@@ -492,15 +564,21 @@ const ProfileSection = ({
                   />
                   {isEditing && (
                     <div className="md:col-span-2">
-                      <label className="text-white/70 text-sm mb-2 block">Profile Picture</label>
+                      <label className="text-white/70 text-sm mb-2 block">
+                        Profile Picture
+                      </label>
                       <input
                         type="file"
                         accept="image/*"
-                        onChange={(e) => onInputChange("profile_picture", e.target.files[0])}
+                        onChange={(e) =>
+                          onInputChange("profile_picture", e.target.files[0])
+                        }
                         className="bg-white/10 text-white rounded-lg px-3 py-2 border border-white/20 focus:border-purple-500/50 focus:outline-none text-sm sm:text-base file:bg-purple-600/30 file:border-0 file:text-white file:px-3 file:py-1 file:rounded file:cursor-pointer file:hover:bg-purple-600/40"
                       />
                       {fieldErrors.profile_picture && (
-                        <p className="text-red-400 text-xs mt-1">{fieldErrors.profile_picture}</p>
+                        <p className="text-red-400 text-xs mt-1">
+                          {fieldErrors.profile_picture}
+                        </p>
                       )}
                     </div>
                   )}
@@ -522,7 +600,11 @@ const ProfileSection = ({
                         <Icon size={16} className="text-white/50" />
                         <EditableField
                           label={label}
-                          value={isEditing ? editData.social_links?.[key] : profileData.social_links?.[key]}
+                          value={
+                            isEditing
+                              ? editData.social_links?.[key]
+                              : profileData.social_links?.[key]
+                          }
                           field={`social_links.${key}`}
                           type="url"
                           isEditing={isEditing}
@@ -549,7 +631,7 @@ const ProfileSection = ({
                 <button
                   onClick={() =>
                     onArrayAdd("educations", {
-                      id: null, // Use null for new entries to align with backend
+                      id: null,
                       college: "",
                       degree: "",
                       year: "",
@@ -564,53 +646,71 @@ const ProfileSection = ({
               )}
             </div>
             <div className="space-y-4">
-              {(isEditing ? editData.educations : profileData.educations || []).map((edu, idx) => (
-                <div
-                  key={edu.id || idx}
-                  className="p-3 sm:p-4 bg-white/5 rounded-xl border border-white/10 flex flex-col gap-2"
-                >
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <EditableField
-                      label="Institution"
-                      value={edu.college}
-                      field={`educations:${idx}:college`}
-                      isEditing={isEditing}
-                      onChange={onInputChange}
-                      error={fieldErrors[`educations:${idx}:college`]}
-                    />
-                    <EditableField
-                      label="Degree"
-                      value={edu.degree}
-                      field={`educations:${idx}:degree`}
-                      isEditing={isEditing}
-                      onChange={onInputChange}
-                      error={fieldErrors[`educations:${idx}:degree`]}
-                    />
-                    <EditableField
-                      label="Year"
-                      value={edu.year}
-                      field={`educations:${idx}:year`}
-                      isEditing={isEditing}
-                      onChange={onInputChange}
-                      error={fieldErrors[`educations:${idx}:year`]}
-                    />
-                    <div className="md:col-span-2">
-                      <div className="flex flex-col gap-2">
-                        <label className="text-white/70 text-sm mb-1 block">Certificate</label>
-                        {renderCertificate(edu.certificate, idx, "educations", isEditing, onInputChange, fieldErrors)}
-                      </div>
-                    </div>
-                  </div>
-                  {isEditing && (
-                    <button
-                      onClick={() => onArrayRemove("educations", idx)}
-                      className="bg-red-600/30 hover:bg-red-600/40 px-3 py-1 rounded text-red-300 text-xs sm:text-sm flex items-center gap-1 mt-2 ml-auto"
-                    >
-                      <Trash2 size={12} /> Remove
-                    </button>
-                  )}
+              {(isEditing ? editData.educations : profileData.educations || [])
+                .length === 0 ? (
+                <div className="text-center text-white/50 py-4">
+                  No education entries added yet.
                 </div>
-              ))}
+              ) : (
+                (isEditing ? editData.educations : profileData.educations || []).map(
+                  (edu, idx) => (
+                    <div
+                      key={edu.id || idx}
+                      className="p-3 sm:p-4 bg-white/5 rounded-xl border border-white/10 flex flex-col gap-2"
+                    >
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <EditableField
+                          label="Institution"
+                          value={edu.college}
+                          field={`educations:${idx}:college`}
+                          isEditing={isEditing}
+                          onChange={onInputChange}
+                          error={fieldErrors[`educations:${idx}:college`]}
+                        />
+                        <EditableField
+                          label="Degree"
+                          value={edu.degree}
+                          field={`educations:${idx}:degree`}
+                          isEditing={isEditing}
+                          onChange={onInputChange}
+                          error={fieldErrors[`educations:${idx}:degree`]}
+                        />
+                        <EditableField
+                          label="Year"
+                          value={edu.year}
+                          field={`educations:${idx}:year`}
+                          isEditing={isEditing}
+                          onChange={onInputChange}
+                          error={fieldErrors[`educations:${idx}:year`]}
+                        />
+                        <div className="md:col-span-2">
+                          <div className="flex flex-col gap-2">
+                            <label className="text-white/70 text-sm mb-1 block">
+                              Certificate
+                            </label>
+                            {renderCertificate(
+                              edu.certificate,
+                              idx,
+                              "educations",
+                              isEditing,
+                              onInputChange,
+                              fieldErrors
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      {isEditing && (
+                        <button
+                          onClick={() => onArrayRemove("educations", idx)}
+                          className="bg-red-600/30 hover:bg-red-600/40 px-3 py-1 rounded text-red-300 text-xs sm:text-sm flex items-center gap-1 mt-2 ml-auto"
+                        >
+                          <Trash2 size={12} /> Remove
+                        </button>
+                      )}
+                    </div>
+                  )
+                )
+              )}
             </div>
           </div>
         )}
@@ -626,7 +726,7 @@ const ProfileSection = ({
                 <button
                   onClick={() =>
                     onArrayAdd("experiences", {
-                      id: null, // Use null for new entries to align with backend
+                      id: null,
                       company: "",
                       role: "",
                       start_date: "",
@@ -643,76 +743,90 @@ const ProfileSection = ({
               )}
             </div>
             <div className="space-y-4">
-              {(isEditing ? editData.experiences : profileData.experiences || []).map((exp, idx) => {
-                // Log each experience for debugging
-                console.log("Rendering experience:", exp);
-                return (
-                  <div
-                    key={exp.id || idx}
-                    className="p-3 sm:p-4 bg-white/5 rounded-xl border border-white/10 flex flex-col gap-2"
-                  >
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      <EditableField
-                        label="Company"
-                        value={exp.company}
-                        field={`experiences:${idx}:company`}
-                        isEditing={isEditing}
-                        onChange={onInputChange}
-                        error={fieldErrors[`experiences:${idx}:company`]}
-                      />
-                      <EditableField
-                        label="Role"
-                        value={exp.role}
-                        field={`experiences:${idx}:role`}
-                        isEditing={isEditing}
-                        onChange={onInputChange}
-                        error={fieldErrors[`experiences:${idx}:role`]}
-                      />
-                      <EditableField
-                        label="Start Date (YYYY-MM-DD)"
-                        value={exp.start_date}
-                        field={`experiences:${idx}:start_date`}
-                        isEditing={isEditing}
-                        onChange={onInputChange}
-                        error={fieldErrors[`experiences:${idx}:start_date`]}
-                      />
-                      <EditableField
-                        label="End Date (YYYY-MM-DD)"
-                        value={exp.end_date}
-                        field={`experiences:${idx}:end_date`}
-                        isEditing={isEditing}
-                        onChange={onInputChange}
-                        error={fieldErrors[`experiences:${idx}:end_date`]}
-                      />
-                      <div className="md:col-span-2">
+              {(isEditing ? editData.experiences : profileData.experiences || [])
+                .length === 0 ? (
+                <div className="text-center text-white/50 py-4">
+                  No experience entries added yet.
+                </div>
+              ) : (
+                (isEditing ? editData.experiences : profileData.experiences || []).map(
+                  (exp, idx) => (
+                    <div
+                      key={exp.id || idx}
+                      className="p-3 sm:p-4 bg-white/5 rounded-xl border border-white/10 flex flex-col gap-2"
+                    >
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         <EditableField
-                          label="Description"
-                          value={exp.description}
-                          field={`experiences:${idx}:description`}
-                          isTextarea={true}
+                          label="Company"
+                          value={exp.company}
+                          field={`experiences:${idx}:company`}
                           isEditing={isEditing}
                           onChange={onInputChange}
-                          error={fieldErrors[`experiences:${idx}:description`]}
+                          error={fieldErrors[`experiences:${idx}:company`]}
                         />
-                      </div>
-                      <div className="md:col-span-2">
-                        <div className="flex flex-col gap-2">
-                          <label className="text-white/70 text-sm mb-1 block">Certificate</label>
-                          {renderCertificate(exp.certificate, idx, "experiences", isEditing, onInputChange, fieldErrors)}
+                        <EditableField
+                          label="Role"
+                          value={exp.role}
+                          field={`experiences:${idx}:role`}
+                          isEditing={isEditing}
+                          onChange={onInputChange}
+                          error={fieldErrors[`experiences:${idx}:role`]}
+                        />
+                        <EditableField
+                          label="Start Date (YYYY-MM-DD)"
+                          value={exp.start_date}
+                          field={`experiences:${idx}:start_date`}
+                          isEditing={isEditing}
+                          onChange={onInputChange}
+                          error={fieldErrors[`experiences:${idx}:start_date`]}
+                        />
+                        <EditableField
+                          label="End Date (YYYY-MM-DD)"
+                          value={exp.end_date}
+                          field={`experiences:${idx}:end_date`}
+                          isEditing={isEditing}
+                          onChange={onInputChange}
+                          error={fieldErrors[`experiences:${idx}:end_date`]}
+                        />
+                        <div className="md:col-span-2">
+                          <EditableField
+                            label="Description"
+                            value={exp.description}
+                            field={`experiences:${idx}:description`}
+                            isTextarea={true}
+                            isEditing={isEditing}
+                            onChange={onInputChange}
+                            error={fieldErrors[`experiences:${idx}:description`]}
+                          />
+                        </div>
+                        <div className="md:col-span-2">
+                          <div className="flex flex-col gap-2">
+                            <label className="text-white/70 text-sm mb-1 block">
+                              Certificate
+                            </label>
+                            {renderCertificate(
+                              exp.certificate,
+                              idx,
+                              "experiences",
+                              isEditing,
+                              onInputChange,
+                              fieldErrors
+                            )}
+                          </div>
                         </div>
                       </div>
+                      {isEditing && (
+                        <button
+                          onClick={() => onArrayRemove("experiences", idx)}
+                          className="bg-red-600/30 hover:bg-red-600/40 px-3 py-1 rounded text-red-300 text-xs sm:text-sm flex items-center gap-1 mt-2 ml-auto"
+                        >
+                          <Trash2 size={12} /> Remove
+                        </button>
+                      )}
                     </div>
-                    {isEditing && (
-                      <button
-                        onClick={() => onArrayRemove("experiences", idx)}
-                        className="bg-red-600/30 hover:bg-red-600/40 px-3 py-1 rounded text-red-300 text-xs sm:text-sm flex items-center gap-1 mt-2 ml-auto"
-                      >
-                        <Trash2 size={12} /> Remove
-                      </button>
-                    )}
-                  </div>
-                );
-              })}
+                  )
+                )
+              )}
             </div>
           </div>
         )}
@@ -728,7 +842,7 @@ const ProfileSection = ({
                 <button
                   onClick={() =>
                     onArrayAdd("portfolios", {
-                      id: null, // Use null for new entries
+                      id: null,
                       title: "",
                       description: "",
                       project_link: "",
@@ -742,51 +856,60 @@ const ProfileSection = ({
               )}
             </div>
             <div className="space-y-4">
-              {(isEditing ? editData.portfolios : profileData.portfolios || []).map((pf, idx) => (
-                <div
-                  key={pf.id || idx}
-                  className="p-3 sm:p-4 bg-white/5 rounded-xl border border-white/10 flex flex-col gap-2"
-                >
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <EditableField
-                      label="Project Title"
-                      value={pf.title}
-                      field={`portfolios:${idx}:title`}
-                      isEditing={isEditing}
-                      onChange={onInputChange}
-                      error={fieldErrors[`portfolios:${idx}:title`]}
-                    />
-                    <EditableField
-                      label="Project Link"
-                      value={pf.project_link}
-                      field={`portfolios:${idx}:project_link`}
-                      type="url"
-                      isEditing={isEditing}
-                      onChange={onInputChange}
-                      error={fieldErrors[`portfolios:${idx}:project_link`]}
-                    />
-                    <div className="md:col-span-2">
-                      <EditableField
-                        label="Description"
-                        value={pf.description}
-                        field={`portfolios:${idx}:description`}
-                        isTextarea={true}
-                        isEditing={isEditing}
-                        onChange={onInputChange}
-                        error={fieldErrors[`portfolios:${idx}:description`]}
-                      />
-                    </div>
-                  </div>
-                  {isEditing && (
-                    <button
-                      onClick={() => onArrayRemove("portfolios", idx)}
-                      className="bg-red-600/30 hover:bg-red-600/40 px-3 py-1 rounded text-red-300 text-xs sm:text-sm flex items-center gap-1 mt-2 ml-auto"
-                    >
-                      <Trash2 size={12} /> Remove
-                    </button>
-                  )}
+              {(isEditing ? editData.portfolios : profileData.portfolios || [])
+                .length === 0 ? (
+                <div className="text-center text-white/50 py-4">
+                  No portfolio projects added yet.
                 </div>
-              ))}
+              ) : (
+                (isEditing ? editData.portfolios : profileData.portfolios || []).map(
+                  (pf, idx) => (
+                    <div
+                      key={pf.id || idx}
+                      className="p-3 sm:p-4 bg-white/5 rounded-xl border border-white/10 flex flex-col gap-2"
+                    >
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <EditableField
+                          label="Project Title"
+                          value={pf.title}
+                          field={`portfolios:${idx}:title`}
+                          isEditing={isEditing}
+                          onChange={onInputChange}
+                          error={fieldErrors[`portfolios:${idx}:title`]}
+                        />
+                        <EditableField
+                          label="Project Link"
+                          value={pf.project_link}
+                          field={`portfolios:${idx}:project_link`}
+                          type="url"
+                          isEditing={isEditing}
+                          onChange={onInputChange}
+                          error={fieldErrors[`portfolios:${idx}:project_link`]}
+                        />
+                        <div className="md:col-span-2">
+                          <EditableField
+                            label="Description"
+                            value={pf.description}
+                            field={`portfolios:${idx}:description`}
+                            isTextarea={true}
+                            isEditing={isEditing}
+                            onChange={onInputChange}
+                            error={fieldErrors[`portfolios:${idx}:description`]}
+                          />
+                        </div>
+                      </div>
+                      {isEditing && (
+                        <button
+                          onClick={() => onArrayRemove("portfolios", idx)}
+                          className="bg-red-600/30 hover:bg-red-600/40 px-3 py-1 rounded text-red-300 text-xs sm:text-sm flex items-center gap-1 mt-2 ml-auto"
+                        >
+                          <Trash2 size={12} /> Remove
+                        </button>
+                      )}
+                    </div>
+                  )
+                )
+              )}
             </div>
           </div>
         )}
@@ -838,10 +961,26 @@ const ProfileSection = ({
             </div>
             <div className="space-y-4">
               {[
-                { key: "verifications.email_verified", label: "Email Verification", icon: Mail },
-                { key: "verifications.phone_verified", label: "Phone Verification", icon: Phone },
-                { key: "verifications.id_verified", label: "ID Verification", icon: Shield },
-                { key: "verifications.video_verified", label: "Video Verification", icon: Video },
+                {
+                  key: "verifications.email_verified",
+                  label: "Email Verification",
+                  icon: Mail,
+                },
+                {
+                  key: "verifications.phone_verified",
+                  label: "Phone Verification",
+                  icon: Phone,
+                },
+                {
+                  key: "verifications.id_verified",
+                  label: "ID Verification",
+                  icon: Shield,
+                },
+                {
+                  key: "verifications.video_verified",
+                  label: "Video Verification",
+                  icon: Video,
+                },
               ].map(({ key, label, icon: Icon }) => (
                 <div
                   key={key}
@@ -850,25 +989,51 @@ const ProfileSection = ({
                   <div className="flex items-center gap-2">
                     <Icon
                       size={16}
-                      className={isEditing ? editData.verifications?.[key.split(".")[1]] ? "text-green-400" : "text-gray-400" : profileData.verifications?.[key.split(".")[1]] ? "text-green-400" : "text-gray-400"}
+                      className={
+                        isEditing
+                          ? editData.verifications?.[key.split(".")[1]]
+                            ? "text-green-400"
+                            : "text-gray-400"
+                          : profileData.verifications?.[key.split(".")[1]]
+                            ? "text-green-400"
+                            : "text-gray-400"
+                      }
                     />
-                    <span className="text-white text-sm sm:text-base">{label}</span>
+                    <span className="text-white text-sm sm:text-base">
+                      {label}
+                    </span>
                   </div>
                   {isEditing ? (
                     <label className="flex items-center gap-2">
                       <input
                         type="checkbox"
-                        checked={editData.verifications?.[key.split(".")[1]] || false}
-                        onChange={() => onInputChange(key, !editData.verifications?.[key.split(".")[1]])}
+                        checked={
+                          editData.verifications?.[key.split(".")[1]] || false
+                        }
+                        onChange={() =>
+                          onInputChange(
+                            key,
+                            !editData.verifications?.[key.split(".")[1]]
+                          )
+                        }
                         className="h-4 w-4 text-purple-500 focus:ring-purple-500 border-gray-300 rounded"
                       />
-                      <span className="text-white/80 text-sm">{editData.verifications?.[key.split(".")[1]] ? "Verified" : "Not Verified"}</span>
+                      <span className="text-white/80 text-sm">
+                        {editData.verifications?.[key.split(".")[1]]
+                          ? "Verified"
+                          : "Not Verified"}
+                      </span>
                     </label>
                   ) : (
                     <span
-                      className={`text-sm sm:text-base ${profileData.verifications?.[key.split(".")[1]] ? "text-green-300" : "text-red-300"}`}
+                      className={`text-sm sm:text-base ${profileData.verifications?.[key.split(".")[1]]
+                        ? "text-green-300"
+                        : "text-red-300"
+                        }`}
                     >
-                      {profileData.verifications?.[key.split(".")[1]] ? "Verified" : "Not Verified"}
+                      {profileData.verifications?.[key.split(".")[1]]
+                        ? "Verified"
+                        : "Not Verified"}
                     </span>
                   )}
                 </div>
@@ -887,34 +1052,60 @@ const ProfileSection = ({
             </div>
             <div className="p-3 sm:p-4 bg-white/5 rounded-xl border border-white/10 flex flex-col items-center gap-4">
               <div
-                className={`w-12 h-12 sm:w-16 sm:h-16 rounded-full flex items-center justify-center ${(isEditing ? editData.is_available : profileData.is_available)
-                  ? "bg-green-500/20 border-2 border-green-500"
-                  : "bg-red-500/20 border-2 border-red-500"
+                className={`w-12 h-12 sm:w-16 sm:h-16 rounded-full flex items-center justify-center ${isEditing
+                  ? editData.is_available
+                    ? "bg-green-500/20 border-2 border-green-500"
+                    : "bg-red-500/20 border-2 border-red-500"
+                  : profileData.is_available
+                    ? "bg-green-500/20 border-2 border-green-500"
+                    : "bg-red-500/20 border-2 border-red-500"
                   }`}
               >
                 <CheckCircle
                   size={24}
-                  className={(isEditing ? editData.is_available : profileData.is_available) ? "text-green-500" : "text-red-500"}
+                  className={
+                    isEditing
+                      ? editData.is_available
+                        ? "text-green-500"
+                        : "text-red-500"
+                      : profileData.is_available
+                        ? "text-green-500"
+                        : "text-red-500"
+                  }
                 />
               </div>
               <h4 className="text-base sm:text-lg font-semibold text-white">
-                {(isEditing ? editData.is_available : profileData.is_available) ? "Available for Work" : "Not Available"}
+                {isEditing
+                  ? editData.is_available
+                    ? "Available for Work"
+                    : "Not Available"
+                  : profileData.is_available
+                    ? "Available for Work"
+                    : "Not Available"}
               </h4>
               <p className="text-white/70 text-sm sm:text-base text-center">
-                {(isEditing ? editData.is_available : profileData.is_available)
-                  ? "You are currently available to take on new projects"
-                  : "You are not currently available for new projects"}
+                {isEditing
+                  ? editData.is_available
+                    ? "You are currently available to take on new projects"
+                    : "You are not currently available for new projects"
+                  : profileData.is_available
+                    ? "You are currently available to take on new projects"
+                    : "You are not currently available for new projects"}
               </p>
               {isEditing && (
                 <label className="relative inline-flex items-center cursor-pointer">
                   <input
                     type="checkbox"
                     checked={editData.is_available}
-                    onChange={() => onInputChange("is_available", !editData.is_available)}
+                    onChange={() =>
+                      onInputChange("is_available", !editData.is_available)
+                    }
                     className="sr-only peer"
                   />
                   <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
-                  <span className="ml-3 text-sm font-medium text-white">Available for work</span>
+                  <span className="ml-3 text-sm font-medium text-white">
+                    Available for work
+                  </span>
                 </label>
               )}
             </div>
@@ -925,7 +1116,21 @@ const ProfileSection = ({
   );
 };
 
+ProfileSection.propTypes = {
+  profileData: PropTypes.object,
+  editData: PropTypes.object,
+  isEditing: PropTypes.bool,
+  onInputChange: PropTypes.func,
+  onArrayAdd: PropTypes.func,
+  onArrayRemove: PropTypes.func,
+  onEdit: PropTypes.func,
+  onCancel: PropTypes.func,
+  onSave: PropTypes.func,
+  fieldErrors: PropTypes.object,
+};
+
 export default ProfileSection;
+
 
 
 

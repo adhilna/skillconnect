@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext } from "react";
+import React, { useState } from 'react';
 import {
   Home,
   Briefcase,
@@ -8,444 +8,53 @@ import {
   BarChart3,
   User,
   Settings,
+  Bell,
+  Menu,
   X,
-} from "lucide-react";
-import Sidebar from "../components/freelancerDashboard/Sidebar";
-import Header from "../components/freelancerDashboard/Header";
-import DashboardOverview from "../components/freelancerDashboard/DashboardOverview";
-import GigsSection from "../components/freelancerDashboard/GigsSection";
-import OrderSection from "../components/freelancerDashboard/OrderSection";
-import MessagesSection from "../components/freelancerDashboard/MessagesSection";
-import RequestSection from "../components/freelancerDashboard/RequestSection";
-import AnalyticsSection from "../components/freelancerDashboard/AnalyticsSection";
-import ProfileSection from "../components/freelancerDashboard/ProfileSection";
-import SettingsSection from "../components/freelancerDashboard/SettingsSection";
-import { AuthContext } from "../../../context/AuthContext";
-import axios from "axios";
-import { toast } from "react-toastify";
+  DollarSign,
+  Star,
+  TrendingUp,
+  Clock,
+  Eye,
+  Plus,
+  Filter,
+  Calendar,
+  CheckCircle,
+  AlertCircle,
+} from 'lucide-react';
 
 const FreelancerDashboard = () => {
-  const { token } = useContext(AuthContext);
-  const [activeSection, setActiveSection] = useState("dashboard");
+  const [activeSection, setActiveSection] = useState('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [profileData, setProfileData] = useState(null);
-  const [isEditing, setIsEditing] = useState(false);
-  const [editData, setEditData] = useState(null);
-  const [profileId, setProfileId] = useState(null);
-  const [errors, setErrors] = useState(null);
-  const [fieldErrors, setFieldErrors] = useState({});
-
-  // Deep update function for nested fields
-  const updateNestedField = (obj, path, value) => {
-    const keys = path.includes(":") ? path.split(":") : path.split(".");
-    let current = { ...obj };
-    let parent = current;
-    for (let i = 0; i < keys.length - 1; i++) {
-      const key = isNaN(keys[i]) ? keys[i] : parseInt(keys[i]);
-      parent[key] = Array.isArray(parent[key]) ? [...parent[key]] : { ...parent[key] };
-      parent = parent[key];
-    }
-    parent[keys[keys.length - 1]] = value;
-    return current;
-  };
-
-  // Fetch profile data
-  useEffect(() => {
-    if (!token) return;
-    axios
-      .get("http://localhost:8000/api/v1/profiles/freelancer/profile-setup/", {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      .then((res) => {
-        console.log("API Response:", res.data);
-        const profile = Array.isArray(res.data) ? res.data[0] : res.data;
-        if (profile) {
-          const normalizedProfile = {
-            ...profile,
-            educations: (profile.educations || []).map((edu) => ({
-              ...edu,
-              id: edu.id || null,
-              year: String(edu.year || ""),
-              certificate: edu.certificate || null,
-            })),
-            experiences: (profile.experiences || []).map((exp) => ({
-              ...exp,
-              id: exp.id || null,
-              certificate: exp.certificate || null,
-            })),
-            portfolios: (profile.portfolios || []).map((item) => ({
-              ...item,
-              id: item.id || null,
-            })),
-          };
-          setProfileData(normalizedProfile);
-          setProfileId(profile.id);
-          setEditData({ ...normalizedProfile });
-        } else {
-          setProfileData(null);
-          setProfileId(null);
-          setEditData(null);
-        }
-      })
-      .catch((err) => {
-        console.error("Error fetching profile:", err);
-        setProfileData(null);
-        setProfileId(null);
-        setEditData(null);
-        toast.error("Failed to fetch profile data.");
-      });
-  }, [token]);
-
-  // Update editData when profileData changes
-  useEffect(() => {
-    if (profileData) {
-      setEditData({ ...profileData });
-    }
-  }, [profileData]);
-
-  const handleInputChange = (field, value) => {
-    setEditData((prev) => updateNestedField(prev, field, value));
-    setFieldErrors((prev) => ({ ...prev, [field]: null }));
-  };
-
-  const handleArrayAdd = (field, value, setter) => {
-    if (value && typeof value === "string" && value.trim()) {
-      setEditData((prev) => ({
-        ...prev,
-        [field]: [...(prev[field] || []), { id: null, name: value.trim() }],
-      }));
-      setter("");
-    } else if (value && typeof value === "object") {
-      setEditData((prev) => ({
-        ...prev,
-        [field]: [...(prev[field] || []), { id: null, ...value }],
-      }));
-    }
-    setFieldErrors((prev) => ({ ...prev, [field]: null }));
-  };
-
-  const handleArrayRemove = (field, index) => {
-    setEditData((prev) => ({
-      ...prev,
-      [field]: (prev[field] || []).filter((_, i) => i !== index),
-    }));
-    setFieldErrors((prev) => ({ ...prev, [field]: null }));
-  };
-
-  // Map frontend to backend format
-  const mapFrontendToBackend = (frontendData) => {
-    const formData = new FormData();
-    const mappedData = {
-      first_name: String(frontendData.first_name || ""),
-      last_name: String(frontendData.last_name || ""),
-      about: String(frontendData.about || ""),
-      location: String(frontendData.location || ""),
-      age: frontendData.age ? parseInt(frontendData.age) : null,
-      is_available: !!frontendData.is_available,
-      skills: (frontendData.skills || []).map((skill) => ({
-        name: String(skill.name || ""),
-      })).filter((skill) => skill.name.trim()),
-      educations: (frontendData.educations || []).map((edu) => ({
-        id: edu.id || null,
-        college: String(edu.college || ""),
-        degree: String(edu.degree || ""),
-        year: String(edu.year || ""),
-        certificate: typeof edu.certificate === "string" ? edu.certificate : null,
-      })).filter((edu) => edu.college.trim() || edu.degree.trim() || edu.year.trim()),
-      experiences: (frontendData.experiences || []).map((exp) => ({
-        id: exp.id || null,
-        role: String(exp.role || ""),
-        company: String(exp.company || ""),
-        start_date: String(exp.start_date || ""),
-        end_date: exp.end_date ? String(exp.end_date) : null,
-        description: String(exp.description || ""),
-        certificate: typeof exp.certificate === "string" ? exp.certificate : null,
-      })).filter((exp) => exp.role.trim() || exp.company.trim()),
-      languages: (frontendData.languages || []).map((lang) => ({
-        name: String(lang.name || ""),
-        proficiency: String(lang.proficiency || ""),
-      })).filter((lang) => lang.name.trim()),
-      portfolios: (frontendData.portfolios || []).map((item) => ({
-        id: item.id || null,
-        title: String(item.title || ""),
-        description: String(item.description || ""),
-        project_link: String(item.project_link || ""),
-      })).filter((item) => item.title.trim() || item.project_link.trim()),
-      social_links: {
-        github_url: String(frontendData.social_links?.github_url || ""),
-        linkedin_url: String(frontendData.social_links?.linkedin_url || ""),
-        twitter_url: String(frontendData.social_links?.twitter_url || ""),
-        facebook_url: String(frontendData.social_links?.facebook_url || ""),
-        instagram_url: String(frontendData.social_links?.instagram_url || ""),
-      },
-    };
-
-    // Log mapped data
-    console.log("Mapped data:", JSON.stringify(mappedData, null, 2));
-
-    // Append JSON data
-    formData.append("data", JSON.stringify(mappedData));
-
-    // Append education certificates
-    frontendData.educations.forEach((edu, index) => {
-      if (edu.certificate instanceof File) {
-        console.log(`Appending education_certificate_${index}:`, edu.certificate.name);
-        formData.append(`education_certificate_${index}`, edu.certificate);
-      }
-    });
-
-    // Append experience certificates
-    frontendData.experiences.forEach((exp, index) => {
-      if (exp.certificate instanceof File) {
-        console.log(`Appending experience_certificate_${index}:`, exp.certificate.name);
-        formData.append(`experience_certificate_${index}`, exp.certificate);
-      }
-    });
-
-    // Append profile picture
-    if (frontendData.profile_picture instanceof File) {
-      console.log("Appending profile_picture:", frontendData.profile_picture.name);
-      formData.append("profile_picture", frontendData.profile_picture);
-    }
-
-    // Log FormData entries
-    console.log("FormData entries:");
-    for (let [key, value] of formData.entries()) {
-      console.log(`${key}: ${value instanceof File ? value.name : value}`);
-    }
-
-    return formData;
-  };
-
-  function isValidUrl(url) {
-    if (!url) return true; // Allow empty strings
-    try {
-      new URL(url);
-      return true;
-    } catch {
-      return false;
-    }
-  }
-
-  // Validate required fields
-  const validateData = (data) => {
-    const errors = {};
-    if (!data.first_name?.trim()) errors.first_name = "First name is required";
-    if (!data.last_name?.trim()) errors.last_name = "Last name is required";
-    if (!data.location?.trim()) errors.location = "Location is required";
-    if (!data.skills?.length || data.skills.some((s) => !s.name?.trim())) {
-      errors.skills = "At least one valid skill is required";
-    }
-    if (
-      !data.educations?.length ||
-      data.educations.some((e) => !e.college?.trim() || !e.degree?.trim() || !e.year?.trim())
-    ) {
-      errors.educations = "At least one valid education entry is required";
-      data.educations.forEach((edu, idx) => {
-        if (!edu.college?.trim()) errors[`educations:${idx}:college`] = "College is required";
-        if (!edu.degree?.trim()) errors[`educations:${idx}:degree`] = "Degree is required";
-        if (!edu.year?.trim()) errors[`educations:${idx}:year`] = "Year is required";
-      });
-    }
-    if (
-      !data.experiences?.length ||
-      data.experiences.some((e) => !e.company?.trim() || !e.role?.trim() || !e.start_date?.trim())
-    ) {
-      errors.experiences = "At least one valid experience entry is required";
-      data.experiences.forEach((exp, idx) => {
-        if (!exp.company?.trim()) errors[`experiences:${idx}:company`] = "Company is required";
-        if (!exp.role?.trim()) errors[`experiences:${idx}:role`] = "Role is required";
-        if (!exp.start_date?.trim()) errors[`experiences:${idx}:start_date`] = "Start date is required";
-      });
-    }
-    if (
-      !data.languages?.length ||
-      data.languages.some((l) => !l.name?.trim() || !l.proficiency?.trim())
-    ) {
-      errors.languages = "At least one valid language is required";
-      data.languages.forEach((lang, idx) => {
-        if (!lang.name?.trim()) errors[`languages:${idx}:name`] = "Language name is required";
-        if (!lang.proficiency?.trim()) errors[`languages:${idx}:proficiency`] = "Proficiency is required";
-      });
-    }
-    if (
-      !data.portfolios?.length ||
-      data.portfolios.some((p) => !p.title?.trim() || !p.project_link?.trim())
-    ) {
-      errors.portfolios = "At least one valid portfolio is required";
-      data.portfolios.forEach((pf, idx) => {
-        if (!pf.title?.trim()) errors[`portfolios:${idx}:title`] = "Project title is required";
-        if (!pf.project_link?.trim()) errors[`portfolios:${idx}:project_link`] = "Project link is required";
-      });
-    }
-    if (data.social_links) {
-      const socialKeys = [
-        "github_url",
-        "linkedin_url",
-        "twitter_url",
-        "facebook_url",
-        "instagram_url",
-      ];
-      socialKeys.forEach((key) => {
-        const value = data.social_links[key];
-        if (value && !isValidUrl(value)) {
-          errors[`social_links.${key}`] = "Please enter a valid URL.";
-        }
-      });
-    }
-    console.log("Validating editData:", data);
-    return errors;
-  };
-
-  const handleSave = async () => {
-    if (!profileId || !editData) {
-      toast.error("Profile data is missing.");
-      return;
-    }
-    setErrors(null);
-    setFieldErrors({});
-
-    // Validate data
-    const validationErrors = validateData(editData);
-    if (Object.keys(validationErrors).length) {
-      setFieldErrors(validationErrors);
-      toast.error("Please fill in all required fields.");
-      return;
-    }
-
-    try {
-      const formData = mapFrontendToBackend(editData);
-      console.log("Sending FormData:", formData);
-
-      const response = await axios.put(
-        `http://localhost:8000/api/v1/profiles/freelancer/profile-setup/${profileId}/`,
-        formData,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "multipart/form-data",
-          },
-        }
-      );
-
-      console.log("Response data:", response.data);
-      console.log("Experiences:", response.data.experiences);
-
-      const normalizedResponse = {
-        ...response.data,
-        educations: (response.data.educations || []).map((edu) => ({
-          ...edu,
-          id: edu.id || null,
-          year: String(edu.year || ""),
-          certificate: edu.certificate || null,
-        })),
-        experiences: (response.data.experiences || []).map((exp) => ({
-          ...exp,
-          id: exp.id || null,
-          certificate: exp.certificate || null,
-        })),
-        portfolios: (response.data.portfolios || []).map((item) => ({
-          ...item,
-          id: item.id || null,
-        })),
-        social_links: response.data.social_links || {
-          github_url: "",
-          linkedin_url: "",
-          twitter_url: "",
-          facebook_url: "",
-          instagram_url: "",
-        },
-      };
-      setProfileData(normalizedResponse);
-      setEditData(normalizedResponse);
-      setIsEditing(false);
-      toast.success("Profile updated successfully!");
-    } catch (err) {
-      console.error("Error updating profile:", err.response?.data || err);
-      console.log("Raw backend errors:", err.response?.data);
-      if (err.response?.data) {
-        const backendErrors = {};
-        Object.keys(err.response.data).forEach((key) => {
-          if (Array.isArray(err.response.data[key])) {
-            err.response.data[key].forEach((item, index) => {
-              if (typeof item === "object" && item !== null) {
-                Object.entries(item).forEach(([subKey, value]) => {
-                  backendErrors[`${key}:${index}:${subKey}`] = Array.isArray(value) ? value[0] : value;
-                });
-              } else {
-                backendErrors[`${key}:${index}`] = item;
-              }
-            });
-          } else if (typeof err.response.data[key] === "object" && err.response.data[key] !== null) {
-            Object.entries(err.response.data[key]).forEach(([subKey, value]) => {
-              backendErrors[`${key}:${subKey}`] = Array.isArray(value) ? value[0] : value;
-            });
-          } else {
-            backendErrors[key] = err.response.data[key];
-          }
-        });
-        console.log("Backend validation errors:", backendErrors);
-        setFieldErrors(backendErrors);
-        setErrors("Failed to update profile. Please check the errors.");
-        toast.error("Failed to update profile. Please check the errors.");
-      } else {
-        setErrors("Something went wrong. Please try again.");
-        toast.error("Something went wrong. Please try again.");
-      }
-    }
-  };
-
-  const handleCancel = () => {
-    setEditData({ ...profileData });
-    setIsEditing(false);
-    setErrors(null);
-    setFieldErrors({});
-  };
-
-  const firstLetter = profileData?.first_name?.charAt(0)?.toUpperCase() || "F";
 
   const navigationItems = [
-    { id: "dashboard", label: "Dashboard", icon: Home },
-    { id: "gigs", label: "My Gigs", icon: Briefcase },
-    { id: "orders", label: "Orders", icon: ShoppingCart },
-    { id: "messages", label: "Messages", icon: MessageCircle },
-    { id: "requests", label: "Buyer Requests", icon: Search },
-    { id: "analytics", label: "Analytics", icon: BarChart3 },
-    { id: "profile", label: "Profile", icon: User },
-    { id: "settings", label: "Settings", icon: Settings },
+    { id: 'dashboard', label: 'Dashboard', icon: Home },
+    { id: 'gigs', label: 'My Gigs', icon: Briefcase },
+    { id: 'orders', label: 'Orders', icon: ShoppingCart },
+    { id: 'messages', label: 'Messages', icon: MessageCircle },
+    { id: 'requests', label: 'Buyer Requests', icon: Search },
+    { id: 'analytics', label: 'Analytics', icon: BarChart3 },
+    { id: 'profile', label: 'Profile', icon: User },
+    { id: 'settings', label: 'Settings', icon: Settings },
   ];
 
   const getCurrentSectionContent = () => {
     switch (activeSection) {
-      case "dashboard":
-        return <DashboardOverview profileData={profileData} />;
-      case "gigs":
+      case 'dashboard':
+        return <DashboardOverview />;
+      case 'gigs':
         return <GigsSection />;
-      case "orders":
-        return <OrderSection />;
-      case "messages":
+      case 'orders':
+        return <OrdersSection />;
+      case 'messages':
         return <MessagesSection />;
-      case "requests":
-        return <RequestSection />;
-      case "analytics":
+      case 'requests':
+        return <RequestsSection />;
+      case 'analytics':
         return <AnalyticsSection />;
-      case "profile":
-        return (
-          <ProfileSection
-            profileData={profileData}
-            editData={editData}
-            isEditing={isEditing}
-            onInputChange={handleInputChange}
-            onArrayAdd={handleArrayAdd}
-            onArrayRemove={handleArrayRemove}
-            onEdit={() => setIsEditing(true)}
-            onSave={handleSave}
-            onCancel={handleCancel}
-            errors={errors}
-            fieldErrors={fieldErrors}
-          />
-        );
-      case "settings":
+      case 'profile':
+        return <ProfileSection />;
+      case 'settings':
         return <SettingsSection />;
       default:
         return <DashboardOverview />;
@@ -454,30 +63,423 @@ const FreelancerDashboard = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+      {/* Mobile Sidebar Overlay */}
       {sidebarOpen && (
         <div
           className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 lg:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
-      <Sidebar
-        sidebarOpen={sidebarOpen}
-        setSidebarOpen={setSidebarOpen}
-        navigationItems={navigationItems}
-        activeSection={activeSection}
-        setActiveSection={setActiveSection}
-      />
+
+      {/* Sidebar */}
+      <div className={`fixed left-0 top-0 h-full w-64 bg-black/20 backdrop-blur-lg border-r border-white/10 z-50 transform transition-transform duration-300 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+        }`}>
+        <div className="p-6">
+          {/* Logo/Brand */}
+          <div className="flex items-center justify-between mb-8">
+            <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">FreelanceHub</h1>
+            <button
+              onClick={() => setSidebarOpen(false)}
+              className="lg:hidden text-white/70 hover:text-white transition-colors"
+            >
+              <X size={24} />
+            </button>
+          </div>
+
+          {/* Navigation */}
+          <nav className="space-y-2">
+            {navigationItems.map((item) => {
+              const Icon = item.icon;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => {
+                    setActiveSection(item.id);
+                    setSidebarOpen(false);
+                  }}
+                  className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 group ${activeSection === item.id
+                      ? 'bg-gradient-to-r from-purple-500/20 to-pink-500/20 text-white shadow-lg border border-purple-500/30'
+                      : 'text-white/70 hover:text-white hover:bg-white/10'
+                    }`}
+                >
+                  <Icon size={20} className="group-hover:scale-110 transition-transform" />
+                  <span className="font-medium">{item.label}</span>
+                  {item.id === 'messages' && (
+                    <span className="ml-auto bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">3</span>
+                  )}
+                  {item.id === 'orders' && (
+                    <span className="ml-auto bg-green-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">2</span>
+                  )}
+                </button>
+              );
+            })}
+          </nav>
+
+          {/* Quick Actions */}
+          <div className="mt-8 pt-6 border-t border-white/10">
+            <button className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white px-4 py-3 rounded-xl font-medium hover:from-purple-600 hover:to-pink-600 transition-all duration-200 flex items-center justify-center space-x-2 shadow-lg">
+              <Plus size={18} />
+              <span>Create New Gig</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Content */}
       <div className="lg:ml-64">
-        <Header
-          activeSection={activeSection}
-          setSidebarOpen={setSidebarOpen}
-          profileData={profileData}
-          firstLetter={firstLetter}
-        />
-        <main className="p-6">{getCurrentSectionContent()}</main>
+        {/* Top Header */}
+        <header className="bg-black/20 backdrop-blur-lg border-b border-white/10 px-6 py-4 sticky top-0 z-30">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <button
+                onClick={() => setSidebarOpen(true)}
+                className="lg:hidden text-white/70 hover:text-white transition-colors"
+              >
+                <Menu size={24} />
+              </button>
+              <div>
+                <h2 className="text-xl font-semibold text-white capitalize">
+                  {activeSection === 'dashboard' ? 'Dashboard Overview' : activeSection.replace(/([A-Z])/g, ' $1')}
+                </h2>
+                <p className="text-white/60 text-sm">Welcome back, John!</p>
+              </div>
+            </div>
+
+            <div className="flex items-center space-x-4">
+              <div className="hidden md:flex items-center space-x-2 bg-white/10 rounded-lg px-3 py-2">
+                <Calendar size={16} className="text-white/70" />
+                <span className="text-white/70 text-sm">{new Date().toLocaleDateString()}</span>
+              </div>
+
+              <button className="relative p-2 text-white/70 hover:text-white rounded-lg hover:bg-white/10 transition-colors">
+                <Bell size={20} />
+                <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-pulse"></span>
+              </button>
+
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full flex items-center justify-center shadow-lg">
+                  <User size={20} className="text-white" />
+                </div>
+                <div className="hidden sm:block">
+                  <p className="text-white font-medium">John Doe</p>
+                  <p className="text-white/60 text-xs">Pro Freelancer</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        {/* Page Content */}
+        <main className="p-6">
+          {getCurrentSectionContent()}
+        </main>
       </div>
     </div>
   );
 };
+
+// Enhanced Dashboard Overview
+const DashboardOverview = () => {
+
+  return (
+    <div className="space-y-6">
+      {/* Welcome Section */}
+      <div className="bg-gradient-to-r from-purple-500/20 to-pink-500/20 backdrop-blur-lg rounded-2xl border border-purple-500/30 p-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-2xl font-bold text-white mb-2">Good Morning, John! 🌟</h3>
+            <p className="text-white/80">You have 3 pending orders and 2 new messages waiting for you.</p>
+          </div>
+          <div className="hidden md:block">
+            <div className="text-right">
+              <p className="text-white/60 text-sm">Completion Rate</p>
+              <p className="text-2xl font-bold text-white">98%</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Quick Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <StatCard
+          title="Total Earnings"
+          value="$2,847"
+          icon={DollarSign}
+          change="+12%"
+          trend="up"
+          subtitle="This month"
+        />
+        <StatCard
+          title="Active Orders"
+          value="8"
+          icon={ShoppingCart}
+          change="+3"
+          trend="up"
+          subtitle="In progress"
+        />
+        <StatCard
+          title="Total Gigs"
+          value="12"
+          icon={Briefcase}
+          change="2 new"
+          trend="up"
+          subtitle="Published"
+        />
+        <StatCard
+          title="Rating"
+          value="4.9"
+          icon={Star}
+          change="+0.1"
+          trend="up"
+          subtitle="Average score"
+        />
+      </div>
+
+      {/* Main Content Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Recent Orders */}
+        <div className="lg:col-span-2 bg-black/20 backdrop-blur-lg rounded-2xl border border-white/10 p-6">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-xl font-semibold text-white">Recent Orders</h3>
+            <button className="text-purple-400 hover:text-purple-300 text-sm font-medium">View All</button>
+          </div>
+          <div className="space-y-4">
+            <OrderItem
+              title="Logo Design for Tech Startup"
+              client="Sarah Wilson"
+              status="in-progress"
+              amount="$150"
+              deadline="2 days left"
+            />
+            <OrderItem
+              title="Website Redesign"
+              client="Mike Johnson"
+              status="review"
+              amount="$450"
+              deadline="5 days left"
+            />
+            <OrderItem
+              title="Mobile App UI/UX"
+              client="Anna Chen"
+              status="completed"
+              amount="$320"
+              deadline="Delivered"
+            />
+          </div>
+        </div>
+
+        {/* Quick Actions & Stats */}
+        <div className="space-y-6">
+          {/* Performance */}
+          <div className="bg-black/20 backdrop-blur-lg rounded-2xl border border-white/10 p-6">
+            <h3 className="text-lg font-semibold text-white mb-4">This Week</h3>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <span className="text-white/70 text-sm">Orders Completed</span>
+                <span className="text-white font-medium">5</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-white/70 text-sm">Revenue</span>
+                <span className="text-white font-medium">$890</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-white/70 text-sm">Profile Views</span>
+                <span className="text-white font-medium">124</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Quick Actions */}
+          <div className="bg-black/20 backdrop-blur-lg rounded-2xl border border-white/10 p-6">
+            <h3 className="text-lg font-semibold text-white mb-4">Quick Actions</h3>
+            <div className="space-y-3">
+              <button className="w-full bg-white/10 hover:bg-white/20 text-white px-4 py-3 rounded-lg transition-colors text-sm font-medium text-left flex items-center space-x-2">
+                <Plus size={16} />
+                <span>Create New Gig</span>
+              </button>
+              <button className="w-full bg-white/10 hover:bg-white/20 text-white px-4 py-3 rounded-lg transition-colors text-sm font-medium text-left flex items-center space-x-2">
+                <MessageCircle size={16} />
+                <span>Message Clients</span>
+              </button>
+              <button className="w-full bg-white/10 hover:bg-white/20 text-white px-4 py-3 rounded-lg transition-colors text-sm font-medium text-left flex items-center space-x-2">
+                <BarChart3 size={16} />
+                <span>View Analytics</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const StatCard = ({ title, value, icon: Icon, change, trend, subtitle }) => {
+  const trendColor = trend === 'up' ? 'text-green-400' : trend === 'down' ? 'text-red-400' : 'text-white/70';
+
+  return (
+    <div className="bg-black/20 backdrop-blur-lg rounded-2xl border border-white/10 p-6 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105">
+      <div className="flex items-center justify-between mb-4">
+        <div className="p-3 bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-xl border border-purple-500/30">
+          <Icon size={24} className="text-white" />
+        </div>
+        <span className={`text-sm font-medium ${trendColor} flex items-center space-x-1`}>
+          {trend === 'up' && <TrendingUp size={14} />}
+          <span>{change}</span>
+        </span>
+      </div>
+      <div>
+        <p className="text-3xl font-bold text-white mb-1">{value}</p>
+        <p className="text-white/70 text-sm font-medium">{title}</p>
+        {subtitle && <p className="text-white/50 text-xs mt-1">{subtitle}</p>}
+      </div>
+    </div>
+  );
+};
+
+const OrderItem = ({ title, client, status, amount, deadline }) => {
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'completed': return 'bg-green-500/20 text-green-400 border-green-500/30';
+      case 'in-progress': return 'bg-blue-500/20 text-blue-400 border-blue-500/30';
+      case 'review': return 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30';
+      default: return 'bg-white/10 text-white/70 border-white/20';
+    }
+  };
+
+  const getStatusIcon = (status) => {
+    switch (status) {
+      case 'completed': return <CheckCircle size={14} />;
+      case 'in-progress': return <Clock size={14} />;
+      case 'review': return <Eye size={14} />;
+      default: return <AlertCircle size={14} />;
+    }
+  };
+
+  return (
+    <div className="flex items-center justify-between p-4 bg-white/5 rounded-lg border border-white/10 hover:bg-white/10 transition-colors">
+      <div className="flex-1">
+        <h4 className="font-medium text-white mb-1">{title}</h4>
+        <p className="text-white/60 text-sm">{client}</p>
+      </div>
+      <div className="flex items-center space-x-4">
+        <div>
+          <p className="text-white font-medium text-right">{amount}</p>
+          <p className="text-white/60 text-xs text-right">{deadline}</p>
+        </div>
+        <span className={`px-3 py-1 rounded-full text-xs font-medium border flex items-center space-x-1 ${getStatusColor(status)}`}>
+          {getStatusIcon(status)}
+          <span className="capitalize">{status.replace('-', ' ')}</span>
+        </span>
+      </div>
+    </div>
+  );
+};
+
+// Enhanced placeholder sections with better styling
+const GigsSection = () => (
+  <div className="space-y-6">
+    <div className="flex items-center justify-between">
+      <h3 className="text-2xl font-bold text-white">My Gigs</h3>
+      <button className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-6 py-2 rounded-lg font-medium hover:from-purple-600 hover:to-pink-600 transition-all duration-200 flex items-center space-x-2">
+        <Plus size={18} />
+        <span>Create New Gig</span>
+      </button>
+    </div>
+    <div className="bg-black/20 backdrop-blur-lg rounded-2xl border border-white/10 p-8 text-center">
+      <Briefcase size={48} className="text-white/30 mx-auto mb-4" />
+      <h4 className="text-xl font-semibold text-white mb-2">Gigs Management</h4>
+      <p className="text-white/70 mb-6">Create, edit, and manage your service offerings</p>
+      <div className="text-white/50 text-sm">Coming in the next update...</div>
+    </div>
+  </div>
+);
+
+const OrdersSection = () => (
+  <div className="space-y-6">
+    <div className="flex items-center justify-between">
+      <h3 className="text-2xl font-bold text-white">Orders</h3>
+      <div className="flex items-center space-x-2">
+        <button className="bg-white/10 text-white px-4 py-2 rounded-lg font-medium hover:bg-white/20 transition-colors flex items-center space-x-2">
+          <Filter size={16} />
+          <span>Filter</span>
+        </button>
+      </div>
+    </div>
+    <div className="bg-black/20 backdrop-blur-lg rounded-2xl border border-white/10 p-8 text-center">
+      <ShoppingCart size={48} className="text-white/30 mx-auto mb-4" />
+      <h4 className="text-xl font-semibold text-white mb-2">Order Management</h4>
+      <p className="text-white/70 mb-6">Track and manage all your client orders</p>
+      <div className="text-white/50 text-sm">Enhanced order management coming soon...</div>
+    </div>
+  </div>
+);
+
+const MessagesSection = () => (
+  <div className="space-y-6">
+    <div className="flex items-center justify-between">
+      <h3 className="text-2xl font-bold text-white">Messages</h3>
+      <span className="bg-red-500 text-white px-3 py-1 rounded-full text-sm font-medium">3 Unread</span>
+    </div>
+    <div className="bg-black/20 backdrop-blur-lg rounded-2xl border border-white/10 p-8 text-center">
+      <MessageCircle size={48} className="text-white/30 mx-auto mb-4" />
+      <h4 className="text-xl font-semibold text-white mb-2">Client Communication</h4>
+      <p className="text-white/70 mb-6">Chat with clients and manage conversations</p>
+      <div className="text-white/50 text-sm">Real-time messaging system in development...</div>
+    </div>
+  </div>
+);
+
+const RequestsSection = () => (
+  <div className="space-y-6">
+    <div className="flex items-center justify-between">
+      <h3 className="text-2xl font-bold text-white">Buyer Requests</h3>
+      <button className="bg-white/10 text-white px-4 py-2 rounded-lg font-medium hover:bg-white/20 transition-colors">
+        Refresh
+      </button>
+    </div>
+    <div className="bg-black/20 backdrop-blur-lg rounded-2xl border border-white/10 p-8 text-center">
+      <Search size={48} className="text-white/30 mx-auto mb-4" />
+      <h4 className="text-xl font-semibold text-white mb-2">Find New Opportunities</h4>
+      <p className="text-white/70 mb-6">Browse and respond to buyer requests</p>
+      <div className="text-white/50 text-sm">Request browsing system coming soon...</div>
+    </div>
+  </div>
+);
+
+const AnalyticsSection = () => (
+  <div className="space-y-6">
+    <h3 className="text-2xl font-bold text-white">Analytics & Insights</h3>
+    <div className="bg-black/20 backdrop-blur-lg rounded-2xl border border-white/10 p-8 text-center">
+      <BarChart3 size={48} className="text-white/30 mx-auto mb-4" />
+      <h4 className="text-xl font-semibold text-white mb-2">Performance Analytics</h4>
+      <p className="text-white/70 mb-6">Track your earnings, views, and performance metrics</p>
+      <div className="text-white/50 text-sm">Detailed analytics dashboard in development...</div>
+    </div>
+  </div>
+);
+
+const ProfileSection = () => (
+  <div className="space-y-6">
+    <h3 className="text-2xl font-bold text-white">Profile Management</h3>
+    <div className="bg-black/20 backdrop-blur-lg rounded-2xl border border-white/10 p-8 text-center">
+      <User size={48} className="text-white/30 mx-auto mb-4" />
+      <h4 className="text-xl font-semibold text-white mb-2">Your Professional Profile</h4>
+      <p className="text-white/70 mb-6">Manage your profile information, skills, and portfolio</p>
+      <div className="text-white/50 text-sm">Profile editor coming in the next update...</div>
+    </div>
+  </div>
+);
+
+const SettingsSection = () => (
+  <div className="space-y-6">
+    <h3 className="text-2xl font-bold text-white">Settings</h3>
+    <div className="bg-black/20 backdrop-blur-lg rounded-2xl border border-white/10 p-8 text-center">
+      <Settings size={48} className="text-white/30 mx-auto mb-4" />
+      <h4 className="text-xl font-semibold text-white mb-2">Account Settings</h4>
+      <p className="text-white/70 mb-6">Manage your account preferences and notifications</p>
+      <div className="text-white/50 text-sm">Settings panel coming soon...</div>
+    </div>
+  </div>
+);
 
 export default FreelancerDashboard;

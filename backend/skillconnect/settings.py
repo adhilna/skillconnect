@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     'profiles',
     'django_ratelimit',
     'gigs',
+    'core',
 ]
 
 MIDDLEWARE = [
