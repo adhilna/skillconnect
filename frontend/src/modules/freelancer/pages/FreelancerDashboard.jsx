@@ -1,27 +1,10 @@
 import React, { useState } from 'react';
 import {
-  Home,
-  Briefcase,
-  ShoppingCart,
-  MessageCircle,
-  Search,
-  BarChart3,
-  User,
-  Settings,
-  Bell,
-  Menu,
-  X,
-  DollarSign,
-  Star,
-  TrendingUp,
-  Clock,
-  Eye,
-  Plus,
-  Filter,
-  Calendar,
-  CheckCircle,
-  AlertCircle,
+  Home, Briefcase, ShoppingCart, MessageCircle,Search, BarChart3,
+  User, Settings, Bell, Menu, X, DollarSign, Star,TrendingUp,Clock,
+  Eye, Plus, Filter, Calendar, CheckCircle, AlertCircle,
 } from 'lucide-react';
+import ProfileSection from '../components/freelancerDashboard/ProfileSection';
 
 const FreelancerDashboard = () => {
   const [activeSection, setActiveSection] = useState('dashboard');
@@ -454,18 +437,6 @@ const AnalyticsSection = () => (
       <h4 className="text-xl font-semibold text-white mb-2">Performance Analytics</h4>
       <p className="text-white/70 mb-6">Track your earnings, views, and performance metrics</p>
       <div className="text-white/50 text-sm">Detailed analytics dashboard in development...</div>
-    </div>
-  </div>
-);
-
-const ProfileSection = () => (
-  <div className="space-y-6">
-    <h3 className="text-2xl font-bold text-white">Profile Management</h3>
-    <div className="bg-black/20 backdrop-blur-lg rounded-2xl border border-white/10 p-8 text-center">
-      <User size={48} className="text-white/30 mx-auto mb-4" />
-      <h4 className="text-xl font-semibold text-white mb-2">Your Professional Profile</h4>
-      <p className="text-white/70 mb-6">Manage your profile information, skills, and portfolio</p>
-      <div className="text-white/50 text-sm">Profile editor coming in the next update...</div>
     </div>
   </div>
 );

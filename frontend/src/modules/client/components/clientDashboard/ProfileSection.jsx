@@ -268,8 +268,8 @@ const ProfileSection = ({
             key={id}
             onClick={() => setActiveTab(id)}
             className={`flex items-center gap-1 px-2 sm:px-3 py-1.5 sm:py-2 rounded-xl transition-all duration-200 text-xs sm:text-sm ${activeTab === id
-                ? 'bg-gradient-to-r from-purple-600/40 to-blue-600/40 text-white border border-purple-500/30'
-                : 'text-white/60 hover:text-white/80 hover:bg-white/5'
+              ? 'bg-gradient-to-r from-purple-600/40 to-blue-600/40 text-white border border-purple-500/30'
+              : 'text-white/60 hover:text-white/80 hover:bg-white/5'
               }`}
           >
             <Icon size={12} />

@@ -27,7 +27,10 @@ const mapFrontendToBackend = (frontendData) => ({
     age: frontendData.age || null,
     is_available: frontendData.is_available || false,
     profile_picture: frontendData.profile_picture || null,
-    skills: (frontendData.skills || []).map(skill => skill.id),
+    skills: (frontendData.skills || []).map(skill => ({
+        id: skill.id,
+        name: skill.name
+    })),
     educations: (frontendData.educations || []).map(edu => ({
         college: edu.college || '',
         degree: edu.degree || '',
@@ -48,7 +51,7 @@ const mapFrontendToBackend = (frontendData) => ({
         name: lang.name || '',
         proficiency: lang.proficiency || '',
     })),
-    portfolios: (frontendData.portfolio || []).map(item => ({
+    portfolios: (frontendData.portfolios || []).map(item => ({
         title: item.title || '',
         description: item.description || '',
         project_link: item.project_link || '',
@@ -342,7 +345,7 @@ const FreelancerProfileSetup = () => {
 
             // 2. Append nested arrays/objects as JSON strings
             formData.append('skills_input', JSON.stringify(freelancerData.skills));
-            
+
             formData.append('educations_input', JSON.stringify(
                 // eslint-disable-next-line no-unused-vars
                 backendData.educations?.map(({ certificate, ...rest }) => rest)
