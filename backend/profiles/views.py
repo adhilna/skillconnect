@@ -1,16 +1,13 @@
 from rest_framework import viewsets, permissions, status
 from rest_framework.permissions import IsAuthenticated
 from .models import FreelancerProfile, ClientProfile
-from .serializers import FreelancerProfileSerializer, ClientProfileSerializer
-from django.shortcuts import get_object_or_404
+from .serializers import FreelancerProfileSetupSerializer, ClientProfileSerializer
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework.decorators import action
 import json
-from rest_framework.parsers import JSONParser
-from rest_framework import generics
-from core.models import Skill
-from .serializers import SkillSerializer
+import pprint
+from rest_framework.parsers import MultiPartParser, FormParser
 
 CITIES = [
     # Andhra Pradesh (20 cities)
@@ -176,11 +173,6 @@ def city_autocomplete(request):
     ]
     return Response(results)
 
-@api_view(['GET'])
-def get_skills(request):
-    skills = Skill.objects.all()
-    serializer = SkillSerializer(skills, many=True)
-    return Response(serializer.data)
 
 class IsOwnerOrReadOnly(permissions.BasePermission):
     """
@@ -194,137 +186,105 @@ class IsOwnerOrReadOnly(permissions.BasePermission):
         # Write permissions are only allowed to the owner of the profile.
         return obj.user == request.user
 
-class FreelancerProfileViewSet(viewsets.ModelViewSet):
-    serializer_class = FreelancerProfileSerializer
-    permission_classes = [IsAuthenticated, IsOwnerOrReadOnly]
+import json
+from rest_framework import status
+from rest_framework.response import Response
+
+class FreelancerProfileSetupViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet for creating and managing FreelancerProfile with full multipart/form-data and JSON support.
+    Includes extensive debugging/logging for all incoming data and files.
+    """
+    permission_classes = [permissions.IsAuthenticated, IsOwnerOrReadOnly]
+    queryset = FreelancerProfile.objects.all()
+    serializer_class = FreelancerProfileSetupSerializer
+    parser_classes = [MultiPartParser, FormParser]
 
     def get_queryset(self):
-        return FreelancerProfile.objects.filter(user=self.request.user)
-    
+        # Only allow users to access their own profiles
+        return self.queryset.filter(user=self.request.user)
+
     def perform_create(self, serializer):
+        # Attach the current user to the new profile
         serializer.save(user=self.request.user)
-    
+
     def create(self, request, *args, **kwargs):
-        print("Create view is being called!")
-        print("request.FILES:", request.FILES)
-        print("request.headers:", request.headers)
 
-        try:
-            data_str = request.POST.get('data')
-            if not data_str:
-                print("No data field in request.POST")
-                return Response({'error': 'No data field in request'}, status=400)
-            print("Raw data string:", data_str)
-            data = json.loads(data_str)
-            print("Parsed data:", data)
+        print("==== [DEBUG] RAW DATA RECEIVED ====")
+        pprint.pprint(dict(request.data))
+        print("==== [DEBUG] RAW FILES RECEIVED ====")
+        pprint.pprint(dict(request.FILES))
 
-            # Attach files
-            if 'profile_picture' in request.FILES:
-                data['profile_picture'] = request.FILES['profile_picture']
+        data = request.data.copy()
+        json_fields = [
+            'skills_input', 'educations_input', 'experiences_input', 'languages_input',
+            'portfolios_input', 'social_links_input', 'verification_input'
+        ]
 
-            for i, edu in enumerate(data.get('educations', [])):
-                cert_key = f'education_certificate_{i}'
-                if cert_key in request.FILES:
-                    edu['certificate'] = request.FILES[cert_key]
-                elif isinstance(edu.get('certificate'), str) and edu['certificate']:
-                    pass  # Preserve existing certificate URL
-                else:
-                    edu['certificate'] = None
+        # Extract FormData safely
+        parsed_data = {}
+        for key in data:
+            val = data.getlist(key) if isinstance(data.getlist(key), list) and len(data.getlist(key)) > 1 else data.get(key)
+            parsed_data[key] = val
 
-            for i, exp in enumerate(data.get('experiences', [])):
-                cert_key = f'experience_certificate_{i}'
-                if cert_key in request.FILES:
-                    exp['certificate'] = request.FILES[cert_key]
-                elif isinstance(exp.get('certificate'), str) and exp['certificate']:
-                    pass  # Preserve existing certificate URL
-                else:
-                    exp['certificate'] = None
+        # Parse JSON fields safely
+        for field in json_fields:
+            if field in parsed_data:
+                try:
+                    parsed_data[field] = json.loads(parsed_data[field]) if isinstance(parsed_data[field], str) else parsed_data[field]
+                except Exception as e:
+                    print(f"[DEBUG] JSON parse error in {field}: {e}")
+                    parsed_data[field] = [] if 'input' in field else {}
 
-            print("Data after attaching files:", data)
+        # Normalize lists of dicts
+        def ensure_list_of_dicts(val):
+            if isinstance(val, list):
+                flat = []
+                for item in val:
+                    if isinstance(item, list):
+                        flat.extend(item)
+                    elif isinstance(item, dict):
+                        flat.append(item)
+                return flat
+            return []
 
-            serializer = self.get_serializer(data=data)
-            if not serializer.is_valid():
-                print("Serializer errors:", serializer.errors)
-                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-            self.perform_create(serializer)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        for field in ['skills_input', 'educations_input', 'experiences_input', 'languages_input', 'portfolios_input']:
+            parsed_data[field] = ensure_list_of_dicts(parsed_data.get(field, []))
 
-        except json.JSONDecodeError as e:
-            print("JSON decode error:", e)
-            print("Data string:", data_str)
-            return Response({'error': 'Invalid JSON data'}, status=400)
-        except Exception as e:
-            print("Error:", e)
-            return Response({'error': str(e)}, status=400)
-        
-    def update(self, request, *args, **kwargs):
-        print("Update view is being called!")
-        print("request.method:", request.method)
-        print("request.FILES:", request.FILES)
-        print("request.headers:", request.headers)
+        # Final check
+        for field in ['skills_input', 'educations_input', 'experiences_input', 'languages_input', 'portfolios_input']:
+            print(f"Final {field}:", parsed_data[field])
+            for idx, val in enumerate(parsed_data[field]):
+                print(f"{field}[{idx}] type: {type(val)} => {val}")
 
-        try:
-            # Parse JSON data from FormData
-            data_str = request.POST.get('data')
-            if not data_str:
-                print("No data field in request.POST")
-                return Response({'error': 'No data field in request'}, status=status.HTTP_400_BAD_REQUEST)
-            data = json.loads(data_str)
-            print("Parsed data:", data)
+        # Now pass to serializer
+        serializer = self.get_serializer(data=parsed_data)
+        if not serializer.is_valid():
+            print("==== [DEBUG] SERIALIZER ERRORS ====")
+            pprint.pprint(serializer.errors)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-            # Attach files for educations
-            for i, edu in enumerate(data.get('educations', [])):
-                cert_key = f'education_certificate_{i}'
-                if cert_key in request.FILES:
-                    print(f"Attaching {cert_key}:", request.FILES[cert_key].name)
-                    edu['certificate'] = request.FILES[cert_key]
-                elif isinstance(edu.get('certificate'), str) and edu['certificate']:
-                    pass
-                    print(f"Preserving education certificate URL {i}:", edu['certificate'])
-                else:
-                    edu['certificate'] = None
-                print(f"Education {i} certificate:", edu.get('certificate'), type(edu.get('certificate')))
-
-            # Attach files for experiences
-            for i, exp in enumerate(data.get('experiences', [])):
-                cert_key = f'experience_certificate_{i}'
-                if cert_key in request.FILES:
-                    print(f"Attaching {cert_key}:", request.FILES[cert_key].name)
-                    exp['certificate'] = request.FILES[cert_key]
-                elif isinstance(exp.get('certificate'), str) and exp['certificate']:
-                    print(f"Preserving experience certificate URL {i}:", exp['certificate'])
-                    pass
-                else:
-                    exp['certificate'] = None
-                print(f"Experience {i} certificate:", exp.get('certificate'), type(exp.get('certificate')))
-
-            # Attach profile picture
-            if 'profile_picture' in request.FILES:
-                print("Attaching profile_picture:", request.FILES['profile_picture'].name)
-                data['profile_picture'] = request.FILES['profile_picture']
-
-            print("Data after attaching files:", data)
-
-            instance = self.get_object()
-            serializer = self.get_serializer(instance, data=data, partial=True)
-            if not serializer.is_valid():
-                print("Serializer errors:", serializer.errors)
-                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_200_OK)
-
-        except json.JSONDecodeError as e:
-            print("JSON decode error:", str(e))
-            return Response({'error': 'Invalid JSON data'}, status=status.HTTP_400_BAD_REQUEST)
-        except Exception as e:
-            print("Error:", str(e))
-            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        self.perform_create(serializer)
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
 
-    def partial_update(self, request, *args, **kwargs):
-        kwargs['partial'] = True
-        return self.update(request, *args, **kwargs)
+
+
+
+
+
+
+    @action(detail=True, methods=['get'])
+    def setup(self, request, pk=None):
+        """
+        Custom action to fetch the full setup data for a specific profile.
+        """
+        profile = self.get_object()
+        serializer = self.get_serializer(profile)
+        return Response(serializer.data)
+
+
 
 
 

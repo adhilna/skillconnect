@@ -8,7 +8,7 @@ export default function CompletionStep({ freelancerData, onDashboard }) {
                 <div className="w-20 h-20 bg-blue-500/20 rounded-full flex items-center justify-center border-2 border-blue-500">
                     <CheckCircle size={40} className="text-blue-500" />
                 </div>
-            </div>
+            </div> 
 
             <div>
                 <h2 className="text-3xl font-bold text-white mb-2">Profile Setup Complete!</h2>
