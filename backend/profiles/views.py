@@ -268,21 +268,15 @@ class FreelancerProfileSetupViewSet(viewsets.ModelViewSet):
         headers = self.get_success_headers(serializer.data)
         return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
+    @action(detail=False, methods=['get'], url_path='me')
+    def me(self, request):
+        try:
+            profile = self.get_queryset().get(user=request.user)
+            serializer = self.get_serializer(profile)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except FreelancerProfile.DoesNotExist:
+            return Response({"detail": "Profile not found."}, status=status.HTTP_404_NOT_FOUND)
 
-
-
-
-
-
-
-    @action(detail=True, methods=['get'])
-    def setup(self, request, pk=None):
-        """
-        Custom action to fetch the full setup data for a specific profile.
-        """
-        profile = self.get_object()
-        serializer = self.get_serializer(profile)
-        return Response(serializer.data)
 
 
 
