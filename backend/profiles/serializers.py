@@ -112,7 +112,7 @@ class FreelancerProfileSetupSerializer(serializers.ModelSerializer):
     experiences_output = ExperienceSerializer(source='experiences', many=True, read_only=True, required=False)
     languages_output = LanguageSerializer(source='languages', many=True, read_only=True, required=False)
     portfolios_output = PortfolioSerializer(source='portfolios', many=True, read_only=True, required=False)
-    social_links_output = SocialLinksSerializer(source='user.sociallinks', read_only=True)
+    social_links_output = SocialLinksSerializer(source='user.social_links', read_only=True)
     verification_output = VerificationSerializer(source='user.verification', read_only=True)
 
 
