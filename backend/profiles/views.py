@@ -268,14 +268,75 @@ class FreelancerProfileSetupViewSet(viewsets.ModelViewSet):
         headers = self.get_success_headers(serializer.data)
         return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
-    @action(detail=False, methods=['get'], url_path='me')
+    @action(detail=False, methods=['get', 'put', 'patch'], url_path='me')
     def me(self, request):
         try:
             profile = self.get_queryset().get(user=request.user)
-            serializer = self.get_serializer(profile)
-            return Response(serializer.data, status=status.HTTP_200_OK)
         except FreelancerProfile.DoesNotExist:
             return Response({"detail": "Profile not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        if request.method == 'GET':
+            serializer = self.get_serializer(profile)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+        # ---- Start of robust parsing logic ----
+        print("==== [DEBUG] RAW DATA RECEIVED ====")
+        pprint.pprint(dict(request.data))
+        print("==== [DEBUG] RAW FILES RECEIVED ====")
+        pprint.pprint(dict(request.FILES))
+
+        data = request.data.copy()
+        json_fields = [
+            'skills_input', 'educations_input', 'experiences_input', 'languages_input',
+            'portfolios_input', 'social_links_input', 'verification_input'
+        ]
+
+        # Extract FormData safely
+        parsed_data = {}
+        for key in data:
+            val = data.getlist(key) if hasattr(data, 'getlist') and isinstance(data.getlist(key), list) and len(data.getlist(key)) > 1 else data.get(key)
+            parsed_data[key] = val
+
+        # Parse JSON fields safely
+        for field in json_fields:
+            if field in parsed_data:
+                try:
+                    parsed_data[field] = json.loads(parsed_data[field]) if isinstance(parsed_data[field], str) else parsed_data[field]
+                except Exception as e:
+                    print(f"[DEBUG] JSON parse error in {field}: {e}")
+                    parsed_data[field] = [] if 'input' in field else {}
+
+        # Normalize lists of dicts
+        def ensure_list_of_dicts(val):
+            if isinstance(val, list):
+                flat = []
+                for item in val:
+                    if isinstance(item, list):
+                        flat.extend(item)
+                    elif isinstance(item, dict):
+                        flat.append(item)
+                return flat
+            return []
+
+        for field in ['skills_input', 'educations_input', 'experiences_input', 'languages_input', 'portfolios_input']:
+            parsed_data[field] = ensure_list_of_dicts(parsed_data.get(field, []))
+
+        # Final check
+        for field in ['skills_input', 'educations_input', 'experiences_input', 'languages_input', 'portfolios_input']:
+            print(f"Final {field}:", parsed_data[field])
+            for idx, val in enumerate(parsed_data[field]):
+                print(f"{field}[{idx}] type: {type(val)} => {val}")
+
+        # ---- End of robust parsing logic ----
+
+        partial = request.method == 'PATCH'
+        serializer = self.get_serializer(profile, data=parsed_data, partial=partial)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        print("==== [DEBUG] SERIALIZER ERRORS ====")
+        pprint.pprint(serializer.errors)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 

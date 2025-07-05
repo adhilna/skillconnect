@@ -65,7 +65,7 @@ const apiService = {
 
   async updateProfile(formData) {
     try {
-      const response = await axios.put(`${API_BASE_URL}/me/`, formData, {
+      const response = await axios.patch(`${API_BASE_URL}/me/`, formData, {
         headers: createApiHeaders(true),
       });
       return { data: response.data, error: null };
@@ -435,8 +435,7 @@ const ProfileSection = () => {
         : await apiService.createProfile(formData);
 
       if (data) {
-        setProfileData(data);
-        setEditData(data);
+        await loadProfile();
         setIsEditing(false);
         setCertificateFiles({});
         setProfilePictureFile(null);
