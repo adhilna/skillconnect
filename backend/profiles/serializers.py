@@ -263,94 +263,85 @@ class FreelancerProfileSetupSerializer(serializers.ModelSerializer):
         social_links_data = validated_data.pop('social_links_input', {})
         verification_data = validated_data.pop('verification_input', {})
 
-
         # Update direct fields
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
         instance.save()
         print("Updated profile:", instance)
 
-    # Update Skills (ManyToMany)
-        print("Skills data right before update:", skills_data)
+        # Update Skills
         instance.skills.clear()
         for skill in skills_data:
             name = skill.get('name')
             if name and name.strip():
-                try:
-                    skill_obj, _ = Skill.objects.get_or_create(name=name.strip())
-                    instance.skills.add(skill_obj)
-                    print("Added skill:", skill_obj)
-                except Exception as e:
-                    print("Failed to add skill:", e)
+                skill_obj, _ = Skill.objects.get_or_create(name=name.strip())
+                instance.skills.add(skill_obj)
 
-
-        # Update Educations (FK)
-        print("Educations data right before update:", educations_data)
-        instance.educations.all().delete()
-        for edu in educations_data:
-            print("Creating education with:", edu)
-            try:
-                certificate_file = edu.pop('certificate', None)
+        # Update Educations
+        existing_edu_ids = set(instance.educations.values_list('id', flat=True))
+        new_edu_ids = set()
+        for idx, edu in enumerate(educations_data):
+            edu_id = edu.get('id')
+            certificate_file = self.context['request'].FILES.get(f'education_certificate_{idx}')
+            if edu_id and instance.educations.filter(id=edu_id).exists():
+                edu_obj = instance.educations.get(id=edu_id)
+                for attr, value in edu.items():
+                    setattr(edu_obj, attr, value)
+                if certificate_file:
+                    edu_obj.certificate.save(certificate_file.name, certificate_file)
+                edu_obj.save()
+                new_edu_ids.add(edu_id)
+            else:
                 edu_obj = Education.objects.create(profile=instance, **edu)
                 if certificate_file:
                     edu_obj.certificate.save(certificate_file.name, certificate_file)
-                print("Created education:", edu_obj)
-            except Exception as e:
-                print("Failed to create education:", e)
+                new_edu_ids.add(edu_obj.id)
 
-        # Update Experiences (FK)
-        print("Experiences data right before update:", experiences_data)
-        instance.experiences.all().delete()
-        for exp in experiences_data:
-            print("Creating experience with:", exp)
-            try:
-                certificate_file = exp.pop('certificate', None)
+        # Delete removed educations
+        to_delete_edu_ids = existing_edu_ids - new_edu_ids
+        instance.educations.filter(id__in=to_delete_edu_ids).delete()
+
+        # Update Experiences
+        existing_exp_ids = set(instance.experiences.values_list('id', flat=True))
+        new_exp_ids = set()
+        for idx, exp in enumerate(experiences_data):
+            exp_id = exp.get('id')
+            certificate_file = self.context['request'].FILES.get(f'experience_certificate_{idx}')
+            if exp_id and instance.experiences.filter(id=exp_id).exists():
+                exp_obj = instance.experiences.get(id=exp_id)
+                for attr, value in exp.items():
+                    setattr(exp_obj, attr, value)
+                if certificate_file:
+                    exp_obj.certificate.save(certificate_file.name, certificate_file)
+                exp_obj.save()
+                new_exp_ids.add(exp_id)
+            else:
                 exp_obj = Experience.objects.create(profile=instance, **exp)
                 if certificate_file:
                     exp_obj.certificate.save(certificate_file.name, certificate_file)
-                print("Created experience:", exp_obj)
-            except Exception as e:
-                print("Failed to create experience:", e)
+                new_exp_ids.add(exp_obj.id)
 
-        # Update Languages (FK)
-        print("Languages data right before update:", languages_data)
+        # Delete removed experiences
+        to_delete_exp_ids = existing_exp_ids - new_exp_ids
+        instance.experiences.filter(id__in=to_delete_exp_ids).delete()
+
+        # Update Languages
         instance.languages.all().delete()
         for lang in languages_data:
-            print("Creating language with:", lang)
-            try:
-                lang_obj = Language.objects.create(profile=instance, **lang)
-                print("Created language:", lang_obj)
-            except Exception as e:
-                print("Failed to create language:", e)
+            Language.objects.create(profile=instance, **lang)
 
-        # Update Portfolios (FK)
-        print("Portfolios data right before update:", portfolios_data)
+        # Update Portfolios
         instance.portfolios.all().delete()
         for port in portfolios_data:
-            print("Creating portfolio with:", port)
-            try:
-                port_obj = Portfolio.objects.create(profile=instance, **port)
-                print("Created portfolio:", port_obj)
-            except Exception as e:
-                print("Failed to create portfolio:", e)
+            Portfolio.objects.create(profile=instance, **port)
 
-        # Update SocialLinks (OneToOne to User)
-        print("SocialLinks data right before update:", social_links_data)
+        # Update SocialLinks
         if social_links_data:
-            try:
-                sl_obj, _ = SocialLinks.objects.update_or_create(user=instance.user, defaults=social_links_data)
-                print("Updated/created social links:", sl_obj)
-            except Exception as e:
-                print("Failed to update social links:", e)
+            SocialLinks.objects.update_or_create(user=instance.user, defaults=social_links_data)
 
-        # Update Verification (OneToOne to User)
-        print("Verification data right before update:", verification_data)
+        # Update Verification
         if verification_data:
-            try:
-                v_obj, _ = Verification.objects.update_or_create(user=instance.user, defaults=verification_data)
-                print("Updated/created verification:", v_obj)
-            except Exception as e:
-                print("Failed to update verification:", e)
+            Verification.objects.update_or_create(user=instance.user, defaults=verification_data)
 
         print("Final profile object:", instance)
         return instance

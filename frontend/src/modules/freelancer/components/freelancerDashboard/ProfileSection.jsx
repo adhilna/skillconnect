@@ -330,12 +330,14 @@ const ProfileSection = () => {
       }
 
       if (field.includes(':')) {
-        const [arrayName, indexStr, fieldName] = field.split(':');
-        const index = parseInt(indexStr);
+        const parts = field.split(':');
+        const arrayName = parts[0];
+        const index = parseInt(parts[1]);
+        const fieldName = parts[2] || "certificate";  // default to certificate
         const newArray = [...(prev[arrayName] || [])];
 
         if (fieldName === 'certificate' && value instanceof File) {
-          const fileKey = `${arrayName}_certificate_${index}`;
+          const fileKey = `${arrayName}_${index}`; // ✅ Fix: remove extra 'certificate'
           setCertificateFiles(prev => ({
             ...prev,
             [fileKey]: value
@@ -350,6 +352,7 @@ const ProfileSection = () => {
           [arrayName]: newArray
         };
       }
+
 
       if (field === 'profile_picture' && value instanceof File) {
         setProfilePictureFile(value);
@@ -409,16 +412,13 @@ const ProfileSection = () => {
     formData.append('verification_input', JSON.stringify(backendData.verification));
 
     // Certificate files
-    backendData.educations.forEach((edu, idx) => {
-      if (edu.certificate && typeof edu.certificate !== 'string') {
-        formData.append(`education_certificate_${idx}`, edu.certificate);
+    // Certificate files (accurately mapped by key)
+    Object.entries(certificateFiles).forEach(([key, file]) => {
+      if (file instanceof File) {
+        formData.append(key, file);
       }
     });
-    backendData.experiences.forEach((exp, idx) => {
-      if (exp.certificate && typeof exp.certificate !== 'string') {
-        formData.append(`experience_certificate_${idx}`, exp.certificate);
-      }
-    });
+
 
     return formData;
   };
@@ -430,6 +430,10 @@ const ProfileSection = () => {
 
     try {
       const formData = prepareFormData();
+      // ✅ DEBUG: Log what's being sent
+      for (let pair of formData.entries()) {
+        console.log(pair[0], pair[1]);
+      }
       const { data, error } = profileData
         ? await apiService.updateProfile(formData)
         : await apiService.createProfile(formData);
@@ -511,7 +515,7 @@ const ProfileSection = () => {
                   ...prev,
                   [fileKey]: file
                 }));
-                handleInputChange(`${fieldPrefix}:${idx}:certificate`, file);
+                handleInputChange(`${fieldPrefix}:${idx}`, file);
               }
             }}
             className="bg-white/10 text-white rounded-lg px-3 py-2 border border-white/20 focus:border-purple-500/50 focus:outline-none text-sm file:bg-purple-600/30 file:border-0 file:text-white file:px-3 file:py-1 file:rounded file:cursor-pointer file:hover:bg-purple-600/40"
