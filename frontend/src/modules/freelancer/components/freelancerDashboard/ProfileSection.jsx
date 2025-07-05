@@ -400,18 +400,38 @@ const ProfileSection = () => {
 
     // JSON fields
     formData.append('skills_input', JSON.stringify(backendData.skills));
+
     formData.append('educations_input', JSON.stringify(
-      backendData.educations.map(({ certificate, ...rest }) => rest)
+      backendData.educations.map((edu, idx) => {
+        const fileKey = `education_certificate_${idx}`;
+        if (!(certificateFiles[fileKey] instanceof File)) {
+          return {
+            ...edu,
+            certificate: editData.educations?.[idx]?.certificate || null
+          };
+        }
+        const { certificate, ...rest } = edu;
+        return rest;
+      })
     ));
     formData.append('experiences_input', JSON.stringify(
-      backendData.experiences.map(({ certificate, ...rest }) => rest)
+      backendData.experiences.map((exp, idx) => {
+        const fileKey = `experience_certificate_${idx}`;
+        if (!(certificateFiles[fileKey] instanceof File)) {
+          return {
+            ...exp,
+            certificate: editData.experiences?.[idx]?.certificate || null
+          };
+        }
+        const { certificate, ...rest } = exp;
+        return rest;
+      })
     ));
     formData.append('languages_input', JSON.stringify(backendData.languages));
     formData.append('portfolios_input', JSON.stringify(backendData.portfolios));
     formData.append('social_links_input', JSON.stringify(backendData.social_links));
     formData.append('verification_input', JSON.stringify(backendData.verification));
 
-    // Certificate files
     // Certificate files (accurately mapped by key)
     Object.entries(certificateFiles).forEach(([key, file]) => {
       if (file instanceof File) {
