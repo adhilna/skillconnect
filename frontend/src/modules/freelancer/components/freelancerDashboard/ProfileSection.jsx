@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
+import { useToast } from "../../../../hooks/useToast";
 import {
   User,
   Briefcase,
@@ -86,31 +87,33 @@ const apiService = {
   }
 };
 
-// Notification component
-const Notification = ({ message, type, onClose }) => {
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      onClose();
-    }, 5000);
-    return () => clearTimeout(timer);
-  }, [onClose]);
+// // Notification component
+// const Notification = ({ message, type, onClose }) => {
+//   useEffect(() => {
+//     const timer = setTimeout(() => {
+//       onClose();
+//     }, 5000);
+//     return () => clearTimeout(timer);
+//   }, [onClose]);
 
-  const bgColor = type === 'error' ? 'bg-red-500/20 border-red-500/30' : 'bg-green-500/20 border-green-500/30';
-  const textColor = type === 'error' ? 'text-red-300' : 'text-green-300';
-  const Icon = type === 'error' ? AlertCircle : CheckCircle;
+//   const bgColor = type === 'error' ? 'bg-red-500/20 border-red-500/30' : 'bg-green-500/20 border-green-500/30';
+//   const textColor = type === 'error' ? 'text-red-300' : 'text-green-300';
+//   const Icon = type === 'error' ? AlertCircle : CheckCircle;
 
-  return (
-    <div className={`fixed top-4 right-4 z-50 p-4 rounded-lg border ${bgColor} ${textColor} flex items-center gap-2 min-w-[300px]`}>
-      <Icon size={20} />
-      <span className="flex-1">{message}</span>
-      <button onClick={onClose} className="text-white/50 hover:text-white">
-        <X size={16} />
-      </button>
-    </div>
-  );
-};
+//   return (
+//     <div className={`fixed top-4 right-4 z-50 p-4 rounded-lg border ${bgColor} ${textColor} flex items-center gap-2 min-w-[300px]`}>
+//       <Icon size={20} />
+//       <span className="flex-1">{message}</span>
+//       <button onClick={onClose} className="text-white/50 hover:text-white">
+//         <X size={16} />
+//       </button>
+//     </div>
+//   );
+// };
+
 
 // Loading component
+
 const LoadingSpinner = ({ message = "Loading..." }) => (
   <div className="bg-gradient-to-br from-purple-900/20 to-blue-900/20 backdrop-blur-lg rounded-3xl border border-white/10 p-8 text-center">
     <div className="flex items-center justify-center gap-3 mb-4">
@@ -286,7 +289,7 @@ const ProfileSection = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [notification, setNotification] = useState(null);
+  const { success, error: showError } = useToast();
   const [fieldErrors, setFieldErrors] = useState({});
   const [activeTab, setActiveTab] = useState("overview");
   const [certificateFiles, setCertificateFiles] = useState({});
@@ -307,10 +310,7 @@ const ProfileSection = () => {
       setEditData(mapped);
       console.log("ProfileData:", mapped);
     } else {
-      setNotification({
-        type: 'error',
-        message: 'Failed to load profile data'
-      });
+      showError('Something failed!')
     }
     setLoading(false);
   };
@@ -454,7 +454,7 @@ const ProfileSection = () => {
       for (let pair of formData.entries()) {
         console.log(pair[0], pair[1]);
       }
-      const { data, error } = profileData
+      const { data, error: apiError } = profileData
         ? await apiService.updateProfile(formData)
         : await apiService.createProfile(formData);
 
@@ -463,25 +463,16 @@ const ProfileSection = () => {
         setIsEditing(false);
         setCertificateFiles({});
         setProfilePictureFile(null);
-        setNotification({
-          type: 'success',
-          message: 'Profile saved successfully!'
-        });
+        success('Profile saved!')
+
       } else {
-        if (error && typeof error === 'object') {
-          setFieldErrors(error);
+        if (apiError && typeof apiError === 'object') {
+          setFieldErrors(apiError);
         }
-        setNotification({
-          type: 'error',
-          message: 'Failed to save profile. Please check the form for errors.'
-        });
+        showError('Failed to save profile. Please check the form for errors.')
       }
-    } catch (error) {
-      setNotification({
-        type: 'error',
-        message: 'An unexpected error occurred while saving.',
-        consoleError: error.message || error.toString()
-      });
+    } catch (err) {
+      showError('An unexpected error occurred while saving.')
     } finally {
       setSaving(false);
     }
@@ -503,17 +494,26 @@ const ProfileSection = () => {
 
   const getAvailabilityStatus = () => {
     const data = isEditing ? editData : profileData;
+
     return data?.is_available ? (
-      <div className="flex items-center gap-1 px-2 py-1 bg-green-500/20 rounded-full">
-        <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-        <span className="text-green-300 text-xs sm:text-sm font-medium">
+      <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-emerald-500/10 to-green-500/10 border border-emerald-500/20 rounded-full backdrop-blur-sm transition-all duration-200 hover:from-emerald-500/15 hover:to-green-500/15 hover:border-emerald-500/30 hover:shadow-lg hover:shadow-emerald-500/10">
+        <div className="relative">
+          <div className="w-2.5 h-2.5 bg-emerald-400 rounded-full animate-pulse"></div>
+          <div className="absolute inset-0 w-2.5 h-2.5 bg-emerald-400 rounded-full animate-ping opacity-75"></div>
+        </div>
+        <span className="text-emerald-300 text-xs sm:text-sm font-semibold tracking-wide">
           Available
         </span>
       </div>
     ) : (
-      <div className="flex items-center gap-1 px-2 py-1 bg-red-500/20 rounded-full">
-        <div className="w-2 h-2 bg-red-400 rounded-full"></div>
-        <span className="text-red-300 text-xs sm:text-sm font-medium">Busy</span>
+      <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-red-500/10 to-rose-500/10 border border-red-500/20 rounded-full backdrop-blur-sm transition-all duration-200 hover:from-red-500/15 hover:to-rose-500/15 hover:border-red-500/30 hover:shadow-lg hover:shadow-red-500/10">
+        <div className="relative">
+          <div className="w-2.5 h-2.5 bg-red-400 rounded-full"></div>
+          <div className="absolute inset-0 w-2.5 h-2.5 bg-red-400/50 rounded-full animate-pulse"></div>
+        </div>
+        <span className="text-red-300 text-xs sm:text-sm font-semibold tracking-wide">
+          Busy
+        </span>
       </div>
     );
   };
@@ -524,57 +524,120 @@ const ProfileSection = () => {
 
     if (isEditing) {
       return (
-        <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-center">
-          <input
-            type="file"
-            accept=".pdf,.doc,.docx"
-            onChange={(e) => {
-              const file = e.target.files[0];
-              if (file) {
-                setCertificateFiles(prev => ({
-                  ...prev,
-                  [fileKey]: file
-                }));
-                handleInputChange(`${fieldPrefix}:${idx}`, file);
-              }
-            }}
-            className="bg-white/10 text-white rounded-lg px-3 py-2 border border-white/20 focus:border-purple-500/50 focus:outline-none text-sm file:bg-purple-600/30 file:border-0 file:text-white file:px-3 file:py-1 file:rounded file:cursor-pointer file:hover:bg-purple-600/40"
-          />
-          {(currentFile || certificate) && (
-            <button
-              onClick={() => {
-                setCertificateFiles(prev => {
-                  const newFiles = { ...prev };
-                  delete newFiles[fileKey];
-                  return newFiles;
-                });
-                handleInputChange(`${fieldPrefix}:${idx}:certificate`, null);
-              }}
-              className="bg-red-600/30 hover:bg-red-600/40 px-3 py-1 rounded text-red-300 text-xs flex items-center gap-1"
-            >
-              <Trash2 size={12} /> Remove
-            </button>
-          )}
-          {(currentFile || certificate) && (
-            <span className="text-white/60 text-xs">
-              Selected: {currentFile?.name || (typeof certificate === 'string' ? certificate.split('/').pop() : 'None')}
-            </span>
-          )}
+        <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center p-4 bg-gradient-to-r from-slate-800/50 to-slate-700/50 rounded-xl border border-slate-600/30 backdrop-blur-sm">
+          {/* File Input Section */}
+          <div className="flex-1 w-full sm:w-auto">
+            <label className="block text-sm font-medium text-slate-300 mb-2">
+              Upload Certificate
+            </label>
+            <div className="relative group">
+              <input
+                type="file"
+                accept=".pdf,.doc,.docx"
+                onChange={(e) => {
+                  const file = e.target.files[0];
+                  if (file) {
+                    setCertificateFiles(prev => ({
+                      ...prev,
+                      [fileKey]: file
+                    }));
+                    handleInputChange(`${fieldPrefix}:${idx}`, file);
+                  }
+                }}
+                className="w-full bg-slate-900/60 text-slate-200 rounded-lg px-4 py-3 border border-slate-600/40 focus:border-purple-500/60 focus:outline-none focus:ring-2 focus:ring-purple-500/20 text-sm transition-all duration-200 file:bg-gradient-to-r file:from-purple-600/80 file:to-blue-600/80 file:border-0 file:text-white file:px-4 file:py-2 file:rounded-lg file:cursor-pointer file:hover:from-purple-600/90 file:hover:to-blue-600/90 file:transition-all file:duration-200 file:font-medium file:text-xs file:mr-4"
+              />
+              <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-purple-600/5 to-blue-600/5 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none"></div>
+            </div>
+
+            {/* File Info Display */}
+            {(currentFile || certificate) && (
+              <div className="mt-3 p-3 bg-slate-900/40 rounded-lg border border-slate-600/20">
+                <div className="flex items-center gap-2 text-slate-300">
+                  <FileText size={16} className="text-purple-400" />
+                  <span className="text-sm font-medium">
+                    {currentFile?.name || (typeof certificate === 'string' ? certificate.split('/').pop() : 'Unknown file')}
+                  </span>
+                </div>
+                <div className="text-xs text-slate-500 mt-1">
+                  {currentFile ? `${(currentFile.size / 1024).toFixed(1)} KB` : 'Previously uploaded'}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex flex-row sm:flex-col gap-2 w-full sm:w-auto">
+            {(currentFile || certificate) && (
+              <button
+                onClick={() => {
+                  setCertificateFiles(prev => {
+                    const newFiles = { ...prev };
+                    delete newFiles[fileKey];
+                    return newFiles;
+                  });
+                  handleInputChange(`${fieldPrefix}:${idx}:certificate`, null);
+                }}
+                className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-red-600/20 to-red-700/20 hover:from-red-600/30 hover:to-red-700/30 border border-red-500/30 hover:border-red-500/50 rounded-lg text-red-300 hover:text-red-200 text-sm font-medium transition-all duration-200 hover:shadow-lg hover:shadow-red-500/10"
+              >
+                <Trash2 size={16} />
+                <span className="hidden sm:inline">Remove</span>
+              </button>
+            )}
+
+            {certificate && typeof certificate === 'string' && (
+              <a
+                href={certificate}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-emerald-600/20 to-green-600/20 hover:from-emerald-600/30 hover:to-green-600/30 border border-emerald-500/30 hover:border-emerald-500/50 rounded-lg text-emerald-300 hover:text-emerald-200 text-sm font-medium transition-all duration-200 hover:shadow-lg hover:shadow-emerald-500/10"
+              >
+                <FileText size={16} />
+                <span className="hidden sm:inline">Preview</span>
+              </a>
+            )}
+          </div>
         </div>
       );
     }
 
+    // View Mode
     return certificate && typeof certificate === 'string' ? (
-      <a
-        href={certificate}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="inline-flex items-center gap-1 px-3 py-1.5 bg-gradient-to-r from-purple-600/30 to-blue-600/30 hover:from-purple-600/40 hover:to-blue-600/40 rounded-lg text-purple-300 text-xs font-medium border border-purple-500/30 transition-all duration-200"
-      >
-        <FileText size={14} /> View Certificate
-      </a>
+      <div className="inline-flex items-center gap-3 p-4 bg-gradient-to-r from-purple-600/10 to-blue-600/10 hover:from-purple-600/20 hover:to-blue-600/20 rounded-xl border border-purple-500/20 hover:border-purple-500/30 transition-all duration-300 hover:shadow-lg hover:shadow-purple-500/10 backdrop-blur-sm group">
+        <div className="flex items-center justify-center w-10 h-10 bg-gradient-to-br from-purple-600/30 to-blue-600/30 rounded-lg group-hover:from-purple-600/40 group-hover:to-blue-600/40 transition-all duration-200">
+          <FileText size={20} className="text-purple-300" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="text-sm font-semibold text-purple-300 group-hover:text-purple-200 transition-colors duration-200">
+            Certificate Available
+          </div>
+          <div className="text-xs text-slate-400 group-hover:text-slate-300 transition-colors duration-200 truncate">
+            {certificate.split('/').pop()}
+          </div>
+        </div>
+        <a
+          href={certificate}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600/30 to-blue-600/30 hover:from-purple-600/50 hover:to-blue-600/50 rounded-lg text-purple-200 text-sm font-medium border border-purple-500/30 hover:border-purple-500/50 transition-all duration-200 hover:shadow-md"
+        >
+          <span className="hidden sm:inline">View</span>
+          <ExternalLink size={14} className="sm:hidden" />
+        </a>
+      </div>
     ) : (
-      <span className="text-white/60 text-sm">No certificate</span>
+      <div className="inline-flex items-center gap-3 p-4 bg-slate-800/30 rounded-xl border border-slate-600/20 backdrop-blur-sm">
+        <div className="flex items-center justify-center w-10 h-10 bg-slate-700/50 rounded-lg">
+          <FileText size={20} className="text-slate-500" />
+        </div>
+        <div className="flex-1">
+          <div className="text-sm font-medium text-slate-400">
+            No Certificate
+          </div>
+          <div className="text-xs text-slate-500">
+            No certificate has been uploaded
+          </div>
+        </div>
+      </div>
     );
   };
 
@@ -633,15 +696,6 @@ const ProfileSection = () => {
 
   return (
     <div className="space-y-6">
-      {/* Notification */}
-      {notification && (
-        <Notification
-          message={notification.message}
-          type={notification.type}
-          onClose={() => setNotification(null)}
-        />
-      )}
-
       {/* Header */}
       <div className="bg-gradient-to-r from-purple-900/30 to-blue-900/30 backdrop-blur-lg rounded-3xl border border-white/10 p-6">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-3">

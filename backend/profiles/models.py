@@ -133,19 +133,25 @@ class Education(models.Model):
         null=True, blank=True,
         validators=[MinValueValidator(1900), MaxValueValidator(timezone.now().year)]
     )
-    certificate = models.FileField(upload_to=education_certificate_path, blank=True, null=True, validators=[validate_certificate_file])
+    certificate = models.FileField(
+        upload_to=education_certificate_path,
+        blank=True,
+        null=True,
+        max_length=500,
+        validators=[validate_certificate_file]
+        )
 
     def clean(self):
         if self.end_year and self.start_year > self.end_year:
             raise ValidationError({'end_year': 'End year must be after start year.'})
-        
+
     def save(self, *args, **kwargs):
         self.clean()
         super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.degree} at {self.college}"
-    
+
     class Meta:
         indexes = [
             models.Index(fields=['profile']),
@@ -159,7 +165,13 @@ class Experience(models.Model):
     end_date = models.DateField(null=True, blank=True)
     description = models.TextField(blank=True)
     ongoing = models.BooleanField(default=False)
-    certificate = models.FileField(upload_to=experience_certificate_path, blank=True, null=True, validators=[validate_certificate_file])
+    certificate = models.FileField(
+        upload_to=experience_certificate_path,
+        blank=True,
+        null=True,
+        max_length=500,
+        validators=[validate_certificate_file]
+        )
 
     def clean(self):
         if not self.ongoing and not self.end_date:
