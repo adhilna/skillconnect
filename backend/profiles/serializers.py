@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from django.conf import settings
 from django.db import transaction
 from .models import (
     FreelancerProfile, SocialLinks, Verification,
@@ -14,7 +15,7 @@ class SkillSerializer(serializers.ModelSerializer):
         fields = ['id', 'name']
 
 class EducationSerializer(serializers.ModelSerializer):
-    certificate = serializers.FileField(required=False, allow_null=True)
+    certificate = serializers.SerializerMethodField(required=False, allow_null=True)
     class Meta:
         model = Education
         fields = [
@@ -27,9 +28,14 @@ class EducationSerializer(serializers.ModelSerializer):
             'end_year': {'required': False, 'allow_null': True},
         }
 
+    def get_certificate(self, obj):
+        request = self.context.get('request')
+        if obj.certificate and hasattr(obj.certificate, 'url'):
+            return request.build_absolute_uri(obj.certificate.url) if request else obj.certificate.url
+        return None
 
 class ExperienceSerializer(serializers.ModelSerializer):
-    certificate = serializers.FileField(required=False, allow_null=True)
+    certificate = serializers.SerializerMethodField(required=False, allow_null=True)
     class Meta:
         model = Experience
         fields = [
@@ -45,6 +51,11 @@ class ExperienceSerializer(serializers.ModelSerializer):
             'ongoing': {'required': False, 'allow_null': True},
         }
 
+    def get_certificate(self, obj):
+        request = self.context.get('request')
+        if obj.certificate and hasattr(obj.certificate, 'url'):
+            return request.build_absolute_uri(obj.certificate.url) if request else obj.certificate.url
+        return None
 
 class LanguageSerializer(serializers.ModelSerializer):
     class Meta:
@@ -55,7 +66,6 @@ class LanguageSerializer(serializers.ModelSerializer):
             'proficiency': {'required': False, 'allow_null': True},
         }
 
-
 class PortfolioSerializer(serializers.ModelSerializer):
     class Meta:
         model = Portfolio
@@ -65,7 +75,6 @@ class PortfolioSerializer(serializers.ModelSerializer):
             'description': {'required': False, 'allow_null': True},
             'project_link': {'required': False, 'allow_null': True},
         }
-
 
 class SocialLinksSerializer(serializers.ModelSerializer):
     class Meta:
@@ -82,7 +91,6 @@ class SocialLinksSerializer(serializers.ModelSerializer):
             'instagram_url': {'required': False, 'allow_null': True},
         }
 
-
 class VerificationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Verification
@@ -96,7 +104,6 @@ class VerificationSerializer(serializers.ModelSerializer):
             'id_verified': {'required': False, 'allow_null': True},
             'video_verified': {'required': False, 'allow_null': True},
         }
-
 
 # Main nested profile serializer
 class FreelancerProfileSetupSerializer(serializers.ModelSerializer):
@@ -346,83 +353,7 @@ class FreelancerProfileSetupSerializer(serializers.ModelSerializer):
         print("Final profile object:", instance)
         return instance
 
-class ClientProfileSerializer(serializers.ModelSerializer):
-    user = serializers.PrimaryKeyRelatedField(read_only=True)
-    verification = VerificationSerializer(required=False)
-
-    def validate_first_name(self, value):
-        if not value.isalpha():
-            raise serializers.ValidationError("First name must contain only letters.")
-        return value
-
-    def validate_last_name(self, value):
-        if not value.isalpha():
-            raise serializers.ValidationError("Last name must contain only letters.")
-        return value
-
-    def validate_website(self, value):
-        if value and not value.startswith(('http://', 'https://')):
-            raise serializers.ValidationError("Website must start with http:// or https://")
-        return value
-
-    def validate_monthly_budget(self, value):
-        if value is not None and value < 0:
-            raise serializers.ValidationError("Monthly budget must be positive.")
-        return value
-
-    def validate_payment_method(self, value):
-        valid_methods = ['credit-card', 'debit-card', 'paypal', 'bank-transfer', 'stripe', '']
-        if value not in valid_methods:
-            raise serializers.ValidationError(f"Payment method must be one of: {', '.join(valid_methods)}")
-        return value
-
-    def validate_account_type(self, value):
-        valid_types = ['personal', 'business']
-        if value not in valid_types:
-            raise serializers.ValidationError(f"Account type must be one of: {', '.join(valid_types)}")
-        return value
-
-    def validate_project_frequency(self, value):
-        valid_frequencies = ['one-time', 'weekly', 'monthly', 'quarterly', 'annually']
-        if value not in valid_frequencies:
-            raise serializers.ValidationError(f"Project frequency must be one of: {', '.join(valid_frequencies)}")
-        return value
-
-    def validate_payment_timing(self, value):
-        valid_timings = ['upfront', 'milestone-based', 'upon-completion', 'monthly']
-        if value not in valid_timings:
-            raise serializers.ValidationError(f"Payment timing must be one of: {', '.join(valid_timings)}")
-        return value
-
-    def validate_working_hours(self, value):
-        valid_options = ['business-hours', 'flexible', '24-7', 'overlap']
-        if value and value not in valid_options:
-            raise serializers.ValidationError(
-                f"Working hours must be one of: {', '.join(valid_options)}"
-        )
-        return value
-
-    def validate_budget_range(self, value):
-        if value and not isinstance(value, str):
-            raise serializers.ValidationError("Budget range must be a string.")
-        return value
-
-    def validate_project_budget(self, value):
-        if value is not None and value < 0:
-            raise serializers.ValidationError("Project budget must be positive.")
-        return value
-
-    def validate_industry(self, value):
-        if value not in ALLOWED_INDUSTRIES:
-            raise serializers.ValidationError(f"Industry must be one of: {', '.join(ALLOWED_INDUSTRIES)}")
-        return value
-
-    def validate_company_size(self, value):
-        if value not in ALLOWED_COMPANY_SIZES:
-            raise serializers.ValidationError(f"Company size must be one of: {', '.join(ALLOWED_COMPANY_SIZES)}")
-        return value
-
-
+class ClientProfileSetupSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ClientProfile
@@ -435,6 +366,7 @@ class ClientProfileSerializer(serializers.ModelSerializer):
             'company_name',
             'profile_picture',
             'company_description',
+            'country',
             'location',
             'industry',
             'company_size',
@@ -453,35 +385,42 @@ class ClientProfileSerializer(serializers.ModelSerializer):
             'monthly_budget',
             'project_budget',
             'payment_timing',
-            'verification',
             'created_at',
             'updated_at',
         ]
+        read_only_fields = ['user', 'created_at', 'updated_at']
 
-        read_only_fields = ['created_at', 'updated_at']
-
+    def to_representation(self, instance):
+        """Customize output if needed (e.g., format image URL, etc.)"""
+        rep = super().to_representation(instance)
+        # rep['profile_picture_url'] = instance.profile_picture.url if instance.profile_picture else None
+        return rep
 
     @transaction.atomic
     def create(self, validated_data):
-        verification_data = validated_data.pop('verification', None)
-        profile = ClientProfile.objects.create(**validated_data)
-        if verification_data:
-            verification = Verification.objects.create(**verification_data)
-            profile.verification = verification
-            profile.save()
+        user = self.context['request'].user
+        if not user:
+            raise serializers.ValidationError("User not found in request context")
+
+        # Prevent duplicate profiles
+        if ClientProfile.objects.filter(user=user).exists():
+            raise serializers.ValidationError("Profile already exists for this user")
+
+        validated_data.pop('user', None)
+        profile = ClientProfile.objects.create(user=user, **validated_data)
         return profile
 
     @transaction.atomic
     def update(self, instance, validated_data):
-        verification_data = validated_data.pop('verification', None)
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
         instance.save()
-        if verification_data:
-            if instance.verification:
-                VerificationSerializer().update(instance.verification, verification_data)
-            else:
-                verification = Verification.objects.create(**verification_data)
-                instance.verification = verification
-                instance.save()
         return instance
+
+    def validate(self, attrs):
+        account_type = attrs.get('account_type')
+        if account_type == 'business':
+            if not attrs.get('company_name'):
+                raise serializers.ValidationError({'company_name': 'Company name is required for business accounts.'})
+        # Add more conditional validation as needed
+        return attrs

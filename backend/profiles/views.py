@@ -1,7 +1,7 @@
 from rest_framework import viewsets, permissions, status
 from rest_framework.permissions import IsAuthenticated
 from .models import FreelancerProfile, ClientProfile
-from .serializers import FreelancerProfileSetupSerializer, ClientProfileSerializer
+from .serializers import FreelancerProfileSetupSerializer, ClientProfileSetupSerializer
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework.decorators import action
@@ -152,7 +152,6 @@ CITIES = [
 
     # Lakshadweep (3 cities)
     "Kavaratti", "Minicoy", "Andrott",
-
 ]
 
 @api_view(['GET'])
@@ -186,9 +185,6 @@ class IsOwnerOrReadOnly(permissions.BasePermission):
         # Write permissions are only allowed to the owner of the profile.
         return obj.user == request.user
 
-import json
-from rest_framework import status
-from rest_framework.response import Response
 
 class FreelancerProfileSetupViewSet(viewsets.ModelViewSet):
     """
@@ -203,6 +199,12 @@ class FreelancerProfileSetupViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         # Only allow users to access their own profiles
         return self.queryset.filter(user=self.request.user)
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context['request'] = self.request
+        return context
+
 
     def perform_create(self, serializer):
         # Attach the current user to the new profile
@@ -276,7 +278,7 @@ class FreelancerProfileSetupViewSet(viewsets.ModelViewSet):
             return Response({"detail": "Profile not found."}, status=status.HTTP_404_NOT_FOUND)
 
         if request.method == 'GET':
-            serializer = self.get_serializer(profile)
+            serializer = self.get_serializer(profile, context={'request': request})
             return Response(serializer.data, status=status.HTTP_200_OK)
 
         # ---- Start of robust parsing logic ----
@@ -333,73 +335,89 @@ class FreelancerProfileSetupViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(profile, data=parsed_data, partial=partial)
         if serializer.is_valid():
             serializer.save()
-            return Response(serializer.data, status=status.HTTP_200_OK)
+            refreshed_serializer = self.get_serializer(profile, context={'request': request})
+            return Response(refreshed_serializer.data, status=status.HTTP_200_OK)
+
         print("==== [DEBUG] SERIALIZER ERRORS ====")
         pprint.pprint(serializer.errors)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-
-
-
-
-
-class ClientProfileViewSet(viewsets.ModelViewSet):
-    serializer_class = ClientProfileSerializer
-    permission_classes = [IsAuthenticated, IsOwnerOrReadOnly]
+class ClientProfileSetupViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet for creating and managing ClientProfile with full multipart/form-data and JSON support.
+    Includes extensive debugging/logging for all incoming data and files.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+    queryset = ClientProfile.objects.all()
+    serializer_class = ClientProfileSetupSerializer
+    parser_classes = [MultiPartParser, FormParser]
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
 
     def get_queryset(self):
         return ClientProfile.objects.filter(user=self.request.user)
+    
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context['request'] = self.request
+        return context
 
     def create(self, request, *args, **kwargs):
+        print("==== [DEBUG] RAW DATA RECEIVED ====")
+        pprint.pprint(dict(request.data))
+        print("==== [DEBUG] RAW FILES RECEIVED ====")
+        pprint.pprint(dict(request.FILES))
+
+        data = request.data.copy()
+
+        # If you have any JSON fields, parse them here (for now, assuming none)
+        # Example: if you add a JSON field in future, parse as below:
+        # for field in ['project_types', 'business_goals', ...]:
+        #     if field in data and isinstance(data[field], str):
+        #         try:
+        #             data[field] = json.loads(data[field])
+        #         except Exception as e:
+        #             print(f"[DEBUG] JSON parse error in {field}: {e}")
+        #             data[field] = []
+
+        serializer = self.get_serializer(data=data)
+        if not serializer.is_valid():
+            print("==== [DEBUG] SERIALIZER ERRORS ====")
+            pprint.pprint(serializer.errors)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        self.perform_create(serializer)
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+
+    @action(detail=False, methods=['get', 'put', 'patch'], url_path='me')
+    def me(self, request):
         try:
-            data_str = request.POST.get('data')
-            if not data_str:
-                return Response({'error': 'No data field in request'}, status=400)
-            data = json.loads(data_str)
+            profile = self.get_queryset().get(user=request.user)
+        except ClientProfile.DoesNotExist:
+            return Response({"detail": "Profile not found."}, status=status.HTTP_404_NOT_FOUND)
 
-            # Attach profile picture
-            if 'profile_picture' in request.FILES:
-                data['profile_picture'] = request.FILES['profile_picture']
-
-            serializer = self.get_serializer(data=data)
-            if not serializer.is_valid():
-                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-            self.perform_create(serializer)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-        except json.JSONDecodeError:
-            return Response({'error': 'Invalid JSON data'}, status=400)
-        except Exception as e:
-            return Response({'error': str(e)}, status=400)
-
-    def update(self, request, *args, **kwargs):
-        try:
-            data_str = request.POST.get('data')
-            if not data_str:
-                return Response({'error': 'No data field in request'}, status=status.HTTP_400_BAD_REQUEST)
-            data = json.loads(data_str)
-
-            # Attach profile picture
-            if 'profile_picture' in request.FILES:
-                data['profile_picture'] = request.FILES['profile_picture']
-
-            instance = self.get_object()
-            serializer = self.get_serializer(instance, data=data, partial=True)
-            if not serializer.is_valid():
-                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-            serializer.save()
+        if request.method == 'GET':
+            serializer = self.get_serializer(profile, context={'request': request})
             return Response(serializer.data, status=status.HTTP_200_OK)
 
-        except json.JSONDecodeError:
-            return Response({'error': 'Invalid JSON data'}, status=status.HTTP_400_BAD_REQUEST)
-        except Exception as e:
-            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        print("==== [DEBUG] RAW DATA RECEIVED ====")
+        pprint.pprint(dict(request.data))
+        print("==== [DEBUG] RAW FILES RECEIVED ====")
+        pprint.pprint(dict(request.FILES))
 
-    def partial_update(self, request, *args, **kwargs):
-        kwargs['partial'] = True
-        return self.update(request, *args, **kwargs)
+        data = request.data.copy()
 
+        # If you have any JSON fields, parse them here as above
+
+        partial = request.method == 'PATCH'
+        serializer = self.get_serializer(profile, data=data, partial=partial)
+        if serializer.is_valid():
+            serializer.save()
+            refreshed_serializer = self.get_serializer(profile, context={'request': request})
+            return Response(refreshed_serializer.data, status=status.HTTP_200_OK)
+
+        print("==== [DEBUG] SERIALIZER ERRORS ====")
+        pprint.pprint(serializer.errors)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

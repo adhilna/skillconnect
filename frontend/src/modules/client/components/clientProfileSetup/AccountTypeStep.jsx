@@ -2,6 +2,11 @@ import React from 'react';
 import { User, Building } from 'lucide-react';
 
 export default function AccountTypeStep({ clientData, setClientData, errors }) {
+    // Helper to handle both click and keyboard selection
+    const selectAccountType = (type) => {
+        setClientData(prev => ({ ...prev, accountType: type }));
+    };
+
     return (
         <div className="space-y-6">
             <div className="text-center">
@@ -10,16 +15,23 @@ export default function AccountTypeStep({ clientData, setClientData, errors }) {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Personal Account Card */}
                 <div
-                    onClick={() => setClientData(prev => ({ ...prev, accountType: 'personal' }))}
-                    className={`p-6 rounded-xl border-2 cursor-pointer transition-all transform hover:scale-105 ${clientData.accountType === 'personal'
-                        ? 'border-green-500 bg-green-500/10 shadow-lg shadow-green-500/20'
-                        : 'border-white/20 bg-white/5 hover:bg-white/10'
+                    role="button"
+                    tabIndex={0}
+                    aria-pressed={clientData.accountType === 'personal'}
+                    onClick={() => selectAccountType('personal')}
+                    onKeyDown={e => {
+                        if (e.key === 'Enter' || e.key === ' ') selectAccountType('personal');
+                    }}
+                    className={`p-6 rounded-xl border-2 cursor-pointer transition-all transform hover:scale-105 outline-none
+                        ${clientData.accountType === 'personal'
+                            ? 'border-green-500 bg-green-500/10 shadow-lg shadow-green-500/20'
+                            : 'border-white/20 bg-white/5 hover:bg-white/10'
                         }`}
                 >
                     <div className="flex items-center gap-4">
-                        <div className={`p-3 rounded-full ${clientData.accountType === 'personal' ? 'bg-green-500' : 'bg-white/10'
-                            }`}>
+                        <div className={`p-3 rounded-full ${clientData.accountType === 'personal' ? 'bg-green-500' : 'bg-white/10'}`}>
                             <User size={24} className="text-white" />
                         </div>
                         <div>
@@ -29,16 +41,23 @@ export default function AccountTypeStep({ clientData, setClientData, errors }) {
                     </div>
                 </div>
 
+                {/* Business Account Card */}
                 <div
-                    onClick={() => setClientData(prev => ({ ...prev, accountType: 'business' }))}
-                    className={`p-6 rounded-xl border-2 cursor-pointer transition-all transform hover:scale-105 ${clientData.accountType === 'business'
-                        ? 'border-green-500 bg-green-500/10 shadow-lg shadow-green-500/20'
-                        : 'border-white/20 bg-white/5 hover:bg-white/10'
+                    role="button"
+                    tabIndex={0}
+                    aria-pressed={clientData.accountType === 'business'}
+                    onClick={() => selectAccountType('business')}
+                    onKeyDown={e => {
+                        if (e.key === 'Enter' || e.key === ' ') selectAccountType('business');
+                    }}
+                    className={`p-6 rounded-xl border-2 cursor-pointer transition-all transform hover:scale-105 outline-none
+                        ${clientData.accountType === 'business'
+                            ? 'border-green-500 bg-green-500/10 shadow-lg shadow-green-500/20'
+                            : 'border-white/20 bg-white/5 hover:bg-white/10'
                         }`}
                 >
                     <div className="flex items-center gap-4">
-                        <div className={`p-3 rounded-full ${clientData.accountType === 'business' ? 'bg-green-500' : 'bg-white/10'
-                            }`}>
+                        <div className={`p-3 rounded-full ${clientData.accountType === 'business' ? 'bg-green-500' : 'bg-white/10'}`}>
                             <Building size={24} className="text-white" />
                         </div>
                         <div>
@@ -49,7 +68,9 @@ export default function AccountTypeStep({ clientData, setClientData, errors }) {
                 </div>
             </div>
 
-            {errors.accountType && <p className="text-red-400 text-sm text-center">{errors.accountType}</p>}
+            {errors.accountType && (
+                <p className="text-red-400 text-sm text-center">{errors.accountType}</p>
+            )}
         </div>
-    )
+    );
 }

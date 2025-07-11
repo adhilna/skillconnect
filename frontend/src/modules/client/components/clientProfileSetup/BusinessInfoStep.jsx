@@ -2,7 +2,7 @@ import React from 'react';
 import { User, Upload } from 'lucide-react';
 import CityAutocomplete from '../../../../components/Shared/CityAutoComplete';
 
-export default function BusinessInfoStep({
+export default function ProfileInfoStep({
     clientData,
     errors,
     industries,
@@ -11,15 +11,18 @@ export default function BusinessInfoStep({
     handleImageUpload,
     profileImage
 }) {
+    const isBusiness = clientData.accountType === 'business';
+
     return (
         <div className="space-y-6">
             <div className="text-center">
                 <h2 className="text-3xl font-bold text-white mb-2">
-                    {clientData.accountType === 'business' ? 'Business Information' : 'Personal Information'}
+                    {isBusiness ? 'Business Information' : 'Personal Information'}
                 </h2>
                 <p className="text-white/70">Help us understand your background</p>
             </div>
 
+            {/* Profile Image Upload */}
             <div className="flex justify-center mb-6">
                 <div className="relative">
                     <div className="w-24 h-24 rounded-full bg-white/10 flex items-center justify-center overflow-hidden border-2 border-white/20">
@@ -41,6 +44,7 @@ export default function BusinessInfoStep({
                 </div>
             </div>
 
+            {/* Name Fields */}
             <div className="grid grid-cols-2 gap-4">
                 <div>
                     <label className="block text-white/80 text-sm font-medium mb-2">First Name</label>
@@ -68,7 +72,33 @@ export default function BusinessInfoStep({
                 </div>
             </div>
 
-            {clientData.accountType === 'business' && (
+            {/* Country & Location */}
+            <div className="grid grid-cols-2 gap-4">
+                <div>
+                    <label className="block text-white/80 text-sm font-medium mb-2">Country</label>
+                    <input
+                        type="text"
+                        name="country"
+                        value={clientData.country}
+                        onChange={handleInputChange}
+                        className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder:text-white/50 focus:outline-none focus:border-green-400 transition-colors"
+                        placeholder="Country"
+                    />
+                    {errors.country && <p className="text-red-400 text-sm mt-1">{errors.country}</p>}
+                </div>
+                <div>
+                    <label className="block text-white/80 text-sm font-medium mb-2">Location</label>
+                    <CityAutocomplete
+                        value={clientData.location}
+                        onChange={handleInputChange}
+                        onBlur={() => { }}
+                        errors={errors}
+                    />
+                </div>
+            </div>
+
+            {/* Business-Only Fields */}
+            {isBusiness && (
                 <>
                     <div>
                         <label className="block text-white/80 text-sm font-medium mb-2">Company Name</label>
@@ -113,36 +143,28 @@ export default function BusinessInfoStep({
                             </select>
                         </div>
                     </div>
-
-                    <div>
-                        <label className="block text-white/80 text-sm font-medium mb-2">Website (Optional)</label>
-                        <input
-                            type="url"
-                            name="website"
-                            value={clientData.website}
-                            onChange={handleInputChange}
-                            className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder:text-white/50 focus:outline-none focus:border-green-400 transition-colors"
-                            placeholder="https://www.company.com"
-                        />
-                    </div>
                 </>
             )}
 
-            <div className="grid grid-cols-2 gap-4">
-                <div>
-                    <label className="block text-white/80 text-sm font-medium mb-2">Location</label>
-                    <CityAutocomplete
-                        value={clientData.location}
-                        onChange={handleInputChange}
-                        onBlur={() => { }} // Add your onBlur logic if needed
-                        errors={errors}
-                    />
-                </div>
-            </div>
-
+            {/* Website Field: Now always shown */}
             <div>
                 <label className="block text-white/80 text-sm font-medium mb-2">
-                    {clientData.accountType === 'business' ? 'Company Description' : 'About You'}
+                    {isBusiness ? "Company Website (Optional)" : "Personal Website or Portfolio (Optional)"}
+                </label>
+                <input
+                    type="url"
+                    name="website"
+                    value={clientData.website}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder:text-white/50 focus:outline-none focus:border-green-400 transition-colors"
+                    placeholder={isBusiness ? "https://www.company.com" : "https://yourportfolio.com"}
+                />
+            </div>
+
+            {/* Description */}
+            <div>
+                <label className="block text-white/80 text-sm font-medium mb-2">
+                    {isBusiness ? 'Company Description' : 'About You'}
                 </label>
                 <textarea
                     name="companyDescription"
@@ -150,12 +172,12 @@ export default function BusinessInfoStep({
                     onChange={handleInputChange}
                     rows={4}
                     className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder:text-white/50 focus:outline-none focus:border-green-400 resize-none transition-colors"
-                    placeholder={clientData.accountType === 'business'
+                    placeholder={isBusiness
                         ? "Tell us about your company and what you do..."
                         : "Tell us about yourself and your needs..."
                     }
                 />
             </div>
         </div>
-    )
+    );
 }

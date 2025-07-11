@@ -135,6 +135,7 @@ const FreelancerProfileSetup = () => {
 
     const [languageOptions] = useState([
         { value: 'english', label: 'English' },
+        { value: 'malayalam', label: 'Malayalam' },
         { value: 'spanish', label: 'Spanish' },
         { value: 'french', label: 'French' },
         { value: 'german', label: 'German' },

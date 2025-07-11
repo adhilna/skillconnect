@@ -6,6 +6,12 @@ import {
   Briefcase,
   GraduationCap,
   Star,
+  BookOpen,
+  Clock,
+  XCircle,
+  Award,
+  Building2,
+  CalendarDays,
   Shield,
   CheckCircle,
   MapPin,
@@ -87,33 +93,7 @@ const apiService = {
   }
 };
 
-// // Notification component
-// const Notification = ({ message, type, onClose }) => {
-//   useEffect(() => {
-//     const timer = setTimeout(() => {
-//       onClose();
-//     }, 5000);
-//     return () => clearTimeout(timer);
-//   }, [onClose]);
-
-//   const bgColor = type === 'error' ? 'bg-red-500/20 border-red-500/30' : 'bg-green-500/20 border-green-500/30';
-//   const textColor = type === 'error' ? 'text-red-300' : 'text-green-300';
-//   const Icon = type === 'error' ? AlertCircle : CheckCircle;
-
-//   return (
-//     <div className={`fixed top-4 right-4 z-50 p-4 rounded-lg border ${bgColor} ${textColor} flex items-center gap-2 min-w-[300px]`}>
-//       <Icon size={20} />
-//       <span className="flex-1">{message}</span>
-//       <button onClick={onClose} className="text-white/50 hover:text-white">
-//         <X size={16} />
-//       </button>
-//     </div>
-//   );
-// };
-
-
 // Loading component
-
 const LoadingSpinner = ({ message = "Loading..." }) => (
   <div className="bg-gradient-to-br from-purple-900/20 to-blue-900/20 backdrop-blur-lg rounded-3xl border border-white/10 p-8 text-center">
     <div className="flex items-center justify-center gap-3 mb-4">
@@ -278,7 +258,6 @@ const mapBackendToFrontend = (data) => ({
   portfolios: data.portfolios_output || [],
   verification: data.verification_output || {},
   social_links: data.social_links_output || {}
-  // Add social_links if you have social_links_output in your API
 });
 
 
@@ -298,11 +277,12 @@ const ProfileSection = () => {
   // Initialize profile data
   useEffect(() => {
     loadProfile();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const loadProfile = async () => {
     setLoading(true);
-    const { data, error } = await apiService.getProfile();
+    const { data, error: apiError } = await apiService.getProfile();
 
     if (data) {
       const mapped = mapBackendToFrontend(data);
@@ -310,6 +290,7 @@ const ProfileSection = () => {
       setEditData(mapped);
       console.log("ProfileData:", mapped);
     } else {
+      console.error('API Error:', apiError);
       showError('Something failed!')
     }
     setLoading(false);
@@ -403,30 +384,46 @@ const ProfileSection = () => {
 
     formData.append('educations_input', JSON.stringify(
       backendData.educations.map((edu, idx) => {
-        const fileKey = `education_certificate_${idx}`;
+        const eduIdOrIdx = edu.id ?? `new_${idx}`;
+        const fileKey = `education_certificate_${eduIdOrIdx}`;
+
         if (!(certificateFiles[fileKey] instanceof File)) {
+          const oldUrl = editData.educations?.[idx]?.certificate || null;
           return {
             ...edu,
-            certificate: editData.educations?.[idx]?.certificate || null
+            certificate: oldUrl
+              ? oldUrl.replace('http://localhost:8000/media/', '')
+              : null
           };
         }
+        // eslint-disable-next-line no-unused-vars
         const { certificate, ...rest } = edu;
         return rest;
       })
     ));
+
+
     formData.append('experiences_input', JSON.stringify(
       backendData.experiences.map((exp, idx) => {
-        const fileKey = `experience_certificate_${idx}`;
+        const expIdOrIdx = exp.id ?? `new_${idx}`;
+        const fileKey = `experience_certificate_${expIdOrIdx}`;
+
         if (!(certificateFiles[fileKey] instanceof File)) {
+          const oldUrl = editData.experiences?.[idx]?.certificate || null;
           return {
             ...exp,
-            certificate: editData.experiences?.[idx]?.certificate || null
+            certificate: oldUrl
+              ? oldUrl.replace('http://localhost:8000/media/', '')
+              : null
           };
         }
+        // eslint-disable-next-line no-unused-vars
         const { certificate, ...rest } = exp;
         return rest;
       })
     ));
+
+
     formData.append('languages_input', JSON.stringify(backendData.languages));
     formData.append('portfolios_input', JSON.stringify(backendData.portfolios));
     formData.append('social_links_input', JSON.stringify(backendData.social_links));
@@ -472,6 +469,7 @@ const ProfileSection = () => {
         showError('Failed to save profile. Please check the form for errors.')
       }
     } catch (err) {
+      console.error('Unexpected error while saving:', err);
       showError('An unexpected error occurred while saving.')
     } finally {
       setSaving(false);
@@ -518,18 +516,20 @@ const ProfileSection = () => {
     );
   };
 
-  const renderCertificate = (certificate, idx, fieldPrefix) => {
-    const fileKey = `${fieldPrefix}_certificate_${idx}`;
+  const getCleanCertificateURL = (url) => {
+    return url || '';
+  };
+
+  const renderCertificate = (certificate, idx, fieldPrefix, itemId = null) => {
+    const idOrIdx = itemId ?? idx; // Use item.id if available
+    const fileKey = `${fieldPrefix}_${idOrIdx}`;
     const currentFile = certificateFiles[fileKey];
 
     if (isEditing) {
       return (
         <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center p-4 bg-gradient-to-r from-slate-800/50 to-slate-700/50 rounded-xl border border-slate-600/30 backdrop-blur-sm">
-          {/* File Input Section */}
           <div className="flex-1 w-full sm:w-auto">
-            <label className="block text-sm font-medium text-slate-300 mb-2">
-              Upload Certificate
-            </label>
+            <label className="block text-sm font-medium text-slate-300 mb-2">Upload Certificate</label>
             <div className="relative group">
               <input
                 type="file"
@@ -549,7 +549,6 @@ const ProfileSection = () => {
               <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-purple-600/5 to-blue-600/5 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none"></div>
             </div>
 
-            {/* File Info Display */}
             {(currentFile || certificate) && (
               <div className="mt-3 p-3 bg-slate-900/40 rounded-lg border border-slate-600/20">
                 <div className="flex items-center gap-2 text-slate-300">
@@ -565,7 +564,6 @@ const ProfileSection = () => {
             )}
           </div>
 
-          {/* Action Buttons */}
           <div className="flex flex-row sm:flex-col gap-2 w-full sm:w-auto">
             {(currentFile || certificate) && (
               <button
@@ -586,7 +584,7 @@ const ProfileSection = () => {
 
             {certificate && typeof certificate === 'string' && (
               <a
-                href={certificate}
+                href={getCleanCertificateURL(certificate)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-emerald-600/20 to-green-600/20 hover:from-emerald-600/30 hover:to-green-600/30 border border-emerald-500/30 hover:border-emerald-500/50 rounded-lg text-emerald-300 hover:text-emerald-200 text-sm font-medium transition-all duration-200 hover:shadow-lg hover:shadow-emerald-500/10"
@@ -615,7 +613,7 @@ const ProfileSection = () => {
           </div>
         </div>
         <a
-          href={certificate}
+          href={getCleanCertificateURL(certificate)}
           target="_blank"
           rel="noopener noreferrer"
           className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600/30 to-blue-600/30 hover:from-purple-600/50 hover:to-blue-600/50 rounded-lg text-purple-200 text-sm font-medium border border-purple-500/30 hover:border-purple-500/50 transition-all duration-200 hover:shadow-md"
@@ -808,11 +806,23 @@ const ProfileSection = () => {
 
       {/* Content Sections */}
       <div className="bg-black/20 backdrop-blur-lg rounded-3xl border border-white/10 p-6">
+
+        {/* Overview Section */}
         {activeTab === "overview" && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="space-y-4">
-              <h3 className="text-xl font-semibold text-white mb-4">Personal Information</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
+            <div className="space-y-6">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="p-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg">
+                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
+                </div>
+                <h3 className="text-2xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+                  Personal Information
+                </h3>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                 <EditableField
                   label="First Name"
                   value={isEditing ? editData.first_name : profileData?.first_name}
@@ -859,8 +869,9 @@ const ProfileSection = () => {
               </div>
 
               {isEditing && (
-                <div>
-                  <label className="text-white/70 text-sm mb-2 block">
+                <div className="mt-6 p-4 bg-gradient-to-r from-purple-500/10 to-pink-500/10 backdrop-blur-sm rounded-xl border border-purple-500/20 transition-all duration-300">
+                  <label className="text-white/80 text-sm font-medium mb-3 block items-center gap-2">
+                    <div className="w-2 h-2 bg-purple-400 rounded-full animate-pulse"></div>
                     Profile Picture
                   </label>
                   <input
@@ -873,44 +884,106 @@ const ProfileSection = () => {
                         handleInputChange("profile_picture", file);
                       }
                     }}
-                    className="w-full bg-white/10 text-white rounded-lg px-3 py-2 border border-white/20 focus:border-purple-500/50 focus:outline-none text-sm file:bg-purple-600/30 file:border-0 file:text-white file:px-3 file:py-1 file:rounded file:cursor-pointer file:hover:bg-purple-600/40"
+                    className="w-full bg-white/10 backdrop-blur-sm text-white rounded-xl px-4 py-3 border border-white/20 focus:border-purple-500/50 focus:ring-2 focus:ring-purple-500/20 focus:outline-none transition-all duration-300 text-sm file:bg-gradient-to-r file:from-purple-600/40 file:to-pink-600/40 file:border-0 file:text-white file:px-4 file:py-2 file:rounded-lg file:cursor-pointer file:hover:from-purple-600/60 file:hover:to-pink-600/60 file:transition-all file:duration-300"
                   />
                   {fieldErrors.profile_picture && (
-                    <p className="text-red-400 text-xs mt-1">{fieldErrors.profile_picture}</p>
+                    <p className="text-red-400 text-xs mt-2 flex items-center gap-1">
+                      <span className="w-1 h-1 bg-red-400 rounded-full"></span>
+                      {fieldErrors.profile_picture}
+                    </p>
                   )}
                 </div>
               )}
             </div>
 
-            <div className="space-y-4">
-              <h3 className="text-xl font-semibold text-white mb-4">Social Links</h3>
-              <div className="space-y-3">
+            <div className="space-y-6">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="p-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg">
+                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                  </svg>
+                </div>
+                <h3 className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+                  Social Links
+                </h3>
+              </div>
+
+              <div className="space-y-4">
                 {[
-                  { key: "github_url", label: "GitHub", icon: Github },
-                  { key: "linkedin_url", label: "LinkedIn", icon: Linkedin },
-                  { key: "twitter_url", label: "Twitter", icon: Twitter },
-                  { key: "facebook_url", label: "Facebook", icon: Facebook },
-                  { key: "instagram_url", label: "Instagram", icon: Instagram },
-                ].map(({ key, label, icon: Icon }) => (
-                  <div key={key} className="flex items-center gap-2">
-                    <Icon size={16} className="text-white/50 flex-shrink-0" />
-                    <div className="flex-1">
-                      <EditableField
-                        label={label}
-                        value={
-                          isEditing
-                            ? editData.social_links?.[key]
-                            : profileData?.social_links?.[key]
-                        }
-                        field={`social_links.${key}`}
-                        type="url"
-                        isEditing={isEditing}
-                        onChange={handleInputChange}
-                        error={fieldErrors[`social_links.${key}`]}
-                      />
+                  { key: "github_url", label: "GitHub", icon: Github, color: "hover:text-gray-300" },
+                  { key: "linkedin_url", label: "LinkedIn", icon: Linkedin, color: "hover:text-blue-400" },
+                  { key: "twitter_url", label: "Twitter", icon: Twitter, color: "hover:text-blue-300" },
+                  { key: "facebook_url", label: "Facebook", icon: Facebook, color: "hover:text-blue-500" },
+                  { key: "instagram_url", label: "Instagram", icon: Instagram, color: "hover:text-pink-400" },
+                ].map(({ key, label, icon: Icon, color }) => {
+                  // Function to extract and format the URL for display
+                  const getDisplayUrl = (url) => {
+                    if (!url) return '';
+                    try {
+                      const urlObj = new URL(url);
+                      return `${urlObj.protocol}//${urlObj.hostname}${urlObj.pathname}`;
+                    } catch {
+                      return url;
+                    }
+                  };
+
+                  const linkValue = isEditing
+                    ? editData.social_links?.[key]
+                    : profileData?.social_links?.[key];
+
+                  return (
+                    <div key={key} className="group relative">
+                      <div className="flex items-center gap-3 p-4 bg-gradient-to-r from-white/5 to-white/10 backdrop-blur-sm rounded-xl border border-white/10 transition-all duration-300 hover:bg-white/15 hover:border-white/20 hover:scale-[1.02] hover:shadow-lg hover:shadow-purple-500/10">
+                        <div className={`p-2 bg-white/10 rounded-lg transition-all duration-300 group-hover:bg-white/20 ${color} flex-shrink-0`}>
+                          <Icon size={20} className="text-white/70 group-hover:text-white transition-colors duration-300" />
+                        </div>
+
+                        <div className="flex-1 min-w-0">
+                          {isEditing ? (
+                            <EditableField
+                              label={label}
+                              value={linkValue}
+                              field={`social_links.${key}`}
+                              type="url"
+                              isEditing={isEditing}
+                              onChange={handleInputChange}
+                              error={fieldErrors[`social_links.${key}`]}
+                            />
+                          ) : (
+                            <div className="space-y-1">
+                              <label className="text-white/80 text-sm font-medium block">
+                                {label}
+                              </label>
+                              {linkValue ? (
+                                <div className="text-white/90 text-sm sm:text-base font-medium break-all">
+                                  <span className="font-bold text-white">
+                                    {getDisplayUrl(linkValue)}
+                                  </span>
+                                </div>
+                              ) : (
+                                <div className="text-white/40 text-sm sm:text-base">
+                                  Not specified
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+
+                        {!isEditing && linkValue && (
+                          <button
+                            onClick={() => window.open(linkValue, '_blank', 'noopener,noreferrer')}
+                            className="p-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-all duration-300 hover:scale-110 hover:shadow-lg flex-shrink-0"
+                            title={`Visit ${label}`}
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                            </svg>
+                          </button>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           </div>
@@ -918,279 +991,863 @@ const ProfileSection = () => {
 
         {/* Skills Section */}
         {activeTab === "skills" && (
-          <div className="space-y-3">
-            {(isEditing ? editData.skills : profileData?.skills || []).map((skill, idx) => (
-              <div key={idx} className="flex items-center gap-2">
-                <EditableField
-                  label={`Skill #${idx + 1}`}
-                  value={skill.name}
-                  field={`skills:${idx}:name`}
-                  isEditing={isEditing}
-                  onChange={handleInputChange}
-                  error={fieldErrors[`skills.${idx}.name`]}
-                />
-                {isEditing && (
-                  <button
-                    onClick={() => handleArrayRemove("skills", idx)}
-                    className="text-red-400 hover:text-red-600"
-                    title="Remove Skill"
-                  >
-                    <Trash2 size={16} />
-                  </button>
-                )}
+          <div className="space-y-6">
+            {/* Section Header */}
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-2 bg-gradient-to-r from-green-500 to-blue-500 rounded-lg">
+                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                </svg>
               </div>
-            ))}
+              <h3 className="text-2xl font-bold bg-gradient-to-r from-green-400 to-blue-400 bg-clip-text text-transparent">
+                Skills & Expertise
+              </h3>
+            </div>
+
+            {/* Skills Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {(isEditing ? editData.skills : profileData?.skills || []).map((skill, idx) => (
+                <div key={idx} className="group relative">
+                  <div className="flex items-center gap-3 p-4 bg-gradient-to-r from-white/5 to-white/10 backdrop-blur-sm rounded-xl border border-white/10 transition-all duration-300 hover:bg-white/15 hover:border-white/20 hover:scale-[1.02] hover:shadow-lg hover:shadow-green-500/10">
+                    {/* Skill Icon */}
+                    <div className="p-2 bg-gradient-to-r from-green-500/20 to-blue-500/20 rounded-lg flex-shrink-0">
+                      <svg className="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                    </div>
+
+                    {/* Skill Content */}
+                    <div className="flex-1 min-w-0">
+                      {isEditing ? (
+                        <EditableField
+                          label={`Skill #${idx + 1}`}
+                          value={skill.name}
+                          field={`skills:${idx}:name`}
+                          isEditing={isEditing}
+                          onChange={handleInputChange}
+                          error={fieldErrors[`skills.${idx}.name`]}
+                        />
+                      ) : (
+                        <div className="space-y-1">
+                          <div className="text-white/90 font-medium text-sm sm:text-base break-words">
+                            {skill.name}
+                          </div>
+                          <div className="text-white/50 text-xs">
+                            Skill #{idx + 1}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Remove Button */}
+                    {isEditing && (
+                      <button
+                        onClick={() => handleArrayRemove("skills", idx)}
+                        className="p-2 bg-red-500/20 text-red-400 hover:bg-red-500/30 hover:text-red-300 rounded-lg opacity-0 group-hover:opacity-100 transition-all duration-300 hover:scale-110 flex-shrink-0"
+                        title="Remove Skill"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Empty State */}
             {isEditing && (editData.skills?.length === 0) && (
-              <p className="text-white/50 text-sm">No skills added yet.</p>
+              <div className="text-center py-12">
+                <div className="p-4 bg-white/5 rounded-xl border border-white/10 max-w-md mx-auto">
+                  <div className="p-3 bg-gradient-to-r from-green-500/20 to-blue-500/20 rounded-lg w-fit mx-auto mb-4">
+                    <svg className="w-8 h-8 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                    </svg>
+                  </div>
+                  <p className="text-white/50 text-sm mb-2">No skills added yet</p>
+                  <p className="text-white/30 text-xs">Add your first skill to get started!</p>
+                </div>
+              </div>
+            )}
+
+            {/* Non-editing empty state */}
+            {!isEditing && (!profileData?.skills || profileData.skills.length === 0) && (
+              <div className="text-center py-12">
+                <div className="p-4 bg-white/5 rounded-xl border border-white/10 max-w-md mx-auto">
+                  <div className="p-3 bg-gradient-to-r from-green-500/20 to-blue-500/20 rounded-lg w-fit mx-auto mb-4">
+                    <svg className="w-8 h-8 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                    </svg>
+                  </div>
+                  <p className="text-white/50 text-sm mb-2">No skills added</p>
+                  <p className="text-white/30 text-xs">Skills will appear here once added</p>
+                </div>
+              </div>
             )}
           </div>
         )}
 
-
         {/* Languages Section */}
         {activeTab === "languages" && (
-          <div>
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-semibold text-white">Languages</h3>
+          <div className="space-y-6">
+            {/* Section Header */}
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-lg">
+                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" />
+                  </svg>
+                </div>
+                <h3 className="text-2xl font-bold bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">
+                  Languages
+                </h3>
+              </div>
+
               {isEditing && (
                 <button
                   onClick={() => handleArrayAdd("languages", { name: "", proficiency: "" })}
-                  className="flex items-center gap-1 bg-green-500/20 hover:bg-green-500/30 px-3 py-1 rounded-lg text-green-300 text-sm transition-colors"
+                  className="flex items-center gap-2 bg-gradient-to-r from-green-500/20 to-emerald-500/20 hover:from-green-500/30 hover:to-emerald-500/30 px-4 py-2 rounded-xl text-green-300 text-sm font-medium transition-all duration-300 hover:scale-105 border border-green-500/20 hover:border-green-500/30"
                 >
-                  <Plus size={12} />
+                  <Plus size={16} />
                   Add Language
                 </button>
               )}
             </div>
-            <div className="space-y-3">
+
+            {/* Languages Grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               {(isEditing ? editData.languages : profileData?.languages || []).map((lang, idx) => (
-                <div key={idx} className="flex items-center gap-2">
-                  <EditableField
-                    label="Language"
-                    value={lang.name}
-                    field={`languages:${idx}:name`}
-                    isEditing={isEditing}
-                    onChange={handleInputChange}
-                    error={fieldErrors[`languages.${idx}.name`]}
-                  />
-                  <EditableField
-                    label="Proficiency"
-                    value={lang.proficiency}
-                    field={`languages:${idx}:proficiency`}
-                    options={["beginner", "intermediate", "advanced", "native"]}
-                    isEditing={isEditing}
-                    onChange={handleInputChange}
-                    error={fieldErrors[`languages.${idx}.proficiency`]}
-                  />
-                  {isEditing && (
-                    <button
-                      onClick={() => handleArrayRemove("languages", idx)}
-                      className="text-red-400 hover:text-red-600"
-                      title="Remove Language"
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                  )}
+                <div key={idx} className="group relative">
+                  <div className="flex items-center gap-3 p-4 bg-gradient-to-r from-white/5 to-white/10 backdrop-blur-sm rounded-xl border border-white/10 transition-all duration-300 hover:bg-white/15 hover:border-white/20 hover:scale-[1.02] hover:shadow-lg hover:shadow-indigo-500/10">
+                    {/* Language Icon */}
+                    <div className="p-2 bg-gradient-to-r from-indigo-500/20 to-purple-500/20 rounded-lg flex-shrink-0">
+                      <svg className="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
+                      </svg>
+                    </div>
+
+                    {/* Language Content */}
+                    <div className="flex-1 min-w-0 space-y-3">
+                      {isEditing ? (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <EditableField
+                            label="Language"
+                            value={lang.name}
+                            field={`languages:${idx}:name`}
+                            isEditing={isEditing}
+                            options={["english", "", "spanish", "french", "german", "chinese", "japanese", "russian", "portuguese"]}
+                            onChange={handleInputChange}
+                            error={fieldErrors[`languages.${idx}.name`]}
+                          />
+                          <EditableField
+                            label="Proficiency"
+                            value={lang.proficiency}
+                            field={`languages:${idx}:proficiency`}
+                            options={["beginner", "intermediate", "advanced", "native"]}
+                            isEditing={isEditing}
+                            onChange={handleInputChange}
+                            error={fieldErrors[`languages.${idx}.proficiency`]}
+                          />
+                        </div>
+                      ) : (
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between">
+                            <h4 className="text-white font-semibold text-base">
+                              {lang.name || 'Language Name'}
+                            </h4>
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${lang.proficiency === 'native'
+                              ? 'bg-green-500/20 text-green-300 border border-green-500/30'
+                              : lang.proficiency === 'advanced'
+                                ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30'
+                                : lang.proficiency === 'intermediate'
+                                  ? 'bg-yellow-500/20 text-yellow-300 border border-yellow-500/30'
+                                  : 'bg-gray-500/20 text-gray-300 border border-gray-500/30'
+                              }`}>
+                              {lang.proficiency || 'Not specified'}
+                            </span>
+                          </div>
+
+                          {/* Proficiency Bar */}
+                          <div className="w-full bg-white/10 rounded-full h-2">
+                            <div
+                              className={`h-2 rounded-full transition-all duration-500 ${lang.proficiency === 'native'
+                                ? 'bg-gradient-to-r from-green-500 to-emerald-500 w-full'
+                                : lang.proficiency === 'advanced'
+                                  ? 'bg-gradient-to-r from-blue-500 to-cyan-500 w-4/5'
+                                  : lang.proficiency === 'intermediate'
+                                    ? 'bg-gradient-to-r from-yellow-500 to-orange-500 w-3/5'
+                                    : 'bg-gradient-to-r from-gray-500 to-gray-400 w-2/5'
+                                }`}
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Remove Button */}
+                    {isEditing && (
+                      <button
+                        onClick={() => handleArrayRemove("languages", idx)}
+                        className="p-2 bg-red-500/20 text-red-400 hover:bg-red-500/30 hover:text-red-300 rounded-lg opacity-0 group-hover:opacity-100 transition-all duration-300 hover:scale-110 flex-shrink-0"
+                        title="Remove Language"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    )}
+                  </div>
                 </div>
               ))}
-              {isEditing && (editData.languages?.length === 0) && (
-                <p className="text-white/50 text-sm">No languages added yet.</p>
-              )}
             </div>
+
+            {/* Empty State - Editing */}
+            {isEditing && (editData.languages?.length === 0) && (
+              <div className="text-center py-12">
+                <div className="p-6 bg-white/5 rounded-xl border border-white/10 max-w-md mx-auto">
+                  <div className="p-3 bg-gradient-to-r from-indigo-500/20 to-purple-500/20 rounded-lg w-fit mx-auto mb-4">
+                    <svg className="w-8 h-8 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                    </svg>
+                  </div>
+                  <p className="text-white/50 text-sm mb-2">No languages added yet</p>
+                  <p className="text-white/30 text-xs">Click &quot;Add Language&quot; to get started!</p>
+                </div>
+              </div>
+            )}
+
+            {/* Empty State - Viewing */}
+            {!isEditing && (!profileData?.languages || profileData.languages.length === 0) && (
+              <div className="text-center py-12">
+                <div className="p-6 bg-white/5 rounded-xl border border-white/10 max-w-md mx-auto">
+                  <div className="p-3 bg-gradient-to-r from-indigo-500/20 to-purple-500/20 rounded-lg w-fit mx-auto mb-4">
+                    <svg className="w-8 h-8 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" />
+                    </svg>
+                  </div>
+                  <p className="text-white/50 text-sm mb-2">No languages added</p>
+                  <p className="text-white/30 text-xs">Language skills will appear here once added</p>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
         {/* Education Section */}
         {activeTab === "education" && (
-          <div>
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-semibold text-white">Education</h3>
-              {isEditing && (
-                <button
-                  onClick={() =>
-                    handleArrayAdd("educations", {
-                      college: "",
-                      degree: "",
-                      start_year: "",
-                      end_year: "",
-                      certificate: null,
-                    })
-                  }
-                  className="flex items-center gap-1 bg-green-500/20 hover:bg-green-500/30 px-3 py-1 rounded-lg text-green-300 text-sm transition-colors"
-                >
-                  <Plus size={12} />
-                  Add Education
-                </button>
+          <div className="w-full max-w-none">
+            {/* Header */}
+            <div className="flex flex-col gap-4 mb-8">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="relative">
+                    <div className="w-12 h-12 bg-gradient-to-br from-blue-500 via-purple-600 to-pink-500 rounded-2xl flex items-center justify-center shadow-lg">
+                      <GraduationCap className="w-6 h-6 text-white" />
+                    </div>
+                    <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-400 rounded-full border-2 border-white/20"></div>
+                  </div>
+                  <div>
+                    <h3 className="text-2xl lg:text-3xl font-bold bg-gradient-to-r from-white to-white/80 bg-clip-text text-transparent">
+                      Education
+                    </h3>
+                    <p className="text-white/60 text-sm lg:text-base mt-1">
+                      Academic journey and achievements
+                    </p>
+                  </div>
+                </div>
+
+                {isEditing && (
+                  <button
+                    onClick={() =>
+                      handleArrayAdd("educations", {
+                        college: "",
+                        degree: "",
+                        start_year: "",
+                        end_year: "",
+                        certificate: null,
+                      })
+                    }
+                    className="group relative overflow-hidden bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 px-4 py-2.5 lg:px-6 lg:py-3 rounded-2xl text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-0.5"
+                  >
+                    <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>
+                    <div className="relative flex items-center gap-2">
+                      <Plus size={18} className="transition-transform group-hover:rotate-180" />
+                      <span className="hidden sm:inline">Add Education</span>
+                      <span className="sm:hidden">Add</span>
+                    </div>
+                  </button>
+                )}
+              </div>
+
+              {/* Progress indicator */}
+              {!isEditing && profileData?.educations && profileData.educations.length > 0 && (
+                <div className="flex items-center gap-3 text-sm">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
+                    <span className="text-white/70">{profileData.educations.length} Education{profileData.educations.length !== 1 ? 's' : ''}</span>
+                  </div>
+                  <div className="w-px h-4 bg-white/20"></div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+                    <span className="text-white/70">
+                      {profileData.educations.filter(edu => edu.certificate).length} Certificate{profileData.educations.filter(edu => edu.certificate).length !== 1 ? 's' : ''}
+                    </span>
+                  </div>
+                </div>
               )}
             </div>
-            <div className="space-y-4">
+
+            {/* Education Cards */}
+            <div className="space-y-6">
               {(isEditing ? editData.educations : profileData?.educations || []).map((edu, idx) => (
-                <div key={idx} className="bg-white/5 rounded-xl p-4 border border-white/10 space-y-2">
-                  <EditableField
-                    label="College"
-                    value={edu.college}
-                    field={`educations:${idx}:college`}
-                    isEditing={isEditing}
-                    onChange={handleInputChange}
-                    error={fieldErrors[`educations.${idx}.college`]}
-                  />
-                  <EditableField
-                    label="Degree"
-                    value={edu.degree}
-                    field={`educations:${idx}:degree`}
-                    isEditing={isEditing}
-                    onChange={handleInputChange}
-                    error={fieldErrors[`educations.${idx}.degree`]}
-                  />
-                  <EditableField
-                    label="Start Year"
-                    value={edu.start_year}
-                    field={`educations:${idx}:start_year`}
-                    type="number"
-                    isEditing={isEditing}
-                    onChange={handleInputChange}
-                    error={fieldErrors[`educations.${idx}.start_year`]}
-                  />
-                  <EditableField
-                    label="End Year"
-                    value={edu.end_year}
-                    field={`educations:${idx}:end_year`}
-                    type="number"
-                    isEditing={isEditing}
-                    onChange={handleInputChange}
-                    error={fieldErrors[`educations.${idx}.end_year`]}
-                  />
-                  <div>
-                    <label className="text-white/70 text-sm mb-1 block">Certificate</label>
-                    {renderCertificate(edu.certificate, idx, "education_certificate")}
+                <div
+                  key={idx}
+                  className="group relative overflow-hidden bg-gradient-to-br from-white/10 via-white/5 to-transparent backdrop-blur-xl rounded-3xl border border-white/10 hover:border-white/20 transition-all duration-500 hover:shadow-2xl hover:shadow-white/10"
+                >
+                  {/* Decorative elements */}
+                  <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500"></div>
+                  <div className="absolute -top-20 -right-20 w-40 h-40 bg-gradient-to-br from-blue-500/10 to-purple-500/10 rounded-full blur-3xl group-hover:scale-150 transition-transform duration-700"></div>
+
+                  <div className="relative p-6 lg:p-8">
+                    {/* Card Header */}
+                    <div className="flex flex-col space-y-4 mb-6">
+                      {/* Top row - Icon, Title, and Delete button */}
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-start gap-4 flex-1 min-w-0">
+                          <div className="w-14 h-14 bg-gradient-to-br from-indigo-500 via-purple-600 to-pink-500 rounded-2xl flex items-center justify-center shadow-lg shrink-0">
+                            <BookOpen className="w-7 h-7 text-white" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <EditableField
+                              label="Institution"
+                              value={edu.college}
+                              field={`educations:${idx}:college`}
+                              isEditing={isEditing}
+                              onChange={handleInputChange}
+                              error={fieldErrors[`educations.${idx}.college`]}
+                              className="text-xl lg:text-2xl font-bold text-white mb-1 truncate"
+                              placeholder="University/College name"
+                            />
+                          </div>
+                        </div>
+
+                        {isEditing && (
+                          <button
+                            onClick={() => handleArrayRemove("educations", idx)}
+                            className="group/delete p-3 text-red-400 hover:text-white hover:bg-red-500/20 rounded-2xl transition-all duration-200 shrink-0"
+                            title="Remove Education"
+                          >
+                            <Trash2 size={20} className="transition-transform group-hover/delete:scale-110 group-hover/delete:rotate-12" />
+                          </button>
+                        )}
+                      </div>
+
+                      {/* Degree - Full width below */}
+                      <div className="pl-0 lg:pl-18">
+                        <EditableField
+                          label="Degree"
+                          value={edu.degree}
+                          field={`educations:${idx}:degree`}
+                          isEditing={isEditing}
+                          onChange={handleInputChange}
+                          error={fieldErrors[`educations.${idx}.degree`]}
+                          className="text-lg lg:text-xl font-medium text-white/90"
+                          placeholder="Degree/Course name"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Duration Section */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-6 mb-6">
+                      <div className="space-y-3">
+                        <label className="flex items-center gap-2 text-white/70 text-sm font-medium">
+                          <div className="w-5 h-5 bg-blue-500/20 rounded-lg flex items-center justify-center">
+                            <Calendar className="w-3 h-3 text-blue-400" />
+                          </div>
+                          Start Year
+                        </label>
+                        <EditableField
+                          value={edu.start_year}
+                          field={`educations:${idx}:start_year`}
+                          type="number"
+                          isEditing={isEditing}
+                          onChange={handleInputChange}
+                          error={fieldErrors[`educations.${idx}.start_year`]}
+                          className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-white/40 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:bg-white/10 transition-all duration-200"
+                          placeholder="2020"
+                        />
+                      </div>
+
+                      <div className="space-y-3">
+                        <label className="flex items-center gap-2 text-white/70 text-sm font-medium">
+                          <div className="w-5 h-5 bg-green-500/20 rounded-lg flex items-center justify-center">
+                            <Calendar className="w-3 h-3 text-green-400" />
+                          </div>
+                          End Year
+                        </label>
+                        <EditableField
+                          value={edu.end_year}
+                          field={`educations:${idx}:end_year`}
+                          type="number"
+                          isEditing={isEditing}
+                          onChange={handleInputChange}
+                          error={fieldErrors[`educations.${idx}.end_year`]}
+                          className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-white/40 focus:border-green-500 focus:ring-2 focus:ring-green-500/20 focus:bg-white/10 transition-all duration-200"
+                          placeholder="2024"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Certificate Section */}
+                    <div className="space-y-4">
+                      <label className="flex items-center gap-2 text-white/70 text-sm font-medium">
+                        <div className="w-5 h-5 bg-amber-500/20 rounded-lg flex items-center justify-center">
+                          <Award className="w-3 h-3 text-amber-400" />
+                        </div>
+                        Certificate
+                      </label>
+
+                      <div className="bg-white/5 backdrop-blur-sm rounded-xl p-3 sm:p-4 lg:p-6 border border-white/10 hover:border-white/20 transition-all duration-300">
+                        <div className="w-full overflow-hidden">
+                          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
+                            <div className="flex-1 min-w-0">
+                              {renderCertificate(edu.certificate, idx, "education_certificate")}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Timeline connector for multiple cards */}
+                    {idx < (isEditing ? editData.educations : profileData?.educations || []).length - 1 && (
+                      <div className="absolute -bottom-6 left-1/2 transform -translate-x-1/2 w-px h-6 bg-gradient-to-b from-white/20 to-transparent"></div>
+                    )}
                   </div>
-                  {isEditing && (
-                    <button
-                      onClick={() => handleArrayRemove("educations", idx)}
-                      className="text-red-400 hover:text-red-600 mt-2"
-                      title="Remove Education"
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                  )}
                 </div>
               ))}
+
+              {/* Empty State */}
               {isEditing && (editData.educations?.length === 0) && (
-                <p className="text-white/50 text-sm">No education records yet.</p>
+                <div className="text-center py-16 px-6">
+                  <div className="relative mx-auto mb-6 w-24 h-24">
+                    <div className="w-full h-full bg-gradient-to-br from-blue-500/20 to-purple-600/20 rounded-3xl flex items-center justify-center">
+                      <GraduationCap className="w-12 h-12 text-white/50" />
+                    </div>
+                    <div className="absolute -top-2 -right-2 w-8 h-8 bg-gradient-to-br from-emerald-400 to-teal-500 rounded-full flex items-center justify-center">
+                      <Plus className="w-4 h-4 text-white" />
+                    </div>
+                  </div>
+                  <h4 className="text-xl font-semibold text-white mb-2">No Education Records</h4>
+                  <p className="text-white/60 max-w-md mx-auto leading-relaxed">
+                    Start building your academic profile by adding your education history and achievements.
+                  </p>
+                </div>
+              )}
+
+              {/* Non-editing empty state */}
+              {!isEditing && (!profileData?.educations || profileData.educations.length === 0) && (
+                <div className="text-center py-16 px-6">
+                  <div className="w-24 h-24 bg-gradient-to-br from-blue-500/20 to-purple-600/20 rounded-3xl flex items-center justify-center mx-auto mb-6">
+                    <GraduationCap className="w-12 h-12 text-white/50" />
+                  </div>
+                  <h4 className="text-xl font-semibold text-white mb-2">No Education Information</h4>
+                  <p className="text-white/60 max-w-md mx-auto leading-relaxed">
+                    Education details and academic achievements will be displayed here.
+                  </p>
+                </div>
               )}
             </div>
+
+            {/* Summary Statistics */}
+            {!isEditing && profileData?.educations && profileData.educations.length > 0 && (
+              <div className="mt-8 bg-gradient-to-r from-blue-500/10 via-purple-500/10 to-pink-500/10 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                  <div className="text-center">
+                    <div className="w-12 h-12 bg-blue-500/20 rounded-2xl flex items-center justify-center mx-auto mb-3">
+                      <GraduationCap className="w-6 h-6 text-blue-400" />
+                    </div>
+                    <div className="text-2xl font-bold text-white mb-1">{profileData.educations.length}</div>
+                    <div className="text-white/60 text-sm">Education{profileData.educations.length !== 1 ? 's' : ''}</div>
+                  </div>
+
+                  <div className="text-center">
+                    <div className="w-12 h-12 bg-green-500/20 rounded-2xl flex items-center justify-center mx-auto mb-3">
+                      <Award className="w-6 h-6 text-green-400" />
+                    </div>
+                    <div className="text-2xl font-bold text-white mb-1">
+                      {profileData.educations.filter(edu => edu.certificate).length}
+                    </div>
+                    <div className="text-white/60 text-sm">Certificate{profileData.educations.filter(edu => edu.certificate).length !== 1 ? 's' : ''}</div>
+                  </div>
+
+                  <div className="text-center">
+                    <div className="w-12 h-12 bg-purple-500/20 rounded-2xl flex items-center justify-center mx-auto mb-3">
+                      <BookOpen className="w-6 h-6 text-purple-400" />
+                    </div>
+                    <div className="text-2xl font-bold text-white mb-1">
+                      {Math.max(...profileData.educations.map(edu => parseInt(edu.end_year) || 0)) || 'N/A'}
+                    </div>
+                    <div className="text-white/60 text-sm">Latest Year</div>
+                  </div>
+
+                  <div className="text-center">
+                    <div className="w-12 h-12 bg-amber-500/20 rounded-2xl flex items-center justify-center mx-auto mb-3">
+                      <Calendar className="w-6 h-6 text-amber-400" />
+                    </div>
+                    <div className="text-2xl font-bold text-white mb-1">
+                      {profileData.educations.reduce((total, edu) => {
+                        const start = parseInt(edu.start_year) || 0;
+                        const end = parseInt(edu.end_year) || 0;
+                        return total + (end - start > 0 ? end - start : 0);
+                      }, 0)}
+                    </div>
+                    <div className="text-white/60 text-sm">Total Years</div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
         {/* Experience Section */}
         {activeTab === "experience" && (
-          <div>
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-semibold text-white">Experience</h3>
-              {isEditing && (
-                <button
-                  onClick={() =>
-                    handleArrayAdd("experiences", {
-                      role: "",
-                      company: "",
-                      start_date: "",
-                      end_date: "",
-                      ongoing: false,
-                      description: "",
-                      certificate: null,
-                    })
-                  }
-                  className="flex items-center gap-1 bg-green-500/20 hover:bg-green-500/30 px-3 py-1 rounded-lg text-green-300 text-sm transition-colors"
-                >
-                  <Plus size={12} />
-                  Add Experience
-                </button>
+          <div className="w-full max-w-none">
+            {/* Header */}
+            <div className="flex flex-col gap-4 mb-8">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="relative">
+                    <div className="w-12 h-12 bg-gradient-to-br from-orange-500 via-red-500 to-pink-500 rounded-2xl flex items-center justify-center shadow-lg">
+                      <Briefcase className="w-6 h-6 text-white" />
+                    </div>
+                    <div className="absolute -top-1 -right-1 w-4 h-4 bg-orange-400 rounded-full border-2 border-white/20"></div>
+                  </div>
+                  <div>
+                    <h3 className="text-2xl lg:text-3xl font-bold bg-gradient-to-r from-white to-white/80 bg-clip-text text-transparent">
+                      Experience
+                    </h3>
+                    <p className="text-white/60 text-sm lg:text-base mt-1">
+                      Professional journey and achievements
+                    </p>
+                  </div>
+                </div>
+
+                {isEditing && (
+                  <button
+                    onClick={() =>
+                      handleArrayAdd("experiences", {
+                        role: "",
+                        company: "",
+                        start_date: "",
+                        end_date: "",
+                        ongoing: false,
+                        description: "",
+                        certificate: null,
+                      })
+                    }
+                    className="group relative overflow-hidden bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 px-4 py-2.5 lg:px-6 lg:py-3 rounded-2xl text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-0.5"
+                  >
+                    <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>
+                    <div className="relative flex items-center gap-2">
+                      <Plus size={18} className="transition-transform group-hover:rotate-180" />
+                      <span className="hidden sm:inline">Add Experience</span>
+                      <span className="sm:hidden">Add</span>
+                    </div>
+                  </button>
+                )}
+              </div>
+
+              {/* Progress indicator */}
+              {!isEditing && profileData?.experiences && profileData.experiences.length > 0 && (
+                <div className="flex items-center gap-3 text-sm">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-orange-400 rounded-full"></div>
+                    <span className="text-white/70">{profileData.experiences.length} Position{profileData.experiences.length !== 1 ? 's' : ''}</span>
+                  </div>
+                  <div className="w-px h-4 bg-white/20"></div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+                    <span className="text-white/70">
+                      {profileData.experiences.filter(exp => exp.ongoing).length} Current Role{profileData.experiences.filter(exp => exp.ongoing).length !== 1 ? 's' : ''}
+                    </span>
+                  </div>
+                </div>
               )}
             </div>
-            <div className="space-y-4">
+
+            {/* Experience Cards */}
+            <div className="space-y-6">
               {(isEditing ? editData.experiences : profileData?.experiences || []).map((exp, idx) => (
-                <div key={idx} className="bg-white/5 rounded-xl p-4 border border-white/10 space-y-2">
-                  <EditableField
-                    label="Role"
-                    value={exp.role}
-                    field={`experiences:${idx}:role`}
-                    isEditing={isEditing}
-                    onChange={handleInputChange}
-                    error={fieldErrors[`experiences.${idx}.role`]}
-                  />
-                  <EditableField
-                    label="Company"
-                    value={exp.company}
-                    field={`experiences:${idx}:company`}
-                    isEditing={isEditing}
-                    onChange={handleInputChange}
-                    error={fieldErrors[`experiences.${idx}.company`]}
-                  />
-                  <EditableField
-                    label="Start Date"
-                    value={exp.start_date}
-                    field={`experiences:${idx}:start_date`}
-                    type="date"
-                    isEditing={isEditing}
-                    onChange={handleInputChange}
-                    error={fieldErrors[`experiences.${idx}.start_date`]}
-                  />
-                  <EditableField
-                    label="End Date"
-                    value={exp.end_date}
-                    field={`experiences:${idx}:end_date`}
-                    type="date"
-                    isEditing={isEditing}
-                    onChange={handleInputChange}
-                    error={fieldErrors[`experiences.${idx}.end_date`]}
-                  />
-                  <div className="flex items-center gap-2">
-                    <label className="text-white/70 text-sm">Ongoing</label>
-                    <input
-                      type="checkbox"
-                      checked={exp.ongoing}
-                      onChange={(e) =>
-                        handleInputChange(`experiences:${idx}:ongoing`, e.target.checked)
-                      }
-                      disabled={!isEditing}
-                    />
-                  </div>
-                  <EditableField
-                    label="Description"
-                    value={exp.description}
-                    field={`experiences:${idx}:description`}
-                    isTextarea={true}
-                    isEditing={isEditing}
-                    onChange={handleInputChange}
-                    error={fieldErrors[`experiences.${idx}.description`]}
-                  />
-                  <div>
-                    <label className="text-white/70 text-sm mb-1 block">Certificate</label>
-                    {renderCertificate(exp.certificate, idx, "experience_certificate")}
-                  </div>
-                  {isEditing && (
-                    <button
-                      onClick={() => handleArrayRemove("experiences", idx)}
-                      className="text-red-400 hover:text-red-600 mt-2"
-                      title="Remove Experience"
-                    >
-                      <Trash2 size={16} />
-                    </button>
+                <div
+                  key={idx}
+                  className="group relative overflow-hidden bg-gradient-to-br from-white/10 via-white/5 to-transparent backdrop-blur-xl rounded-3xl border border-white/10 hover:border-white/20 transition-all duration-500 hover:shadow-2xl hover:shadow-white/10"
+                >
+                  {/* Decorative elements */}
+                  <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-orange-500 via-red-500 to-pink-500"></div>
+                  <div className="absolute -top-20 -right-20 w-40 h-40 bg-gradient-to-br from-orange-500/10 to-red-500/10 rounded-full blur-3xl group-hover:scale-150 transition-transform duration-700"></div>
+
+                  {/* Ongoing indicator */}
+                  {exp.ongoing && (
+                    <div className="absolute top-4 right-4 flex items-center gap-2 bg-green-500/20 backdrop-blur-sm px-3 py-1 rounded-full border border-green-500/30">
+                      <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                      <span className="text-green-300 text-xs font-medium">Current</span>
+                    </div>
                   )}
+
+                  <div className="relative p-6 lg:p-8">
+                    {/* Card Header */}
+                    <div className="flex flex-col space-y-4 mb-6">
+                      {/* Top row - Icon, Role, Company and Delete button */}
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-start gap-4 flex-1 min-w-0">
+                          <div className="w-14 h-14 bg-gradient-to-br from-orange-500 via-red-500 to-pink-500 rounded-2xl flex items-center justify-center shadow-lg shrink-0">
+                            <Building2 className="w-7 h-7 text-white" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <EditableField
+                              label="Role"
+                              value={exp.role}
+                              field={`experiences:${idx}:role`}
+                              isEditing={isEditing}
+                              onChange={handleInputChange}
+                              error={fieldErrors[`experiences.${idx}.role`]}
+                              className="text-xl lg:text-2xl font-bold text-white mb-1 truncate"
+                              placeholder="Job Title/Position"
+                            />
+                          </div>
+                        </div>
+
+                        {isEditing && (
+                          <button
+                            onClick={() => handleArrayRemove("experiences", idx)}
+                            className="group/delete p-3 text-red-400 hover:text-white hover:bg-red-500/20 rounded-2xl transition-all duration-200 shrink-0"
+                            title="Remove Experience"
+                          >
+                            <Trash2 size={20} className="transition-transform group-hover/delete:scale-110 group-hover/delete:rotate-12" />
+                          </button>
+                        )}
+                      </div>
+
+                      {/* Company - Full width below */}
+                      <div className="pl-0 lg:pl-18">
+                        <EditableField
+                          label="Company"
+                          value={exp.company}
+                          field={`experiences:${idx}:company`}
+                          isEditing={isEditing}
+                          onChange={handleInputChange}
+                          error={fieldErrors[`experiences.${idx}.company`]}
+                          className="text-lg lg:text-xl font-medium text-white/90 flex items-center gap-2"
+                          placeholder="Company Name"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Duration Section */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-6 mb-6">
+                      <div className="space-y-3">
+                        <label className="flex items-center gap-2 text-white/70 text-sm font-medium">
+                          <div className="w-5 h-5 bg-green-500/20 rounded-lg flex items-center justify-center">
+                            <CalendarDays className="w-3 h-3 text-green-400" />
+                          </div>
+                          Start Date
+                        </label>
+                        <EditableField
+                          value={exp.start_date}
+                          field={`experiences:${idx}:start_date`}
+                          type="date"
+                          isEditing={isEditing}
+                          onChange={handleInputChange}
+                          error={fieldErrors[`experiences.${idx}.start_date`]}
+                          className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-white/40 focus:border-green-500 focus:ring-2 focus:ring-green-500/20 focus:bg-white/10 transition-all duration-200"
+                        />
+                      </div>
+
+                      <div className="space-y-3">
+                        <label className="flex items-center gap-2 text-white/70 text-sm font-medium">
+                          <div className="w-5 h-5 bg-red-500/20 rounded-lg flex items-center justify-center">
+                            <CalendarDays className="w-3 h-3 text-red-400" />
+                          </div>
+                          End Date
+                        </label>
+                        <EditableField
+                          value={exp.end_date}
+                          field={`experiences:${idx}:end_date`}
+                          type="date"
+                          isEditing={isEditing}
+                          onChange={handleInputChange}
+                          error={fieldErrors[`experiences.${idx}.end_date`]}
+                          className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-white/40 focus:border-red-500 focus:ring-2 focus:ring-red-500/20 focus:bg-white/10 transition-all duration-200"
+                          disabled={exp.ongoing}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Ongoing Toggle */}
+                    <div className="mb-6">
+                      <label className="flex items-center gap-3 cursor-pointer group/toggle">
+                        <div className="relative">
+                          <input
+                            type="checkbox"
+                            checked={exp.ongoing}
+                            onChange={(e) =>
+                              handleInputChange(`experiences:${idx}:ongoing`, e.target.checked)
+                            }
+                            disabled={!isEditing}
+                            className="sr-only"
+                          />
+                          <div className={`w-12 h-6 rounded-full transition-all duration-200 ${exp.ongoing
+                            ? 'bg-gradient-to-r from-green-500 to-emerald-500'
+                            : 'bg-white/10 border border-white/20'
+                            }`}>
+                            <div className={`w-5 h-5 bg-white rounded-full shadow-lg transform transition-transform duration-200 ${exp.ongoing ? 'translate-x-6' : 'translate-x-0.5'
+                              } mt-0.5`}></div>
+                          </div>
+                        </div>
+                        <span className="text-white/70 text-sm font-medium group-hover/toggle:text-white/90 transition-colors">
+                          Currently working here
+                        </span>
+                      </label>
+                    </div>
+
+                    {/* Description */}
+                    <div className="space-y-3 mb-6">
+                      <label className="flex items-center gap-2 text-white/70 text-sm font-medium">
+                        <div className="w-5 h-5 bg-blue-500/20 rounded-lg flex items-center justify-center">
+                          <FileText className="w-3 h-3 text-blue-400" />
+                        </div>
+                        Description
+                      </label>
+                      <EditableField
+                        value={exp.description}
+                        field={`experiences:${idx}:description`}
+                        isTextarea={true}
+                        isEditing={isEditing}
+                        onChange={handleInputChange}
+                        error={fieldErrors[`experiences.${idx}.description`]}
+                        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-white/40 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:bg-white/10 transition-all duration-200 min-h-[100px] resize-y"
+                        placeholder="Describe your role, responsibilities, and achievements..."
+                      />
+                    </div>
+
+                    {/* Certificate Section */}
+                    <div className="space-y-4">
+                      <label className="flex items-center gap-2 text-white/70 text-sm font-medium">
+                        <div className="w-5 h-5 bg-amber-500/20 rounded-lg flex items-center justify-center">
+                          <Award className="w-3 h-3 text-amber-400" />
+                        </div>
+                        Certificate
+                      </label>
+
+                      <div className="bg-white/5 backdrop-blur-sm rounded-xl p-3 sm:p-4 lg:p-6 border border-white/10 hover:border-white/20 transition-all duration-300">
+                        <div className="w-full overflow-hidden">
+                          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
+                            <div className="flex-1 min-w-0">
+                              {renderCertificate(exp.certificate, idx, "experience_certificate")}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Timeline connector for multiple cards */}
+                    {idx < (isEditing ? editData.experiences : profileData?.experiences || []).length - 1 && (
+                      <div className="absolute -bottom-6 left-1/2 transform -translate-x-1/2 w-px h-6 bg-gradient-to-b from-white/20 to-transparent"></div>
+                    )}
+                  </div>
                 </div>
               ))}
+
+              {/* Empty State */}
               {isEditing && (editData.experiences?.length === 0) && (
-                <p className="text-white/50 text-sm">No experience records yet.</p>
+                <div className="text-center py-16 px-6">
+                  <div className="relative mx-auto mb-6 w-24 h-24">
+                    <div className="w-full h-full bg-gradient-to-br from-orange-500/20 to-red-500/20 rounded-3xl flex items-center justify-center">
+                      <Briefcase className="w-12 h-12 text-white/50" />
+                    </div>
+                    <div className="absolute -top-2 -right-2 w-8 h-8 bg-gradient-to-br from-orange-400 to-red-500 rounded-full flex items-center justify-center">
+                      <Plus className="w-4 h-4 text-white" />
+                    </div>
+                  </div>
+                  <h4 className="text-xl font-semibold text-white mb-2">No Experience Records</h4>
+                  <p className="text-white/60 max-w-md mx-auto leading-relaxed">
+                    Start building your professional profile by adding your work experience and achievements.
+                  </p>
+                </div>
+              )}
+
+              {/* Non-editing empty state */}
+              {!isEditing && (!profileData?.experiences || profileData.experiences.length === 0) && (
+                <div className="text-center py-16 px-6">
+                  <div className="w-24 h-24 bg-gradient-to-br from-orange-500/20 to-red-500/20 rounded-3xl flex items-center justify-center mx-auto mb-6">
+                    <Briefcase className="w-12 h-12 text-white/50" />
+                  </div>
+                  <h4 className="text-xl font-semibold text-white mb-2">No Experience Information</h4>
+                  <p className="text-white/60 max-w-md mx-auto leading-relaxed">
+                    Professional experience and work history will be displayed here.
+                  </p>
+                </div>
               )}
             </div>
+
+            {/* Summary Statistics */}
+            {!isEditing && profileData?.experiences && profileData.experiences.length > 0 && (
+              <div className="mt-8 bg-gradient-to-r from-orange-500/10 via-red-500/10 to-pink-500/10 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                  <div className="text-center">
+                    <div className="w-12 h-12 bg-orange-500/20 rounded-2xl flex items-center justify-center mx-auto mb-3">
+                      <Briefcase className="w-6 h-6 text-orange-400" />
+                    </div>
+                    <div className="text-2xl font-bold text-white mb-1">{profileData.experiences.length}</div>
+                    <div className="text-white/60 text-sm">Position{profileData.experiences.length !== 1 ? 's' : ''}</div>
+                  </div>
+
+                  <div className="text-center">
+                    <div className="w-12 h-12 bg-green-500/20 rounded-2xl flex items-center justify-center mx-auto mb-3">
+                      <Clock className="w-6 h-6 text-green-400" />
+                    </div>
+                    <div className="text-2xl font-bold text-white mb-1">
+                      {profileData.experiences.filter(exp => exp.ongoing).length}
+                    </div>
+                    <div className="text-white/60 text-sm">Current Role{profileData.experiences.filter(exp => exp.ongoing).length !== 1 ? 's' : ''}</div>
+                  </div>
+
+                  <div className="text-center">
+                    <div className="w-12 h-12 bg-blue-500/20 rounded-2xl flex items-center justify-center mx-auto mb-3">
+                      <Building2 className="w-6 h-6 text-blue-400" />
+                    </div>
+                    <div className="text-2xl font-bold text-white mb-1">
+                      {new Set(profileData.experiences.map(exp => exp.company)).size}
+                    </div>
+                    <div className="text-white/60 text-sm">Compan{new Set(profileData.experiences.map(exp => exp.company)).size !== 1 ? 'ies' : 'y'}</div>
+                  </div>
+
+                  <div className="text-center">
+                    <div className="w-12 h-12 bg-amber-500/20 rounded-2xl flex items-center justify-center mx-auto mb-3">
+                      <Award className="w-6 h-6 text-amber-400" />
+                    </div>
+                    <div className="text-2xl font-bold text-white mb-1">
+                      {profileData.experiences.filter(exp => exp.certificate).length}
+                    </div>
+                    <div className="text-white/60 text-sm">Certificate{profileData.experiences.filter(exp => exp.certificate).length !== 1 ? 's' : ''}</div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
         {/* Portfolio Section */}
         {activeTab === "portfolio" && (
-          <div>
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-semibold text-white">Portfolio</h3>
+          <div className="animate-fade-in">
+            {/* Header */}
+            <div className="flex items-center justify-between mb-8">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg flex items-center justify-center">
+                  <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                  </svg>
+                </div>
+                <h3 className="text-2xl font-bold text-white">Portfolio</h3>
+              </div>
+
               {isEditing && (
                 <button
                   onClick={() =>
@@ -1200,46 +1857,82 @@ const ProfileSection = () => {
                       project_link: "",
                     })
                   }
-                  className="flex items-center gap-1 bg-green-500/20 hover:bg-green-500/30 px-3 py-1 rounded-lg text-green-300 text-sm transition-colors"
+                  className="group flex items-center gap-2 bg-gradient-to-r from-green-500/20 to-emerald-500/20 hover:from-green-500/30 hover:to-emerald-500/30 px-4 py-2 rounded-lg text-green-300 text-sm font-medium transition-all duration-200 border border-green-500/20 hover:border-green-500/40 hover:shadow-lg hover:shadow-green-500/10"
                 >
-                  <Plus size={12} />
+                  <Plus size={14} className="group-hover:rotate-90 transition-transform duration-200" />
                   Add Project
                 </button>
               )}
             </div>
-            <div className="space-y-4">
+
+            {/* Projects Grid */}
+            <div className="grid gap-6">
               {(isEditing ? editData.portfolios : profileData?.portfolios || []).map((port, idx) => (
-                <div key={idx} className="bg-white/5 rounded-xl p-4 border border-white/10 space-y-2">
-                  <EditableField
-                    label="Title"
-                    value={port.title}
-                    field={`portfolios:${idx}:title`}
-                    isEditing={isEditing}
-                    onChange={handleInputChange}
-                    error={fieldErrors[`portfolios.${idx}.title`]}
-                  />
-                  <EditableField
-                    label="Description"
-                    value={port.description}
-                    field={`portfolios:${idx}:description`}
-                    isTextarea={true}
-                    isEditing={isEditing}
-                    onChange={handleInputChange}
-                    error={fieldErrors[`portfolios.${idx}.description`]}
-                  />
-                  <EditableField
-                    label="Project Link"
-                    value={port.project_link}
-                    field={`portfolios:${idx}:project_link`}
-                    type="url"
-                    isEditing={isEditing}
-                    onChange={handleInputChange}
-                    error={fieldErrors[`portfolios.${idx}.project_link`]}
-                  />
+                <div
+                  key={idx}
+                  className="group relative bg-gradient-to-br from-white/8 to-white/3 backdrop-blur-sm rounded-2xl p-6 border border-white/10 hover:border-white/20 transition-all duration-300 hover:shadow-xl hover:shadow-black/20 hover:transform hover:-translate-y-1"
+                >
+                  {/* Project Number Badge */}
+                  <div className="absolute -top-3 -left-3 w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white text-sm font-bold shadow-lg">
+                    {idx + 1}
+                  </div>
+
+                  {/* Content */}
+                  <div className="space-y-4">
+                    <EditableField
+                      label="Project Title"
+                      value={port.title}
+                      field={`portfolios:${idx}:title`}
+                      isEditing={isEditing}
+                      onChange={handleInputChange}
+                      error={fieldErrors[`portfolios.${idx}.title`]}
+                      className="text-lg font-semibold"
+                    />
+
+                    <EditableField
+                      label="Description"
+                      value={port.description}
+                      field={`portfolios:${idx}:description`}
+                      isTextarea={true}
+                      isEditing={isEditing}
+                      onChange={handleInputChange}
+                      error={fieldErrors[`portfolios.${idx}.description`]}
+                      className="text-white/80 leading-relaxed"
+                    />
+
+                    <div className="flex items-center gap-3">
+                      <EditableField
+                        label="Project Link"
+                        value={port.project_link}
+                        field={`portfolios:${idx}:project_link`}
+                        type="url"
+                        isEditing={isEditing}
+                        onChange={handleInputChange}
+                        error={fieldErrors[`portfolios.${idx}.project_link`]}
+                        className="flex-1"
+                      />
+
+                      {!isEditing && port.project_link && (
+                        <a
+                          href={port.project_link}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-2 bg-gradient-to-r from-blue-500/20 to-purple-500/20 hover:from-blue-500/30 hover:to-purple-500/30 px-4 py-2 rounded-lg text-blue-300 text-sm font-medium transition-all duration-200 border border-blue-500/20 hover:border-blue-500/40 hover:shadow-lg hover:shadow-blue-500/10"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                          </svg>
+                          View Project
+                        </a>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Delete Button */}
                   {isEditing && (
                     <button
                       onClick={() => handleArrayRemove("portfolios", idx)}
-                      className="text-red-400 hover:text-red-600 mt-2"
+                      className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 bg-red-500/20 hover:bg-red-500/30 p-2 rounded-lg text-red-400 hover:text-red-300 transition-all duration-200 border border-red-500/20 hover:border-red-500/40"
                       title="Remove Project"
                     >
                       <Trash2 size={16} />
@@ -1247,8 +1940,20 @@ const ProfileSection = () => {
                   )}
                 </div>
               ))}
-              {isEditing && (editData.portfolios?.length === 0) && (
-                <p className="text-white/50 text-sm">No portfolio projects yet.</p>
+
+              {/* Empty State */}
+              {(isEditing ? editData.portfolios?.length === 0 : (!profileData?.portfolios || profileData.portfolios.length === 0)) && (
+                <div className="text-center py-12">
+                  <div className="w-16 h-16 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg className="w-8 h-8 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                    </svg>
+                  </div>
+                  <p className="text-white/60 text-lg font-medium mb-2">No portfolio projects yet</p>
+                  <p className="text-white/40 text-sm">
+                    {isEditing ? "Click 'Add Project' to showcase your work" : "Projects will appear here once added"}
+                  </p>
+                </div>
               )}
             </div>
           </div>
@@ -1288,2013 +1993,168 @@ const ProfileSection = () => {
 
         {/* Availability Section */}
         {activeTab === "availability" && (
-          <div>
-            <h3 className="text-xl font-semibold text-white mb-4">Availability</h3>
-            <div className="flex items-center gap-3">
-              <label className="text-white/70 text-sm">Available for work?</label>
-              <input
-                type="checkbox"
-                checked={isEditing ? editData.is_available : profileData?.is_available}
-                onChange={(e) => handleInputChange("is_available", e.target.checked)}
-                disabled={!isEditing}
-              />
-              {getAvailabilityStatus()}
+          <div className="animate-fade-in">
+            <div className="flex flex-col items-center justify-center min-h-[60vh] px-4 py-8 sm:py-12">
+              {/* Animated Icon with Glow Effect */}
+              <div className="relative mb-8">
+                <div
+                  className={`w-20 h-20 sm:w-24 sm:h-24 rounded-full mx-auto flex items-center justify-center border-2 transition-all duration-500 transform hover:scale-110
+            ${(isEditing ? editData.is_available : profileData?.is_available)
+                      ? 'bg-gradient-to-br from-green-500/30 to-emerald-500/30 border-green-400 shadow-lg shadow-green-500/25'
+                      : 'bg-gradient-to-br from-red-500/30 to-rose-500/30 border-red-400 shadow-lg shadow-red-500/25'
+                    }`}
+                >
+                  {/* Pulsing ring effect */}
+                  <div
+                    className={`absolute inset-0 rounded-full animate-pulse
+              ${(isEditing ? editData.is_available : profileData?.is_available) ? 'bg-green-500/10' : 'bg-red-500/10'}`}
+                  ></div>
+
+                  <CheckCircle
+                    size={40}
+                    className={`relative z-10 transition-colors duration-300 ${(isEditing ? editData.is_available : profileData?.is_available) ? "text-green-400" : "text-red-400"
+                      }`}
+                  />
+                </div>
+              </div>
+
+              {/* Title with gradient text */}
+              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-2 bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
+                Availability Status
+              </h2>
+              <p className="text-gray-400 text-sm sm:text-base mb-8 max-w-md text-center">
+                Let clients know if you&apos;re ready for new projects
+              </p>
+
+              {/* Main Card with Glass Effect */}
+              <div className="w-full max-w-md sm:max-w-lg bg-white/5 backdrop-blur-sm border border-white/20 rounded-2xl p-6 sm:p-8 shadow-2xl">
+                {/* Toggle Section */}
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+                  <div className="flex-1">
+                    <h3 className="text-lg sm:text-xl font-semibold text-white mb-1">
+                      Work Availability
+                    </h3>
+                    <p className="text-sm text-gray-400">
+                      Control your visibility to potential clients
+                    </p>
+                  </div>
+
+                  {/* Enhanced Toggle Switch */}
+                  <label className="relative inline-flex items-center cursor-pointer select-none group">
+                    <input
+                      type="checkbox"
+                      checked={isEditing ? editData.is_available : profileData?.is_available}
+                      onChange={(e) => handleInputChange("is_available", e.target.checked)}
+                      disabled={!isEditing}
+                      className="sr-only peer"
+                    />
+                    {/* Toggle Track with enhanced styling */}
+                    <div
+                      className={`w-14 h-7 rounded-full transition-all duration-300 relative shadow-inner
+                ${(isEditing ? editData.is_available : profileData?.is_available)
+                          ? 'bg-gradient-to-r from-green-500 to-emerald-500 shadow-green-500/30'
+                          : 'bg-gradient-to-r from-gray-600 to-gray-700 shadow-gray-500/20'
+                        }
+                ${isEditing ? 'peer-focus:ring-4 peer-focus:ring-blue-300/50 group-hover:shadow-lg' : 'opacity-60'}`}
+                    >
+                      {/* Toggle Thumb with improved design */}
+                      <div
+                        className={`absolute top-[2px] left-[2px] h-6 w-6 rounded-full transition-all duration-300 shadow-lg flex items-center justify-center
+                  ${(isEditing ? editData.is_available : profileData?.is_available)
+                            ? 'bg-white translate-x-7 shadow-green-200/50'
+                            : 'bg-white translate-x-0 shadow-gray-200/50'
+                          }`}
+                      >
+                        {/* Mini icon in toggle */}
+                        <div className={`w-2 h-2 rounded-full transition-colors duration-300 ${(isEditing ? editData.is_available : profileData?.is_available) ? 'bg-green-500' : 'bg-gray-500'
+                          }`}></div>
+                      </div>
+                    </div>
+                  </label>
+                </div>
+
+                {/* Status Display with Enhanced Animation */}
+                <div
+                  className={`relative overflow-hidden rounded-xl p-4 sm:p-5 transition-all duration-500 transform
+            ${(isEditing ? editData.is_available : profileData?.is_available)
+                      ? "bg-gradient-to-br from-green-500/20 to-emerald-500/20 border border-green-400/30 shadow-lg shadow-green-500/10"
+                      : "bg-gradient-to-br from-red-500/20 to-rose-500/20 border border-red-400/30 shadow-lg shadow-red-500/10"
+                    }`}
+                >
+                  {/* Background Pattern */}
+                  <div className="absolute inset-0 opacity-5">
+                    <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent"></div>
+                  </div>
+
+                  <div className="relative flex items-center gap-3">
+                    <div className={`p-2 rounded-full ${(isEditing ? editData.is_available : profileData?.is_available) ? 'bg-green-500/20' : 'bg-red-500/20'
+                      }`}>
+                      {(isEditing ? editData.is_available : profileData?.is_available) ? (
+                        <CheckCircle className="text-green-400" size={24} />
+                      ) : (
+                        <XCircle className="text-red-400" size={24} />
+                      )}
+                    </div>
+
+                    <div className="flex-1">
+                      <p className={`text-sm sm:text-base font-medium ${(isEditing ? editData.is_available : profileData?.is_available) ? 'text-green-300' : 'text-red-300'
+                        }`}>
+                        {(isEditing ? editData.is_available : profileData?.is_available)
+                          ? "Ready for new projects!"
+                          : "Currently unavailable"
+                        }
+                      </p>
+                      <p className="text-xs text-gray-400 mt-1">
+                        {(isEditing ? editData.is_available : profileData?.is_available)
+                          ? "Clients can contact you for new opportunities"
+                          : "Your profile will show as unavailable to clients"
+                        }
+                      </p>
+                    </div>
+
+                    {/* Status indicator dot */}
+                    <div className={`w-3 h-3 rounded-full animate-pulse ${(isEditing ? editData.is_available : profileData?.is_available) ? 'bg-green-400' : 'bg-red-400'
+                      }`}></div>
+                  </div>
+                </div>
+
+                {/* Additional Info Card */}
+                <div className="mt-6 bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-4">
+                  <div className="flex items-start gap-3">
+                    <div className="w-8 h-8 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <svg className="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <h6 className="text-white font-medium text-sm mb-1">How this works</h6>
+                      <p className="text-gray-400 text-xs leading-relaxed">
+                        When you&apos;re available, your profile appears in search results and clients can send you project invitations.
+                        When unavailable, your profile is hidden from new client searches.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Action Buttons (if editing) */}
+                {isEditing && (
+                  <div className="mt-6 flex gap-3">
+                    <button className="flex-1 bg-gradient-to-r from-green-500/20 to-emerald-500/20 hover:from-green-500/30 hover:to-emerald-500/30 border border-green-500/30 text-green-300 font-medium py-3 px-4 rounded-xl transition-all duration-200 text-sm">
+                      Set as Available
+                    </button>
+                    <button className="flex-1 bg-gradient-to-r from-red-500/20 to-rose-500/20 hover:from-red-500/30 hover:to-rose-500/30 border border-red-500/30 text-red-300 font-medium py-3 px-4 rounded-xl transition-all duration-200 text-sm">
+                      Set as Unavailable
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         )}
+
       </div>
     </div>
   );
 };
 
 export default ProfileSection;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// import React, { useState, useEffect } from "react";
-// import PropTypes from "prop-types";
-// import {
-//   User,
-//   Briefcase,
-//   GraduationCap,
-//   Star,
-//   Shield,
-//   CheckCircle,
-//   MapPin,
-//   Calendar,
-//   X,
-//   Save,
-//   Edit3,
-//   Plus,
-//   Trash2,
-//   FileText,
-//   ExternalLink,
-//   Mail,
-//   Phone,
-//   Video,
-//   Globe,
-//   Github,
-//   Linkedin,
-//   Twitter,
-//   Facebook,
-//   Instagram,
-// } from "lucide-react";
-// import { ToastContainer } from "react-toastify";
-// import "react-toastify/dist/ReactToastify.css";
-
-// // Reusable EditableField Component
-// const EditableField = ({
-//   label,
-//   value,
-//   field,
-//   type = "text",
-//   options = null,
-//   isTextarea = false,
-//   isEditing,
-//   onChange,
-//   error,
-// }) => {
-//   if (!isEditing) {
-//     return (
-//       <div>
-//         <label className="text-white/70 text-sm">{label}</label>
-//         <p className="text-white font-medium mt-1">
-//           {type === "currency"
-//             ? `$${parseInt(value || 0).toLocaleString()}`
-//             : value || "N/A"}
-//         </p>
-//         {error && <p className="text-red-400 text-xs mt-1">{error}</p>}
-//       </div>
-//     );
-//   }
-//   if (options) {
-//     return (
-//       <div>
-//         <label className="text-white/70 text-sm mb-2 block">{label}</label>
-//         <select
-//           value={value || ""}
-//           onChange={(e) => onChange(field, e.target.value)}
-//           className="w-full bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-500/50"
-//         >
-//           <option value="" className="bg-gray-800">
-//             Select...
-//           </option>
-//           {options.map((option) => (
-//             <option key={option} value={option} className="bg-gray-800">
-//               {option}
-//             </option>
-//           ))}
-//         </select>
-//         {error && <p className="text-red-400 text-xs mt-1">{error}</p>}
-//       </div>
-//     );
-//   }
-//   if (isTextarea) {
-//     return (
-//       <div>
-//         <label className="text-white/70 text-sm mb-2 block">{label}</label>
-//         <textarea
-//           value={value || ""}
-//           onChange={(e) => onChange(field, e.target.value)}
-//           rows={3}
-//           className="w-full bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-500/50 resize-none"
-//         />
-//         {error && <p className="text-red-400 text-xs mt-1">{error}</p>}
-//       </div>
-//     );
-//   }
-//   return (
-//     <div>
-//       <label className="text-white/70 text-sm mb-2 block">{label}</label>
-//       <input
-//         type={type}
-//         value={value || ""}
-//         onChange={(e) => onChange(field, e.target.value)}
-//         className="w-full bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-500/50"
-//       />
-//       {error && <p className="text-red-400 text-xs mt-1">{error}</p>}
-//     </div>
-//   );
-// };
-
-// // Reusable EditableArrayField Component
-// const EditableArrayField = ({
-//   label,
-//   field,
-//   items,
-//   newValue,
-//   setNewValue,
-//   placeholder,
-//   isEditing,
-//   onArrayAdd,
-//   onArrayRemove,
-//   isLanguage = false,
-//   newProficiency,
-//   setNewProficiency,
-//   error,
-// }) => {
-//   if (!isEditing) {
-//     return (
-//       <div>
-//         <label className="text-white/70 text-sm">{label}</label>
-//         <div className="flex flex-wrap gap-2 mt-2">
-//           {(items || []).map((item, index) => (
-//             <span
-//               key={index}
-//               className="bg-purple-500/20 text-purple-300 px-3 py-1 rounded-full text-sm border border-purple-500/30"
-//             >
-//               {isLanguage ? `${item.name} (${item.proficiency})` : item.name}
-//             </span>
-//           ))}
-//           {(items || []).length === 0 && (
-//             <span className="text-white/50 text-sm">No entries added</span>
-//           )}
-//         </div>
-//         {error && <p className="text-red-400 text-xs mt-1">{error}</p>}
-//       </div>
-//     );
-//   }
-//   return (
-//     <div>
-//       <label className="text-white/70 text-sm mb-2 block">{label}</label>
-//       <div className="space-y-3">
-//         <div className="flex flex-wrap gap-2">
-//           {(items || []).map((item, index) => (
-//             <div
-//               key={index}
-//               className="bg-purple-500/20 text-purple-300 px-3 py-1 rounded-full text-sm border border-purple-500/30 flex items-center space-x-2"
-//             >
-//               <span>
-//                 {isLanguage ? `${item.name} (${item.proficiency})` : item.name}
-//               </span>
-//               <button
-//                 onClick={() => onArrayRemove(field, index)}
-//                 className="text-red-300 hover:text-red-200"
-//               >
-//                 <X size={14} />
-//               </button>
-//             </div>
-//           ))}
-//         </div>
-//         <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
-//           <input
-//             type="text"
-//             value={newValue}
-//             onChange={(e) => setNewValue(e.target.value)}
-//             placeholder={placeholder}
-//             className="flex-1 bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-500/50"
-//             onKeyPress={(e) => {
-//               if (
-//                 e.key === "Enter" &&
-//                 (!isLanguage || newProficiency)
-//               ) {
-//                 onArrayAdd(
-//                   field,
-//                   isLanguage
-//                     ? { id: null, name: newValue, proficiency: newProficiency }
-//                     : { id: null, name: newValue },
-//                   setNewValue
-//                 );
-//                 if (isLanguage) setNewProficiency("");
-//               }
-//             }}
-//           />
-//           {isLanguage && (
-//             <input
-//               type="text"
-//               value={newProficiency}
-//               onChange={(e) => setNewProficiency(e.target.value)}
-//               placeholder="Proficiency"
-//               className="flex-1 bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-500/50"
-//             />
-//           )}
-//           <button
-//             onClick={() => {
-//               if (!isLanguage || newProficiency) {
-//                 onArrayAdd(
-//                   field,
-//                   isLanguage
-//                     ? { id: null, name: newValue, proficiency: newProficiency }
-//                     : { id: null, name: newValue },
-//                   setNewValue
-//                 );
-//                 if (isLanguage) setNewProficiency("");
-//               }
-//             }}
-//             className="bg-green-500/20 hover:bg-green-500/30 text-green-300 border border-green-500/30 px-3 py-2 rounded-lg transition-colors"
-//           >
-//             <Plus size={16} />
-//           </button>
-//         </div>
-//         {error && <p className="text-red-400 text-xs mt-1">{error}</p>}
-//       </div>
-//     </div>
-//   );
-// };
-
-// // Reusable Certificate Field
-// const renderCertificate = (
-//   certificate,
-//   idx,
-//   fieldPrefix,
-//   isEditing,
-//   onInputChange,
-//   fieldErrors
-// ) => {
-//   if (isEditing) {
-//     return (
-//       <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-center">
-//         <input
-//           type="file"
-//           accept=".pdf,.doc,.docx"
-//           onChange={(e) =>
-//             onInputChange(
-//               `${fieldPrefix}:${idx}:certificate`,
-//               e.target.files[0] || null
-//             )
-//           }
-//           className="bg-white/10 text-white rounded-lg px-3 py-2 border border-white/20 focus:border-purple-500/50 focus:outline-none text-sm sm:text-base file:bg-purple-600/30 file:border-0 file:text-white file:px-3 file:py-1 file:rounded file:cursor-pointer file:hover:bg-purple-600/40"
-//         />
-//         {certificate && (
-//           <button
-//             onClick={() =>
-//               onInputChange(`${fieldPrefix}:${idx}:certificate`, null)
-//             }
-//             className="bg-red-600/30 hover:bg-red-600/40 px-3 py-1 rounded text-red-300 text-xs sm:text-sm flex items-center gap-1"
-//           >
-//             <Trash2 size={12} /> Remove
-//           </button>
-//         )}
-//         {certificate && (
-//           <span className="text-white/60 text-xs sm:text-sm">
-//             Selected:{" "}
-//             {typeof certificate === "string"
-//               ? certificate.split("/").pop()
-//               : certificate?.name || "None"}
-//           </span>
-//         )}
-//         {fieldErrors[`${fieldPrefix}:${idx}:certificate`] && (
-//           <p className="text-red-400 text-xs mt-1">
-//             {fieldErrors[`${fieldPrefix}:${idx}:certificate`]}
-//           </p>
-//         )}
-//       </div>
-//     );
-//   }
-//   return certificate && typeof certificate === "string" ? (
-//     <a
-//       href={certificate}
-//       target="_blank"
-//       rel="noopener noreferrer"
-//       className="inline-flex items-center gap-1 px-3 py-1.5 bg-gradient-to-r from-purple-600/30 to-blue-600/30 hover:from-purple-600/40 hover:to-blue-600/40 rounded-lg text-purple-300 text-xs sm:text-sm font-medium border border-purple-500/30 transition-all duration-200"
-//     >
-//       <FileText size={14} /> View Certificate
-//     </a>
-//   ) : (
-//     <span className="text-white/60 text-sm">No certificate</span>
-//   );
-// };
-
-// // Main ProfileSection Component
-// const ProfileSection = ({
-//   profileData = {},
-//   editData = {},
-//   isEditing,
-//   onInputChange,
-//   onArrayAdd,
-//   onArrayRemove,
-//   onEdit,
-//   onCancel,
-//   onSave,
-//   fieldErrors,
-// }) => {
-//   const [activeTab, setActiveTab] = useState("overview");
-//   const [loading, setLoading] = useState(true);
-//   const [newSkill, setNewSkill] = useState("");
-//   const [newLanguage, setNewLanguage] = useState("");
-//   const [newProficiency, setNewProficiency] = useState("");
-
-//   useEffect(() => {
-//     if (profileData) setLoading(false);
-//   }, [profileData]);
-
-//   const getAvailabilityStatus = () => {
-//     const data = isEditing ? editData : profileData;
-//     return data?.is_available ? (
-//       <div className="flex items-center gap-1 px-2 py-1 bg-green-500/20 rounded-full">
-//         <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-//         <span className="text-green-300 text-xs sm:text-sm font-medium">
-//           Available
-//         </span>
-//       </div>
-//     ) : (
-//       <div className="flex items-center gap-1 px-2 py-1 bg-red-500/20 rounded-full">
-//         <div className="w-2 h-2 bg-red-400 rounded-full"></div>
-//         <span className="text-red-300 text-xs sm:text-sm font-medium">Busy</span>
-//       </div>
-//     );
-//   };
-
-//   if (loading) {
-//     return (
-//       <div className="bg-gradient-to-br from-purple-900/20 to-blue-900/20 backdrop-blur-lg rounded-3xl border border-white/10 p-4 sm:p-6 md:p-8 text-center">
-//         <div className="animate-spin w-10 h-10 sm:w-12 sm:h-12 border-4 border-purple-500/30 border-t-purple-500 rounded-full mx-auto mb-4"></div>
-//         <h4 className="text-lg sm:text-xl font-semibold text-white mb-2">
-//           Loading Profile...
-//         </h4>
-//         <p className="text-white/50 text-sm">
-//           Please wait while we fetch your data.
-//         </p>
-//       </div>
-//     );
-//   }
-
-//   if (!profileData) {
-//     return (
-//       <div className="bg-gradient-to-br from-purple-900/20 to-blue-900/20 backdrop-blur-lg rounded-3xl border border-white/10 p-4 sm:p-6 md:p-8 text-center">
-//         <User size={40} className="text-white/30 mx-auto mb-4" />
-//         <h4 className="text-lg sm:text-xl font-semibold text-white mb-2">
-//           Profile Not Found
-//         </h4>
-//         <p className="text-white/50 text-sm">Unable to load profile data.</p>
-//       </div>
-//     );
-//   }
-
-//   const tabs = [
-//     { id: "overview", label: "Overview", icon: User },
-//     { id: "experience", label: "Experience", icon: Briefcase },
-//     { id: "education", label: "Education", icon: GraduationCap },
-//     { id: "portfolio", label: "Portfolio", icon: Star },
-//     { id: "verification", label: "Verification", icon: Shield },
-//     { id: "availability", label: "Availability", icon: CheckCircle },
-//     { id: "skills", label: "Skills", icon: null },
-//     { id: "languages", label: "Languages", icon: null },
-//   ];
-
-//   return (
-//     <div className="space-y-4 sm:space-y-6">
-//       <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} />
-//       {/* Header */}
-//       <div className="bg-gradient-to-r from-purple-900/30 to-blue-900/30 backdrop-blur-lg rounded-3xl border border-white/10 p-4 sm:p-6">
-//         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 sm:mb-6 gap-3">
-//           <div className="flex items-start gap-3 sm:gap-4 w-full sm:w-auto">
-//             <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-purple-500 to-blue-500 rounded-2xl flex items-center justify-center flex-shrink-0">
-//               {isEditing && editData.profile_picture instanceof File ? (
-//                 <img
-//                   src={URL.createObjectURL(editData.profile_picture)}
-//                   alt="Profile Preview"
-//                   className="w-full h-full rounded-2xl object-cover"
-//                 />
-//               ) : profileData.profile_picture ? (
-//                 <img
-//                   src={profileData.profile_picture}
-//                   alt="Profile"
-//                   className="w-full h-full rounded-2xl object-cover"
-//                 />
-//               ) : (
-//                 <User size={24} className="text-white" />
-//               )}
-//             </div>
-//             <div className="flex-1">
-//               <h1 className="text-2xl sm:text-3xl font-bold text-white mb-2">
-//                 {profileData.first_name} {profileData.last_name}
-//               </h1>
-//               <div className="flex flex-wrap items-center gap-2 mb-3">
-//                 <div className="flex items-center gap-0.5 text-white/70">
-//                   <MapPin size={14} />
-//                   <span className="text-xs sm:text-sm">
-//                     {profileData.location || "N/A"}
-//                   </span>
-//                 </div>
-//                 <div className="flex items-center gap-0.5 text-white/70">
-//                   <Calendar size={14} />
-//                   <span className="text-xs sm:text-sm">
-//                     {profileData.age || "N/A"} years old
-//                   </span>
-//                 </div>
-//                 {getAvailabilityStatus()}
-//               </div>
-//             </div>
-//           </div>
-//           <div className="flex gap-2 w-full sm:w-auto justify-end">
-//             {isEditing ? (
-//               <>
-//                 <button
-//                   onClick={onCancel}
-//                   className="flex items-center gap-1 px-2 sm:px-3 py-1.5 rounded-xl text-gray-300 hover:text-white transition-all duration-200 text-xs sm:text-sm bg-gray-700/30 hover:bg-gray-700/40"
-//                 >
-//                   <X size={12} />
-//                   Cancel
-//                 </button>
-//                 <button
-//                   onClick={onSave}
-//                   className="flex items-center gap-1 bg-gradient-to-r from-purple-600/30 to-blue-600/30 hover:from-purple-600/40 hover:to-blue-600/40 px-2 sm:px-3 py-1.5 rounded-xl text-white transition-all duration-200 border border-purple-500/30 text-xs sm:text-sm"
-//                 >
-//                   <Save size={12} />
-//                   Save Changes
-//                 </button>
-//               </>
-//             ) : (
-//               <button
-//                 onClick={onEdit}
-//                 className="flex items-center gap-1 bg-gradient-to-r from-purple-600/30 to-blue-600/30 hover:from-purple-600/40 hover:to-blue-600/40 px-2 sm:px-3 py-1.5 rounded-xl text-white transition-all duration-200 border border-purple-500/30 text-xs sm:text-sm"
-//                 aria-label="Edit Profile"
-//               >
-//                 <Edit3 size={12} />
-//                 Edit Profile
-//               </button>
-//             )}
-//           </div>
-//         </div>
-
-//         {/* About Section */}
-//         <div className="bg-white/5 rounded-2xl p-4 border border-white/10">
-//           <h3 className="text-base sm:text-lg font-semibold text-white mb-3">
-//             About
-//           </h3>
-//           <EditableField
-//             label="About"
-//             value={isEditing ? editData.about : profileData.about}
-//             field="about"
-//             isTextarea={true}
-//             isEditing={isEditing}
-//             onChange={onInputChange}
-//             error={fieldErrors.about}
-//           />
-//         </div>
-//       </div>
-
-//       {/* Navigation Tabs */}
-//       <div className="flex flex-wrap gap-1 sm:gap-2 p-2 bg-black/20 backdrop-blur-lg rounded-2xl border border-white/10">
-//         {tabs.map(({ id, label, icon: Icon }) => (
-//           <button
-//             key={id}
-//             onClick={() => setActiveTab(id)}
-//             className={`flex items-center gap-1 px-2 sm:px-3 py-1.5 sm:py-2 rounded-xl transition-all duration-200 text-xs sm:text-sm ${activeTab === id
-//               ? "bg-gradient-to-r from-purple-600/40 to-blue-600/40 text-white border border-purple-500/30"
-//               : "text-white/60 hover:text-white/80 hover:bg-white/5"
-//               }`}
-//             aria-label={label}
-//           >
-//             {Icon && <Icon size={12} />}
-//             <span className="font-medium">{label}</span>
-//           </button>
-//         ))}
-//       </div>
-
-//       {/* Content Sections */}
-//       <div className="bg-black/20 backdrop-blur-lg rounded-3xl border border-white/10 p-4 sm:p-6">
-//         {activeTab === "overview" && (
-//           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-//             <div className="lg:col-span-1">
-//               <div className="bg-white/5 rounded-2xl border border-white/10 p-6">
-//                 <div className="text-center mb-6">
-//                   <div className="w-20 h-20 bg-gradient-to-r from-purple-400 to-blue-400 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
-//                     {isEditing && editData.profile_picture instanceof File ? (
-//                       <img
-//                         src={URL.createObjectURL(editData.profile_picture)}
-//                         alt="Profile Preview"
-//                         className="w-full h-full rounded-full object-cover"
-//                       />
-//                     ) : profileData.profile_picture ? (
-//                       <img
-//                         src={profileData.profile_picture}
-//                         alt="Profile"
-//                         className="w-full h-full rounded-full object-cover"
-//                       />
-//                     ) : (
-//                       <User size={32} className="text-white" />
-//                     )}
-//                   </div>
-//                   <h4 className="text-xl font-semibold text-white">
-//                     {profileData.first_name} {profileData.last_name}
-//                   </h4>
-//                   <p className="text-white/70 text-sm">
-//                     {profileData.location || "N/A"}
-//                   </p>
-//                   <div className="flex items-center justify-center space-x-1 mt-2">
-//                     {getAvailabilityStatus()}
-//                   </div>
-//                 </div>
-//                 <div className="space-y-3">
-//                   <div className="flex items-center space-x-2">
-//                     <Calendar size={16} className="text-white/50" />
-//                     <span className="text-white text-sm">
-//                       {profileData.age || "N/A"} years old
-//                     </span>
-//                   </div>
-//                   <div className="flex items-center space-x-2">
-//                     <Globe size={16} className="text-white/50" />
-//                     <span className="text-white text-sm">
-//                       {(profileData.languages || [])
-//                         .map((lang) => lang.name)
-//                         .join(", ") || "N/A"}
-//                     </span>
-//                   </div>
-//                 </div>
-//               </div>
-//             </div>
-//             <div className="lg:col-span-2">
-//               <div className="bg-white/5 rounded-2xl border border-white/10 p-6">
-//                 <h5 className="text-lg font-semibold text-white mb-4 flex items-center space-x-2">
-//                   <User size={20} />
-//                   <span>Personal Information</span>
-//                 </h5>
-//                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-//                   <EditableField
-//                     label="First Name"
-//                     value={isEditing ? editData.first_name : profileData.first_name}
-//                     field="first_name"
-//                     isEditing={isEditing}
-//                     onChange={onInputChange}
-//                     error={fieldErrors.first_name}
-//                   />
-//                   <EditableField
-//                     label="Last Name"
-//                     value={isEditing ? editData.last_name : profileData.last_name}
-//                     field="last_name"
-//                     isEditing={isEditing}
-//                     onChange={onInputChange}
-//                     error={fieldErrors.last_name}
-//                   />
-//                   <EditableField
-//                     label="Location"
-//                     value={isEditing ? editData.location : profileData.location}
-//                     field="location"
-//                     isEditing={isEditing}
-//                     onChange={onInputChange}
-//                     error={fieldErrors.location}
-//                   />
-//                   <EditableField
-//                     label="Age"
-//                     value={isEditing ? editData.age : profileData.age}
-//                     field="age"
-//                     type="number"
-//                     isEditing={isEditing}
-//                     onChange={onInputChange}
-//                     error={fieldErrors.age}
-//                   />
-//                   {isEditing && (
-//                     <div className="md:col-span-2">
-//                       <label className="text-white/70 text-sm mb-2 block">
-//                         Profile Picture
-//                       </label>
-//                       <input
-//                         type="file"
-//                         accept="image/*"
-//                         onChange={(e) =>
-//                           onInputChange("profile_picture", e.target.files[0])
-//                         }
-//                         className="bg-white/10 text-white rounded-lg px-3 py-2 border border-white/20 focus:border-purple-500/50 focus:outline-none text-sm sm:text-base file:bg-purple-600/30 file:border-0 file:text-white file:px-3 file:py-1 file:rounded file:cursor-pointer file:hover:bg-purple-600/40"
-//                       />
-//                       {fieldErrors.profile_picture && (
-//                         <p className="text-red-400 text-xs mt-1">
-//                           {fieldErrors.profile_picture}
-//                         </p>
-//                       )}
-//                     </div>
-//                   )}
-//                 </div>
-//                 <div className="mt-6">
-//                   <h5 className="text-lg font-semibold text-white mb-4 flex items-center space-x-2">
-//                     <Globe size={20} />
-//                     <span>Social Links</span>
-//                   </h5>
-//                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-//                     {[
-//                       { key: "github_url", label: "GitHub", icon: Github },
-//                       { key: "linkedin_url", label: "LinkedIn", icon: Linkedin },
-//                       { key: "twitter_url", label: "Twitter", icon: Twitter },
-//                       { key: "facebook_url", label: "Facebook", icon: Facebook },
-//                       { key: "instagram_url", label: "Instagram", icon: Instagram },
-//                     ].map(({ key, label, icon: Icon }) => (
-//                       <div key={key} className="flex items-center gap-2">
-//                         <Icon size={16} className="text-white/50" />
-//                         <EditableField
-//                           label={label}
-//                           value={
-//                             isEditing
-//                               ? editData.social_links?.[key]
-//                               : profileData.social_links?.[key]
-//                           }
-//                           field={`social_links.${key}`}
-//                           type="url"
-//                           isEditing={isEditing}
-//                           onChange={onInputChange}
-//                           error={fieldErrors[`social_links.${key}`]}
-//                         />
-//                       </div>
-//                     ))}
-//                   </div>
-//                 </div>
-//               </div>
-//             </div>
-//           </div>
-//         )}
-
-//         {activeTab === "education" && (
-//           <div>
-//             <div className="flex items-center justify-between mb-4">
-//               <h3 className="text-lg sm:text-xl font-semibold text-white flex items-center gap-1">
-//                 <GraduationCap size={16} className="text-green-400" />
-//                 Education
-//               </h3>
-//               {isEditing && (
-//                 <button
-//                   onClick={() =>
-//                     onArrayAdd("educations", {
-//                       id: null,
-//                       college: "",
-//                       degree: "",
-//                       year: "",
-//                       certificate: null,
-//                     })
-//                   }
-//                   className="flex items-center gap-1 bg-green-500/20 hover:bg-green-500/30 px-2 sm:px-3 py-1 rounded-lg text-right text-green-300 text-xs sm:text-sm transition-colors"
-//                 >
-//                   <Plus size={12} />
-//                   Add Education
-//                 </button>
-//               )}
-//             </div>
-//             <div className="space-y-4">
-//               {(isEditing ? editData.educations : profileData.educations || [])
-//                 .length === 0 ? (
-//                 <div className="text-center text-white/50 py-4">
-//                   No education entries added yet.
-//                 </div>
-//               ) : (
-//                 (isEditing ? editData.educations : profileData.educations || []).map(
-//                   (edu, idx) => (
-//                     <div
-//                       key={edu.id || idx}
-//                       className="p-3 sm:p-4 bg-white/5 rounded-xl border border-white/10 flex flex-col gap-2"
-//                     >
-//                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-//                         <EditableField
-//                           label="Institution"
-//                           value={edu.college}
-//                           field={`educations:${idx}:college`}
-//                           isEditing={isEditing}
-//                           onChange={onInputChange}
-//                           error={fieldErrors[`educations:${idx}:college`]}
-//                         />
-//                         <EditableField
-//                           label="Degree"
-//                           value={edu.degree}
-//                           field={`educations:${idx}:degree`}
-//                           isEditing={isEditing}
-//                           onChange={onInputChange}
-//                           error={fieldErrors[`educations:${idx}:degree`]}
-//                         />
-//                         <EditableField
-//                           label="Year"
-//                           value={edu.year}
-//                           field={`educations:${idx}:year`}
-//                           isEditing={isEditing}
-//                           onChange={onInputChange}
-//                           error={fieldErrors[`educations:${idx}:year`]}
-//                         />
-//                         <div className="md:col-span-2">
-//                           <div className="flex flex-col gap-2">
-//                             <label className="text-white/70 text-sm mb-1 block">
-//                               Certificate
-//                             </label>
-//                             {renderCertificate(
-//                               edu.certificate,
-//                               idx,
-//                               "educations",
-//                               isEditing,
-//                               onInputChange,
-//                               fieldErrors
-//                             )}
-//                           </div>
-//                         </div>
-//                       </div>
-//                       {isEditing && (
-//                         <button
-//                           onClick={() => onArrayRemove("educations", idx)}
-//                           className="bg-red-600/30 hover:bg-red-600/40 px-3 py-1 rounded text-red-300 text-xs sm:text-sm flex items-center gap-1 mt-2 ml-auto"
-//                         >
-//                           <Trash2 size={12} /> Remove
-//                         </button>
-//                       )}
-//                     </div>
-//                   )
-//                 )
-//               )}
-//             </div>
-//           </div>
-//         )}
-
-//         {activeTab === "experience" && (
-//           <div>
-//             <div className="flex items-center justify-between mb-4">
-//               <h3 className="text-lg sm:text-xl font-semibold text-white flex items-center gap-1">
-//                 <Briefcase className="text-yellow-400" size={16} />
-//                 Experience
-//               </h3>
-//               {isEditing && (
-//                 <button
-//                   onClick={() =>
-//                     onArrayAdd("experiences", {
-//                       id: null,
-//                       company: "",
-//                       role: "",
-//                       start_date: "",
-//                       end_date: "",
-//                       description: "",
-//                       certificate: null,
-//                     })
-//                   }
-//                   className="flex items-center gap-1 bg-green-500/20 hover:bg-green-500/30 px-2 sm:px-3 py-1 rounded-lg text-right text-green-300 text-xs sm:text-sm transition-colors"
-//                 >
-//                   <Plus size={12} />
-//                   Add Experience
-//                 </button>
-//               )}
-//             </div>
-//             <div className="space-y-4">
-//               {(isEditing ? editData.experiences : profileData.experiences || [])
-//                 .length === 0 ? (
-//                 <div className="text-center text-white/50 py-4">
-//                   No experience entries added yet.
-//                 </div>
-//               ) : (
-//                 (isEditing ? editData.experiences : profileData.experiences || []).map(
-//                   (exp, idx) => (
-//                     <div
-//                       key={exp.id || idx}
-//                       className="p-3 sm:p-4 bg-white/5 rounded-xl border border-white/10 flex flex-col gap-2"
-//                     >
-//                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-//                         <EditableField
-//                           label="Company"
-//                           value={exp.company}
-//                           field={`experiences:${idx}:company`}
-//                           isEditing={isEditing}
-//                           onChange={onInputChange}
-//                           error={fieldErrors[`experiences:${idx}:company`]}
-//                         />
-//                         <EditableField
-//                           label="Role"
-//                           value={exp.role}
-//                           field={`experiences:${idx}:role`}
-//                           isEditing={isEditing}
-//                           onChange={onInputChange}
-//                           error={fieldErrors[`experiences:${idx}:role`]}
-//                         />
-//                         <EditableField
-//                           label="Start Date (YYYY-MM-DD)"
-//                           value={exp.start_date}
-//                           field={`experiences:${idx}:start_date`}
-//                           isEditing={isEditing}
-//                           onChange={onInputChange}
-//                           error={fieldErrors[`experiences:${idx}:start_date`]}
-//                         />
-//                         <EditableField
-//                           label="End Date (YYYY-MM-DD)"
-//                           value={exp.end_date}
-//                           field={`experiences:${idx}:end_date`}
-//                           isEditing={isEditing}
-//                           onChange={onInputChange}
-//                           error={fieldErrors[`experiences:${idx}:end_date`]}
-//                         />
-//                         <div className="md:col-span-2">
-//                           <EditableField
-//                             label="Description"
-//                             value={exp.description}
-//                             field={`experiences:${idx}:description`}
-//                             isTextarea={true}
-//                             isEditing={isEditing}
-//                             onChange={onInputChange}
-//                             error={fieldErrors[`experiences:${idx}:description`]}
-//                           />
-//                         </div>
-//                         <div className="md:col-span-2">
-//                           <div className="flex flex-col gap-2">
-//                             <label className="text-white/70 text-sm mb-1 block">
-//                               Certificate
-//                             </label>
-//                             {renderCertificate(
-//                               exp.certificate,
-//                               idx,
-//                               "experiences",
-//                               isEditing,
-//                               onInputChange,
-//                               fieldErrors
-//                             )}
-//                           </div>
-//                         </div>
-//                       </div>
-//                       {isEditing && (
-//                         <button
-//                           onClick={() => onArrayRemove("experiences", idx)}
-//                           className="bg-red-600/30 hover:bg-red-600/40 px-3 py-1 rounded text-red-300 text-xs sm:text-sm flex items-center gap-1 mt-2 ml-auto"
-//                         >
-//                           <Trash2 size={12} /> Remove
-//                         </button>
-//                       )}
-//                     </div>
-//                   )
-//                 )
-//               )}
-//             </div>
-//           </div>
-//         )}
-
-//         {activeTab === "portfolio" && (
-//           <div>
-//             <div className="flex items-center justify-between mb-4">
-//               <h3 className="text-lg sm:text-xl font-semibold text-white flex items-center gap-1">
-//                 <Star className="text-orange-400" size={16} />
-//                 Portfolio
-//               </h3>
-//               {isEditing && (
-//                 <button
-//                   onClick={() =>
-//                     onArrayAdd("portfolios", {
-//                       id: null,
-//                       title: "",
-//                       description: "",
-//                       project_link: "",
-//                     })
-//                   }
-//                   className="flex items-center gap-1 bg-green-500/20 hover:bg-green-500/30 px-2 sm:px-3 py-1 rounded-lg text-right text-green-300 text-xs sm:text-sm transition-colors"
-//                 >
-//                   <Plus size={12} />
-//                   Add Project
-//                 </button>
-//               )}
-//             </div>
-//             <div className="space-y-4">
-//               {(isEditing ? editData.portfolios : profileData.portfolios || [])
-//                 .length === 0 ? (
-//                 <div className="text-center text-white/50 py-4">
-//                   No portfolio projects added yet.
-//                 </div>
-//               ) : (
-//                 (isEditing ? editData.portfolios : profileData.portfolios || []).map(
-//                   (pf, idx) => (
-//                     <div
-//                       key={pf.id || idx}
-//                       className="p-3 sm:p-4 bg-white/5 rounded-xl border border-white/10 flex flex-col gap-2"
-//                     >
-//                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-//                         <EditableField
-//                           label="Project Title"
-//                           value={pf.title}
-//                           field={`portfolios:${idx}:title`}
-//                           isEditing={isEditing}
-//                           onChange={onInputChange}
-//                           error={fieldErrors[`portfolios:${idx}:title`]}
-//                         />
-//                         <EditableField
-//                           label="Project Link"
-//                           value={pf.project_link}
-//                           field={`portfolios:${idx}:project_link`}
-//                           type="url"
-//                           isEditing={isEditing}
-//                           onChange={onInputChange}
-//                           error={fieldErrors[`portfolios:${idx}:project_link`]}
-//                         />
-//                         <div className="md:col-span-2">
-//                           <EditableField
-//                             label="Description"
-//                             value={pf.description}
-//                             field={`portfolios:${idx}:description`}
-//                             isTextarea={true}
-//                             isEditing={isEditing}
-//                             onChange={onInputChange}
-//                             error={fieldErrors[`portfolios:${idx}:description`]}
-//                           />
-//                         </div>
-//                       </div>
-//                       {isEditing && (
-//                         <button
-//                           onClick={() => onArrayRemove("portfolios", idx)}
-//                           className="bg-red-600/30 hover:bg-red-600/40 px-3 py-1 rounded text-red-300 text-xs sm:text-sm flex items-center gap-1 mt-2 ml-auto"
-//                         >
-//                           <Trash2 size={12} /> Remove
-//                         </button>
-//                       )}
-//                     </div>
-//                   )
-//                 )
-//               )}
-//             </div>
-//           </div>
-//         )}
-
-//         {activeTab === "skills" && (
-//           <div>
-//             <EditableArrayField
-//               label="Skills"
-//               field="skills"
-//               items={isEditing ? editData.skills : profileData.skills}
-//               newValue={newSkill}
-//               setNewValue={setNewSkill}
-//               placeholder="Add skill"
-//               isEditing={isEditing}
-//               onArrayAdd={onArrayAdd}
-//               onArrayRemove={onArrayRemove}
-//               error={fieldErrors.skills}
-//             />
-//           </div>
-//         )}
-
-//         {activeTab === "languages" && (
-//           <div>
-//             <EditableArrayField
-//               label="Languages"
-//               field="languages"
-//               items={isEditing ? editData.languages : profileData.languages}
-//               newValue={newLanguage}
-//               setNewValue={setNewLanguage}
-//               newProficiency={newProficiency}
-//               setNewProficiency={setNewProficiency}
-//               placeholder="Add language"
-//               isEditing={isEditing}
-//               onArrayAdd={onArrayAdd}
-//               onArrayRemove={onArrayRemove}
-//               isLanguage={true}
-//               error={fieldErrors.languages}
-//             />
-//           </div>
-//         )}
-
-//         {activeTab === "verification" && (
-//           <div>
-//             <div className="flex items-center justify-between mb-4">
-//               <h3 className="text-lg sm:text-xl font-semibold text-white flex items-center gap-1">
-//                 <Shield className="text-green-400" size={16} />
-//                 Verification
-//               </h3>
-//             </div>
-//             <div className="space-y-4">
-//               {[
-//                 {
-//                   key: "verifications.email_verified",
-//                   label: "Email Verification",
-//                   icon: Mail,
-//                 },
-//                 {
-//                   key: "verifications.phone_verified",
-//                   label: "Phone Verification",
-//                   icon: Phone,
-//                 },
-//                 {
-//                   key: "verifications.id_verified",
-//                   label: "ID Verification",
-//                   icon: Shield,
-//                 },
-//                 {
-//                   key: "verifications.video_verified",
-//                   label: "Video Verification",
-//                   icon: Video,
-//                 },
-//               ].map(({ key, label, icon: Icon }) => (
-//                 <div
-//                   key={key}
-//                   className="p-3 sm:p-4 bg-white/5 rounded-xl border border-white/10 flex items-center justify-between"
-//                 >
-//                   <div className="flex items-center gap-2">
-//                     <Icon
-//                       size={16}
-//                       className={
-//                         isEditing
-//                           ? editData.verifications?.[key.split(".")[1]]
-//                             ? "text-green-400"
-//                             : "text-gray-400"
-//                           : profileData.verifications?.[key.split(".")[1]]
-//                             ? "text-green-400"
-//                             : "text-gray-400"
-//                       }
-//                     />
-//                     <span className="text-white text-sm sm:text-base">
-//                       {label}
-//                     </span>
-//                   </div>
-//                   {isEditing ? (
-//                     <label className="flex items-center gap-2">
-//                       <input
-//                         type="checkbox"
-//                         checked={
-//                           editData.verifications?.[key.split(".")[1]] || false
-//                         }
-//                         onChange={() =>
-//                           onInputChange(
-//                             key,
-//                             !editData.verifications?.[key.split(".")[1]]
-//                           )
-//                         }
-//                         className="h-4 w-4 text-purple-500 focus:ring-purple-500 border-gray-300 rounded"
-//                       />
-//                       <span className="text-white/80 text-sm">
-//                         {editData.verifications?.[key.split(".")[1]]
-//                           ? "Verified"
-//                           : "Not Verified"}
-//                       </span>
-//                     </label>
-//                   ) : (
-//                     <span
-//                       className={`text-sm sm:text-base ${profileData.verifications?.[key.split(".")[1]]
-//                         ? "text-green-300"
-//                         : "text-red-300"
-//                         }`}
-//                     >
-//                       {profileData.verifications?.[key.split(".")[1]]
-//                         ? "Verified"
-//                         : "Not Verified"}
-//                     </span>
-//                   )}
-//                 </div>
-//               ))}
-//             </div>
-//           </div>
-//         )}
-
-//         {activeTab === "availability" && (
-//           <div>
-//             <div className="flex items-center justify-between mb-4">
-//               <h3 className="text-lg sm:text-xl font-semibold text-white flex items-center gap-1">
-//                 <CheckCircle className="text-blue-400" size={16} />
-//                 Availability
-//               </h3>
-//             </div>
-//             <div className="p-3 sm:p-4 bg-white/5 rounded-xl border border-white/10 flex flex-col items-center gap-4">
-//               <div
-//                 className={`w-12 h-12 sm:w-16 sm:h-16 rounded-full flex items-center justify-center ${isEditing
-//                   ? editData.is_available
-//                     ? "bg-green-500/20 border-2 border-green-500"
-//                     : "bg-red-500/20 border-2 border-red-500"
-//                   : profileData.is_available
-//                     ? "bg-green-500/20 border-2 border-green-500"
-//                     : "bg-red-500/20 border-2 border-red-500"
-//                   }`}
-//               >
-//                 <CheckCircle
-//                   size={24}
-//                   className={
-//                     isEditing
-//                       ? editData.is_available
-//                         ? "text-green-500"
-//                         : "text-red-500"
-//                       : profileData.is_available
-//                         ? "text-green-500"
-//                         : "text-red-500"
-//                   }
-//                 />
-//               </div>
-//               <h4 className="text-base sm:text-lg font-semibold text-white">
-//                 {isEditing
-//                   ? editData.is_available
-//                     ? "Available for Work"
-//                     : "Not Available"
-//                   : profileData.is_available
-//                     ? "Available for Work"
-//                     : "Not Available"}
-//               </h4>
-//               <p className="text-white/70 text-sm sm:text-base text-center">
-//                 {isEditing
-//                   ? editData.is_available
-//                     ? "You are currently available to take on new projects"
-//                     : "You are not currently available for new projects"
-//                   : profileData.is_available
-//                     ? "You are currently available to take on new projects"
-//                     : "You are not currently available for new projects"}
-//               </p>
-//               {isEditing && (
-//                 <label className="relative inline-flex items-center cursor-pointer">
-//                   <input
-//                     type="checkbox"
-//                     checked={editData.is_available}
-//                     onChange={() =>
-//                       onInputChange("is_available", !editData.is_available)
-//                     }
-//                     className="sr-only peer"
-//                   />
-//                   <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
-//                   <span className="ml-3 text-sm font-medium text-white">
-//                     Available for work
-//                   </span>
-//                 </label>
-//               )}
-//             </div>
-//           </div>
-//         )}
-//       </div>
-//     </div>
-//   );
-// };
-
-// ProfileSection.propTypes = {
-//   profileData: PropTypes.object,
-//   editData: PropTypes.object,
-//   isEditing: PropTypes.bool,
-//   onInputChange: PropTypes.func,
-//   onArrayAdd: PropTypes.func,
-//   onArrayRemove: PropTypes.func,
-//   onEdit: PropTypes.func,
-//   onCancel: PropTypes.func,
-//   onSave: PropTypes.func,
-//   fieldErrors: PropTypes.object,
-// };
-
-// export default ProfileSection;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// import React, { useState, useEffect } from 'react';
-// import {
-//   User, Edit3, Save, X, Plus, Trash2, MapPin, Calendar, Briefcase, GraduationCap, Globe, Star,
-//   Award, Mail, Phone, Video, Shield, ExternalLink, FileText, CheckCircle
-// } from 'lucide-react';
-
-
-// const EditableField = ({
-//   label,
-//   value,
-//   field,
-//   type = "text",
-//   options = null,
-//   isTextarea = false,
-//   isEditing,
-//   onChange,
-// }) => {
-//   if (!isEditing) {
-//     return (
-//       <div>
-//         <label className="text-white/70 text-sm">{label}</label>
-//         <p className="text-white font-medium mt-1">
-//           {type === "currency" ? `$${parseInt(value || 0).toLocaleString()}` : value}
-//         </p>
-//       </div>
-//     );
-//   }
-//   if (options) {
-//     return (
-//       <div>
-//         <label className="text-white/70 text-sm mb-2 block">{label}</label>
-//         <select
-//           value={value}
-//           onChange={(e) => onChange(field, e.target.value)}
-//           className="w-full bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-500/50"
-//         >
-//           {options.map((option) => (
-//             <option key={option} value={option} className="bg-gray-800">
-//               {option}
-//             </option>
-//           ))}
-//         </select>
-//       </div>
-//     );
-//   }
-//   if (isTextarea) {
-//     return (
-//       <div>
-//         <label className="text-white/70 text-sm mb-2 block">{label}</label>
-//         <textarea
-//           value={value}
-//           onChange={(e) => onChange(field, e.target.value)}
-//           rows={3}
-//           className="w-full bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-500/50 resize-none"
-//         />
-//       </div>
-//     );
-//   }
-//   return (
-//     <div>
-//       <label className="text-white/70 text-sm mb-2 block">{label}</label>
-//       <input
-//         type={type}
-//         value={value}
-//         onChange={(e) => onChange(field, e.target.value)}
-//         className="w-full bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-500/50"
-//       />
-//     </div>
-//   );
-// };
-
-// const EditableArrayField = ({
-//   label,
-//   field,
-//   items,
-//   newValue,
-//   setNewValue,
-//   placeholder,
-//   isEditing,
-//   onArrayAdd,
-//   onArrayRemove,
-// }) => {
-//   if (!isEditing) {
-//     return (
-//       <div>
-//         <label className="text-white/70 text-sm">{label}</label>
-//         <div className="flex flex-wrap gap-2 mt-2">
-//           {(items || []).map((item, index) => (
-//             <span
-//               key={index}
-//               className="bg-purple-500/20 text-purple-300 px-3 py-1 rounded-full text-sm border border-purple-500/30"
-//             >
-//               {item}
-//             </span>
-//           ))}
-//         </div>
-//       </div>
-//     );
-//   }
-//   return (
-//     <div>
-//       <label className="text-white/70 text-sm mb-2 block">{label}</label>
-//       <div className="space-y-3">
-//         <div className="flex flex-wrap gap-2">
-//           {(items || []).map((item, index) => (
-//             <div
-//               key={index}
-//               className="bg-purple-500/20 text-purple-300 px-3 py-1 rounded-full text-sm border border-purple-500/30 flex items-center space-x-2"
-//             >
-//               <span>{item}</span>
-//               <button
-//                 onClick={() => onArrayRemove(field, index)}
-//                 className="text-red-300 hover:text-red-200"
-//               >
-//                 ✕
-//               </button>
-//             </div>
-//           ))}
-//         </div>
-//         <div className="flex space-x-2">
-//           <input
-//             type="text"
-//             value={newValue}
-//             onChange={(e) => setNewValue(e.target.value)}
-//             placeholder={placeholder}
-//             className="flex-1 bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-500/50"
-//             onKeyPress={(e) => {
-//               if (e.key === "Enter") {
-//                 onArrayAdd(field, newValue, setNewValue);
-//               }
-//             }}
-//           />
-//           <button
-//             onClick={() => {
-//               onArrayAdd(field, newValue, setNewValue);
-//             }}
-//             className="bg-green-500/20 hover:bg-green-500/30 text-green-300 border border-green-500/30 px-3 py-2 rounded-lg transition-colors"
-//           >
-//             <Plus size={16} />
-//           </button>
-//         </div>
-//       </div>
-//     </div>
-//   );
-// };
-
-// const ProfileSection = ({
-//   profileData = {},
-//   editData = {},
-//   isEditing,
-//   onInputChange,
-//   onArrayAdd,
-//   onArrayRemove,
-//   onEdit,
-//   onCancel,
-//   onSave,
-// }) => {
-//   const [activeTab, setActiveTab] = useState("overview");
-//   const [loading, setLoading] = useState(true);
-//   const [newSkill, setNewSkill] = useState('');
-//   const [newLanguage, setNewLanguage] = useState('');
-
-//   useEffect(() => {
-//     if (profileData) setLoading(false);
-//   }, [profileData]);
-
-
-//   const getAvailabilityStatus = () => {
-//     const data = isEditing ? editData : profileData;
-//     return data?.is_available ? (
-//       <div className="flex items-center gap-1 px-2 py-1 bg-green-500/20 rounded-full">
-//         <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-//         <span className="text-green-300 text-xs sm:text-sm font-medium">Available</span>
-//       </div>
-//     ) : (
-//       <div className="flex items-center gap-1 px-2 py-1 bg-red-500/20 rounded-full">
-//         <div className="w-2 h-2 bg-red-400 rounded-full"></div>
-//         <span className="text-red-300 text-xs sm:text-sm font-medium">Busy</span>
-//       </div>
-//     );
-//   };
-
-
-//   if (loading) {
-//     return (
-//       <div className="bg-gradient-to-br from-purple-900/20 to-blue-900/20 backdrop-blur-lg rounded-3xl border border-white/10 p-4 sm:p-6 md:p-8 text-center">
-//         <div className="animate-spin w-10 h-10 sm:w-12 sm:h-12 border-4 border-purple-500/30 border-t-purple-500 rounded-full mx-auto mb-4"></div>
-//         <h4 className="text-lg sm:text-xl font-semibold text-white mb-2">Loading Profile...</h4>
-//         <p className="text-white/50 text-sm">Please wait while we fetch your data.</p>
-//       </div>
-//     );
-//   }
-
-//   if (!profileData) {
-//     return (
-//       <div className="bg-gradient-to-br from-purple-900/20 to-blue-900/20 backdrop-blur-lg rounded-3xl border border-white/10 p-4 sm:p-6 md:p-8 text-center">
-//         <User size={40} className="text-white/30 mx-auto mb-4" />
-//         <h4 className="text-lg sm:text-xl font-semibold text-white mb-2">Profile Not Found</h4>
-//         <p className="text-white/50 text-sm">Unable to load profile data.</p>
-//       </div>
-//     );
-//   }
-
-//   const tabs = [
-//     { id: 'overview', label: 'Overview', icon: User },
-//     { id: 'experience', label: 'Experience', icon: Briefcase },
-//     { id: 'education', label: 'Education', icon: GraduationCap },
-//     { id: 'portfolio', label: 'Portfolio', icon: Star },
-//     { id: 'verification', label: 'Verification', icon: Shield },
-//     { id: 'availability', label: 'Availability', icon: CheckCircle }
-//   ];
-
-//   return (
-//     <div className="space-y-4 sm:space-y-6">
-//       {/* Header */}
-//       <div className="bg-gradient-to-r from-purple-900/30 to-blue-900/30 backdrop-blur-lg rounded-3xl border border-white/10 p-4 sm:p-6">
-//         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 sm:mb-6 gap-3">
-//           <div className="flex items-start gap-3 sm:gap-4 w-full sm:w-auto">
-//             <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-purple-500 to-blue-500 rounded-2xl flex items-center justify-center flex-shrink-0">
-//               {profileData.profile_picture ? (
-//                 <img
-//                   src={profileData.profile_picture}
-//                   alt="Profile"
-//                   className="w-full h-full rounded-2xl object-cover"
-//                 />
-//               ) : (
-//                 <User size={24} className="text-white" />
-//               )}
-//             </div>
-//             <div className="flex-1">
-//               <h1 className="text-2xl sm:text-3xl font-bold text-white mb-2">
-//                 {profileData.first_name} {profileData.last_name}
-//               </h1>
-//               <div className="flex flex-wrap items-center gap-2 mb-3">
-//                 <div className="flex items-center gap-0.5 text-white/70">
-//                   <MapPin size={14} />
-//                   <span className="text-xs sm:text-sm">{profileData.location}</span>
-//                 </div>
-//                 <div className="flex items-center gap-0.5 text-white/70">
-//                   <Calendar size={14} />
-//                   <span className="text-xs sm:text-sm">{profileData.age} years old</span>
-//                 </div>
-//                 {getAvailabilityStatus()}
-//               </div>
-//             </div>
-//           </div>
-//           <div className="flex gap-2 w-full sm:w-auto justify-end">
-//             {isEditing ? (
-//               <>
-//                 <button
-//                   onClick={onCancel}
-//                   className="flex items-center gap-1 px-2 sm:px-3 py-1.5 rounded-xl text-gray-300 hover:text-white transition-all duration-200 text-xs sm:text-sm bg-gray-700/30 hover:bg-gray-700/40"
-//                 >
-//                   <X size={12} />
-//                   Cancel
-//                 </button>
-//                 <button
-//                   onClick={onSave}
-//                   className="flex items-center gap-1 bg-gradient-to-r from-purple-600/30 to-blue-600/30 hover:from-purple-600/40 hover:to-blue-600/40 px-2 sm:px-3 py-1.5 rounded-xl text-white transition-all duration-200 border border-purple-500/30 text-xs sm:text-sm"
-//                 >
-//                   <Save size={12} />
-//                   Save Changes
-//                 </button>
-//               </>
-//             ) : (
-//               <button
-//                 onClick={onEdit}
-//                 className="flex items-center gap-1 bg-gradient-to-r from-purple-600/30 to-blue-600/30 hover:from-purple-600/40 hover:to-blue-600/40 px-2 sm:px-3 py-1.5 rounded-xl text-white transition-all duration-200 border border-purple-500/30 text-xs sm:text-sm"
-//               >
-//                 <Edit3 size={12} />
-//                 Edit Profile
-//               </button>
-//             )}
-//           </div>
-//         </div>
-//         {/* About Section */}
-//         <div className="bg-white/5 rounded-2xl p-4 border border-white/10">
-//           <h3 className="text-base sm:text-lg font-semibold text-white mb-3">About</h3>
-//           {isEditing ? (
-//             <textarea
-//               value={editData.about || ''}
-//               onChange={e => onInputChange('about', e.target.value)}
-//               className="w-full bg-white/10 text-white rounded-xl px-3 sm:px-4 py-3 border border-white/20 focus:border-purple-500/50 focus:outline-none resize-none text-sm sm:text-base"
-//               rows={4}
-//               placeholder="Tell us about yourself..."
-//             />
-//           ) : (
-//             <p className="text-white/80 leading-relaxed text-sm sm:text-base">
-//               {profileData.about || 'No description available.'}
-//             </p>
-//           )}
-//         </div>
-//       </div>
-
-//       {/* Navigation Tabs */}
-//       <div className="flex flex-wrap gap-1 sm:gap-2 p-2 bg-black/20 backdrop-blur-lg rounded-2xl border border-white/10">
-//         {tabs.map(({ id, label, icon: Icon }) => (
-//           <button
-//             key={id}
-//             onClick={() => setActiveTab(id)}
-//             className={`flex items-center gap-1 px-2 sm:px-3 py-1.5 sm:py-2 rounded-xl transition-all duration-200 text-xs sm:text-sm ${activeTab === id
-//               ? 'bg-gradient-to-r from-purple-600/40 to-blue-600/40 text-white border border-purple-500/30'
-//               : 'text-white/60 hover:text-white/80 hover:bg-white/5'
-//               }`}
-//           >
-//             <Icon size={12} />
-//             <span className="font-medium">{label}</span>
-//           </button>
-//         ))}
-//       </div>
-
-//       {/* Content Sections */}
-//       <div className="bg-black/20 backdrop-blur-lg rounded-3xl border border-white/10 p-4 sm:p-6">
-//         {activeTab === 'overview' && (
-//           <div className="space-y-6">
-//             {/* Skills */}
-//             <div>
-//               <div className="flex items-center justify-between mb-4">
-//                 <h3 className="text-lg sm:text-xl font-semibold text-white flex items-center gap-1">
-//                   <Star className="text-purple-400" size={16} />
-//                   Skills
-//                 </h3>
-//                 {isEditing && (
-//                   <button
-//                     onClick={() => onArrayAdd('skills', { id: Date.now(), name: '' })}
-//                     className="flex items-center gap-1 bg-green-500/20 hover:bg-green-500/30 px-2 sm:px-3 py-1 rounded-lg text-green-300 text-xs sm:text-sm transition-colors"
-//                   >
-//                     <Plus size={12} />
-//                     Add Skill
-//                   </button>
-//                 )}
-//               </div>
-//               <div className="flex flex-wrap gap-2 sm:gap-3">
-//                 {isEditing ? (
-//                   <div className="w-full space-y-2">
-//                     {editData.skills?.map((skill, idx) => (
-//                       <div key={skill.id || idx} className="flex gap-2 items-center">
-//                         <input
-//                           value={skill.name}
-//                           onChange={e => onInputChange(`skills.${idx}.name`, e.target.value)}
-//                           className="flex-1 bg-white/10 text-white rounded-lg px-3 py-2 border border-white/20 focus:border-purple-500/50 focus:outline-none text-sm sm:text-base"
-//                           placeholder="Skill name"
-//                         />
-//                         <button
-//                           onClick={() => onArrayRemove('skills', idx)}
-//                           className="bg-red-500/20 hover:bg-red-500/30 p-2 rounded-lg text-red-300 transition-colors"
-//                         >
-//                           <Trash2 size={12} />
-//                         </button>
-//                       </div>
-//                     ))}
-//                   </div>
-//                 ) : (
-//                   profileData.skills?.map((skill, idx) => (
-//                     <span
-//                       key={skill.id || idx}
-//                       className="px-3 sm:px-4 py-1.5 sm:py-2 bg-gradient-to-r from-purple-500/20 to-blue-500/20 rounded-full text-purple-300 text-xs sm:text-sm font-medium border border-purple-500/30"
-//                     >
-//                       {skill.name}
-//                     </span>
-//                   ))
-//                 )}
-//               </div>
-//             </div>
-
-//             {/* Languages */}
-//             <div>
-//               <div className="flex items-center justify-between mb-4">
-//                 <h3 className="text-lg sm:text-xl font-semibold text-white flex items-center gap-1">
-//                   <Globe className="text-blue-400" size={16} />
-//                   Languages
-//                 </h3>
-//                 {isEditing && (
-//                   <button
-//                     onClick={() => onArrayAdd('languages', { id: Date.now(), name: '', proficiency: '' })}
-//                     className="flex items-center gap-1 bg-green-500/20 hover:bg-green-500/30 px-2 sm:px-3 py-1 rounded-lg text-green-300 text-xs sm:text-sm transition-colors"
-//                   >
-//                     <Plus size={12} />
-//                     Add Language
-//                   </button>
-//                 )}
-//               </div>
-//               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
-//                 {isEditing ? (
-//                   <div className="flex flex-col gap-2 w-full">
-//                     {editData.languages?.map((lang, idx) => (
-//                       <div key={lang.id || idx} className="flex flex-col sm:flex-row gap-2 items-center p-3">
-//                         <input
-//                           value={lang.name}
-//                           onChange={e => onInputChange(`languages.${idx}.name`, e.target.value)}
-//                           className="flex-1 bg-white/10 text-white rounded-lg px-3 py-2 border border-white/20 focus:border-purple-500/50 focus:outline-none text-sm sm:text-base"
-//                           placeholder="Language"
-//                         />
-//                         <input
-//                           value={lang.proficiency}
-//                           onChange={e => onInputChange(`languages.${idx}.proficiency`, e.target.value)}
-//                           className="flex-1 bg-white/10 text-white rounded-lg px-3 py-2 border border-white/20 focus:border-purple-500/50 focus:outline-none text-sm sm:text-base"
-//                           placeholder="Proficiency"
-//                         />
-//                         <button
-//                           onClick={() => onArrayRemove('languages', idx)}
-//                           className="bg-red-500/20 hover:bg-red-500/30 p-2 rounded-lg text-red-300 transition-colors"
-//                         >
-//                           <Trash2 size={12} />
-//                         </button>
-//                       </div>
-//                     ))}
-//                   </div>
-//                 ) : (
-//                   <div className="flex flex-col gap-2">
-//                     {profileData.languages?.map((lang, idx) => (
-//                       <span
-//                         key={lang.id || idx}
-//                         className="px-3 sm:px-4 py-1.5 sm:py-2 bg-blue-500/20 rounded-full text-blue-300 text-xs sm:text-sm font-medium border border-blue-500/30"
-//                       >
-//                         {lang.name} ({lang.proficiency})
-//                       </span>
-//                     ))}
-//                   </div>
-//                 )}
-
-//               </div>
-//             </div>
-//           </div>
-//         )}
-//       </div>
-
-
-//       {activeTab === 'experience' && (
-//         <div>
-//           <div className="flex items-center justify-between mb-4">
-//             <h3 className="text-lg sm:text-xl font-semibold text-white flex items-center gap-1">
-//               <Briefcase className="text-yellow-400" size={16} />
-//               Experience
-//             </h3>
-//             {isEditing && (
-//               <button
-//                 onClick={() => onArrayAdd('experiences', { id: Date.now(), company: '', role: '', start_date: '', end_date: '', description: '', certificate: null })}
-//                 className="flex items-center gap-1 bg-green-500/20 hover:bg-green-500/30 px-2 sm:px-3 py-1 rounded-lg text-green-300 text-xs sm:text-sm transition-colors"
-//               >
-//                 <Plus size={12} />
-//                 Add Experience
-//               </button>
-//             )}
-//           </div>
-//           <div className="space-y-4">
-//             {isEditing ? (
-//               editData.experiences?.map((exp, idx) => (
-//                 <div key={exp.id || idx} className="p-3 sm:p-4 bg-white/5 rounded-xl border border-white/10 flex flex-col gap-2">
-//                   <input
-//                     value={exp.company}
-//                     onChange={e => onInputChange(`experiences.${idx}.company`, e.target.value)}
-//                     placeholder="Company"
-//                     className="bg-white/10 text-white rounded-lg px-3 py-2 border border-white/20 focus:border-purple-500/50 focus:outline-none text-sm sm:text-base"
-//                   />
-//                   <input
-//                     value={exp.role}
-//                     onChange={e => onInputChange(`experiences.${idx}.role`, e.target.value)}
-//                     placeholder="Role"
-//                     className="bg-white/10 text-white rounded-lg px-3 py-2 border border-white/20 focus:border-purple-500/50 focus:outline-none text-sm sm:text-base"
-//                   />
-//                   <div className="flex flex-col sm:flex-row gap-2">
-//                     <input
-//                       value={exp.start_date}
-//                       onChange={e => onInputChange(`experiences.${idx}.start_date`, e.target.value)}
-//                       placeholder="Start Date (YYYY-MM-DD)"
-//                       className="flex-1 bg-white/10 text-white rounded-lg px-3 py-2 border border-white/20 focus:border-purple-500/50 focus:outline-none text-sm sm:text-base"
-//                     />
-//                     <input
-//                       value={exp.end_date}
-//                       onChange={e => onInputChange(`experiences.${idx}.end_date`, e.target.value)}
-//                       placeholder="End Date (YYYY-MM-DD)"
-//                       className="flex-1 bg-white/10 text-white rounded-lg px-3 py-2 border border-white/20 focus:border-purple-500/50 focus:outline-none text-sm sm:text-base"
-//                     />
-//                   </div>
-//                   <textarea
-//                     value={exp.description}
-//                     onChange={e => onInputChange(`experiences.${idx}.description`, e.target.value)}
-//                     placeholder="Description"
-//                     className="bg-white/10 text-white rounded-lg px-3 py-2 border border-white/20 focus:border-purple-500/50 focus:outline-none resize-none text-sm sm:text-base"
-//                     rows={2}
-//                   />
-//                   <div className="flex flex-col gap-2">
-//                     <label className="text-white/80 text-sm sm:text-base">Certificate</label>
-//                     <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-center">
-//                       <input
-//                         type="file"
-//                         accept=".pdf,.doc,.docx"
-//                         onChange={e => onInputChange(`experiences.${idx}.certificate`, e.target.files[0])}
-//                         className="bg-white/10 text-white rounded-lg px-3 py-2 border border-white/20 focus:border-purple-500/50 focus:outline-none text-sm sm:text-base file:bg-purple-600/30 file:border-0 file:text-white file:px-3 file:py-1 file:rounded file:cursor-pointer file:hover:bg-purple-600/40"
-//                       />
-//                       {exp.certificate && (
-//                         <button
-//                           onClick={() => onInputChange(`experiences.${idx}.certificate`, null)}
-//                           className="bg-red-500/20 hover:bg-red-500/30 px-2 py-1 rounded text-red-300 text-xs sm:text-sm flex items-center gap-1"
-//                         >
-//                           <Trash2 size={12} /> Remove Certificate
-//                         </button>
-//                       )}
-//                     </div>
-//                     {exp.certificate && (
-//                       <span className="text-white/60 text-xs sm:text-sm">
-//                         Selected: {typeof exp.certificate === 'string' ? exp.certificate.split('/').pop() : exp.certificate.name}
-//                       </span>
-//                     )}
-//                   </div>
-//                   <button
-//                     onClick={() => onArrayRemove('experiences', idx)}
-//                     className="bg-red-500/20 hover:bg-red-500/30 px-2 py-1 rounded text-red-300 text-xs sm:text-sm self-end"
-//                   >
-//                     <Trash2 size={12} /> Remove
-//                   </button>
-//                 </div>
-//               ))
-//             ) : (
-//               profileData.experiences?.map((exp, idx) => (
-//                 <div key={exp.id || idx} className="p-3 sm:p-4 bg-white/5 rounded-xl border border-white/10 flex flex-col gap-2">
-//                   <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
-//                     <div className="flex items-center gap 2">
-//                       <Briefcase size={16} className="text-yellow-400" />
-//                       <span className="text-white font-medium text-sm sm:text-base">{exp.role}</span>
-//                     </div>
-//                     <span className="text-white/70 text-xs sm:text-sm">at</span>
-//                     <span className="text-white text-sm sm:text-base">{exp.company}</span>
-//                   </div>
-//                   <div className="text-white/60 text-xs sm:text-sm">
-//                     {exp.start_date} – {exp.end_date || 'Present'}
-//                   </div>
-//                   <div className="text-white/80 text-sm sm:text-base">{exp.description}</div>
-//                   {exp.certificate && (
-//                     <a
-//                       href={exp.certificate}
-//                       target="_blank"
-//                       rel="noopener noreferrer"
-//                       className="inline-flex items-center gap-1 px-3 py-1.5 bg-gradient-to-r from-purple-600/30 to-blue-600/30 hover:from-purple-600/40 hover:to-blue-600/40 rounded-lg text-purple-300 text-xs sm:text-sm font-medium border border-purple-500/30 transition-all duration-200"
-//                     >
-//                       <FileText size={14} /> View Certificate
-//                     </a>
-//                   )}
-//                 </div>
-//               ))
-//             )}
-//           </div>
-//         </div>
-//       )}
-
-
-//       {activeTab === 'education' && (
-//         <div>
-//           <div className="flex items-center justify-between mb-4">
-//             <h3 className="text-lg sm:text-xl font-semibold text-white flex items-center gap-1">
-//               <GraduationCap className="text-green-400" size={16} />
-//               Education
-//             </h3>
-//             {isEditing && (
-//               <button
-//                 onClick={() => onArrayAdd('educations', { id: Date.now(), college: '', degree: '', year: '', certificate: null })}
-//                 className="flex items-center gap-1 bg-green-500/20 hover:bg-green-500/30 px-2 sm:px-3 py-1 rounded-lg text-green-300 text-xs sm:text-sm transition-colors"
-//               >
-//                 <Plus size={12} />
-//                 Add Education
-//               </button>
-//             )}
-//           </div>
-//           <div className="space-y-4">
-//             {isEditing ? (
-//               editData.educations?.map((edu, idx) => (
-//                 <div key={edu.id || idx} className="p-3 sm:p-4 bg-white/5 rounded-xl border border-white/10 flex flex-col gap-2">
-//                   <input
-//                     value={edu.college}
-//                     onChange={e => onInputChange(`educations.${idx}.college`, e.target.value)}
-//                     placeholder="College"
-//                     className="bg-white/10 text-white rounded-lg px-3 py-2 border border-white/20 focus:border-purple-500/50 focus:outline-none text-sm sm:text-base"
-//                   />
-//                   <input
-//                     value={edu.degree}
-//                     onChange={e => onInputChange(`educations.${idx}.degree`, e.target.value)}
-//                     placeholder="Degree"
-//                     className="bg-white/10 text-white rounded-lg px-3 py-2 border border-white/20 focus:border-purple-500/50 focus:outline-none text-sm sm:text-base"
-//                   />
-//                   <input
-//                     value={edu.year}
-//                     onChange={e => onInputChange(`educations.${idx}.year`, e.target.value)}
-//                     placeholder="Year"
-//                     className="bg-white/10 text-white rounded-lg px-3 py-2 border border-white/20 focus:border-purple-500/50 focus:outline-none text-sm sm:text-base"
-//                   />
-//                   <div className="flex flex-col gap-2">
-//                     <label className="text-white/80 text-sm sm:text-base">Certificate</label>
-//                     <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-center">
-//                       <input
-//                         type="file"
-//                         accept=".pdf,.doc,.docx"
-//                         onChange={e => onInputChange(`educations.${idx}.certificate`, e.target.files[0])}
-//                         className="bg-white/10 text-white rounded-lg px-3 py-2 border border-white/20 focus:border-purple-500/50 focus:outline-none text-sm sm:text-base file:bg-purple-600/30 file:border-0 file:text-white file:px-3 file:py-1 file:rounded file:cursor-pointer file:hover:bg-purple-600/40"
-//                       />
-//                       {edu.certificate && (
-//                         <button
-//                           onClick={() => onInputChange(`educations.${idx}.certificate`, null)}
-//                           className="bg-red-500/20 hover:bg-red-500/30 px-2 py-1 rounded text-red-300 text-xs sm:text-sm flex items-center gap-1"
-//                         >
-//                           <Trash2 size={12} /> Remove Certificate
-//                         </button>
-//                       )}
-//                     </div>
-//                     {edu.certificate && (
-//                       <span className="text-white/60 text-xs sm:text-sm">
-//                         Selected: {typeof edu.certificate === 'string' ? edu.certificate.split('/').pop() : edu.certificate.name}
-//                       </span>
-//                     )}
-//                   </div>
-//                   <button
-//                     onClick={() => onArrayRemove('educations', idx)}
-//                     className="bg-red-500/20 hover:bg-red-500/30 px-2 py-1 rounded text-red-300 text-xs sm:text-sm self-end"
-//                   >
-//                     <Trash2 size={12} /> Remove
-//                   </button>
-//                 </div>
-//               ))
-//             ) : (
-//               profileData.educations?.map((edu, idx) => (
-//                 <div key={edu.id || idx} className="p-3 sm:p-4 bg-white/5 rounded-xl border border-white/10 flex flex-col gap-2">
-//                   <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
-//                     <div className="flex items-center gap-2">
-//                       <GraduationCap size={16} className="text-green-400" />
-//                       <span className="text-white font-medium text-sm sm:text-base">{edu.degree}</span>
-//                     </div>
-//                     <span className="text-white/70 text-xs sm:text-sm">at</span>
-//                     <span className="text-white text-sm sm:text-base">{edu.college}</span>
-//                   </div>
-//                   <div className="text-white/60 text-xs sm:text-sm">{edu.year}</div>
-//                   {edu.certificate && (
-//                     <a
-//                       href={edu.certificate}
-//                       target="_blank"
-//                       rel="noopener noreferrer"
-//                       className="inline-flex items-center gap-1 px-3 py-1.5 bg-gradient-to-r from-purple-600/30 to-blue-600/30 hover:from-purple-600/40 hover:to-blue-600/40 rounded-lg text-purple-300 text-xs sm:text-sm font-medium border border-purple-500/30 transition-all duration-200"
-//                     >
-//                       <FileText size={14} /> View Certificate
-//                     </a>
-//                   )}
-//                 </div>
-//               ))
-//             )}
-//           </div>
-//         </div>
-//       )}
-
-
-//       {activeTab === 'portfolio' && (
-//         <div>
-//           <div className="flex items-center justify-between mb-4">
-//             <h3 className="text-lg sm:text-xl font-semibold text-white flex items-center gap-1">
-//               <Award className="text-orange-400" size={16} />
-//               Portfolio
-//             </h3>
-//             {isEditing && (
-//               <button
-//                 onClick={() => onArrayAdd('portfolios', { id: Date.now(), title: '', description: '', project_link: '' })}
-//                 className="flex items-center gap-1 bg-green-500/20 hover:bg-green-500/30 px-2 sm:px-3 py-1 rounded-lg text-green-300 text-xs sm:text-sm transition-colors"
-//               >
-//                 <Plus size={12} />
-//                 Add Project
-//               </button>
-//             )}
-//           </div>
-//           <div className="space-y-4">
-//             {isEditing ? (
-//               editData.portfolios?.map((pf, idx) => (
-//                 <div key={pf.id || idx} className="p-3 sm:p-4 bg-white/5 rounded-xl border border-white/10 flex flex-col gap-2">
-//                   <input
-//                     value={pf.title}
-//                     onChange={e => onInputChange(`portfolios.${idx}.title`, e.target.value)}
-//                     placeholder="Project Title"
-//                     className="bg-white/10 text-white rounded-lg px-3 py-2 border border-white/20 focus:border-purple-500/50 focus:outline-none text-sm sm:text-base"
-//                   />
-//                   <textarea
-//                     value={pf.description}
-//                     onChange={e => onInputChange('portfolios', idx, { ...pf, description: e.target.value })}
-//                     placeholder="Description"
-//                     className="bg-white/10 text-white rounded-lg px-3 py-2 border border-white/20 focus:border-purple-500/50 focus:outline-none resize-none text-sm sm:text-base"
-//                     rows={2}
-//                   />
-//                   <input
-//                     value={pf.project_link}
-//                     onChange={e => onInputChange('portfolios', idx, { ...pf, project_link: e.target.value })}
-//                     placeholder="Project Link"
-//                     className="bg-white/10 text-white rounded-lg px-3 py-2 border border-white/20 focus:border-purple-500/50 focus:outline-none text-sm sm:text-base"
-//                   />
-//                   <button
-//                     onClick={() => onArrayRemove('portfolios', idx)}
-//                     className="bg-red-500/20 hover:bg-red-500/30 px-2 py-1 rounded text-red-300 text-xs sm:text-sm self-end"
-//                   >
-//                     <Trash2 size={12} /> Remove
-//                   </button>
-//                 </div>
-//               ))
-//             ) : (
-//               profileData.portfolios?.map((pf, idx) => (
-//                 <div key={pf.id || idx} className="p-3 sm:p-4 bg-white/5 rounded-xl border border-white/10 flex flex-col gap-2">
-//                   <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
-//                     <div className="flex items-center gap-2">
-//                       <Award size={16} className="text-orange-400" />
-//                       <span className="text-white font-medium text-sm sm:text-base">{pf.title}</span>
-//                     </div>
-//                     <a href={pf.project_link} target="_blank" rel="noopener noreferrer" className="text-blue-300 underline flex items-center gap-1 text-sm sm:text-base">
-//                       <ExternalLink size={14} /> View
-//                     </a>
-//                   </div>
-//                   <div className="text-white/80 text-sm sm:text-base">{pf.description}</div>
-//                 </div>
-//               ))
-//             )}
-//           </div>
-//         </div>
-//       )}
-
-//       {activeTab === 'verification' && (
-//         <div>
-//           <div className="flex items-center justify-between mb-4">
-//             <h3 className="text-lg sm:text-xl font-semibold text-white flex items-center gap-1">
-//               <Shield className="text-green-400" size={16} />
-//               Verification
-//             </h3>
-//           </div>
-//           <div className="space-y-4">
-//             {[
-//               { key: 'email_verified', label: 'Email Verification', icon: Mail },
-//               { key: 'phone_verified', label: 'Phone Verification', icon: Phone },
-//               { key: 'id_verified', label: 'ID Verification', icon: Shield },
-//               { key: 'video_verified', label: 'Video Verification', icon: Video }
-//             ].map(({ key, label, icon: Icon }) => (
-//               <div
-//                 key={key}
-//                 className="p-3 sm:p-4 bg-white/5 rounded-xl border border-white/10 flex items-center justify-between"
-//               >
-//                 <div className="flex items-center gap-2">
-//                   <Icon size={16} className={editData[key] ? 'text-green-400' : 'text-gray-400'} />
-//                   <span className="text-white text-sm sm:text-base">{label}</span>
-//                 </div>
-//                 {isEditing ? (
-//                   <label className="flex items-center gap-2">
-//                     <input
-//                       type="checkbox"
-//                       checked={editData[key] || false}
-//                       onChange={() => onInputChange(key, !editData[key])}
-//                       className="h-4 w-4 text-purple-500 focus:ring-purple-500 border-gray-300 rounded"
-//                     />
-//                     <span className="text-white/80 text-sm">{editData[key] ? 'Verified' : 'Not Verified'}</span>
-//                   </label>
-//                 ) : (
-//                   <span
-//                     className={`text-sm sm:text-base ${editData[key] ? 'text-green-300' : 'text-red-300'
-//                       }`}
-//                   >
-//                     {editData[key] ? 'Verified' : 'Not Verified'}
-//                   </span>
-//                 )}
-//               </div>
-//             ))}
-//           </div>
-//         </div>
-//       )}
-
-//       {activeTab === 'availability' && (
-//         <div>
-//           <div className="flex items-center justify-between mb-4">
-//             <h3 className="text-lg sm:text-xl font-semibold text-white flex items-center gap-1">
-//               <CheckCircle className="text-blue-400" size={16} />
-//               Availability
-//             </h3>
-//           </div>
-//           <div className="p-3 sm:p-4 bg-white/5 rounded-xl border border-white/10 flex flex-col items-center gap-4">
-//             <div className={`w-12 h-12 sm:w-16 sm:h-16 rounded-full flex items-center justify-center ${editData.is_available ? 'bg-green-500/20 border-2 border-green-500' : 'bg-red-500/20 border-2 border-red-500'}`}>
-//               <CheckCircle size={24} className={editData.is_available ? 'text-green-500' : 'text-red-500'} />
-//             </div>
-//             <h4 className="text-base sm:text-lg font-semibold text-white">
-//               {editData.is_available ? 'Available for Work' : 'Not Available'}
-//             </h4>
-//             <p className="text-white/70 text-sm sm:text-base text-center">
-//               {editData.is_available
-//                 ? 'You are currently available to take on new projects'
-//                 : 'You are not currently available for new projects'
-//               }
-//             </p>
-//             {isEditing && (
-//               <label className="relative inline-flex items-center cursor-pointer">
-//                 <input
-//                   type="checkbox"
-//                   checked={editData.is_available}
-//                   onChange={() => onInputChange('is_available', !editData.is_available)}
-//                   className="sr-only peer"
-//                 />
-//                 <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
-//                 <span className="ml-3 text-sm font-medium text-white">Available for work</span>
-//               </label>
-//             )}
-//           </div>
-//         </div>
-//       )}
-//     </div>
-//   );
-// };
-
-// export default ProfileSection;

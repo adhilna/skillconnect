@@ -17,6 +17,11 @@ def freelancer_profile_picture_path(instance, filename):
     filename = f"{instance.user.id}_profile{ext}"
     return f"freelancers/profile_pics/{instance.user.id}/{filename}"
 
+def client_profile_picture_path(instance, filename):
+    ext = os.path.splitext(filename)[1]
+    filename = f"{instance.user.id}_profile{ext}"
+    return f"clients/profile_pics/{instance.user.id}/{filename}"
+
 def education_certificate_path(instance, filename):
     ext = filename.split('.')[-1]
     return f'freelancers/certifications/education/{instance.profile.user.id}/{instance.id}_education.{ext}'
@@ -220,7 +225,7 @@ class Portfolio(models.Model):
     title = models.CharField(max_length=100)
     description = models.TextField(blank=True)
     project_link = models.URLField(blank=True, null=True, validators=[URLValidator()])
-    
+
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
 
@@ -241,32 +246,45 @@ class ClientProfile(models.Model):
         ('personal', 'Personal'),
         ('business', 'Business'),
     ]
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
-    account_type = models.CharField(max_length=16, choices=ACCOUNT_TYPE_CHOICES, default=None)
+    PAYMENT_METHOD_CHOICES = [
+        ('credit-card', 'Credit Card'),
+        ('debit-card', 'Debit Card'),
+        ('paypal', 'PayPal'),
+        ('bank-transfer', 'Bank Transfer'),
+        ('stripe', 'Stripe'),
+    ]
+    PAYMENT_TIMING_CHOICES = [
+        ('upfront', '100% Upfront'),
+        ('milestone-based', 'Milestone-based'),
+        ('upon-completion', 'Upon Completion'),
+        ('monthly', 'Monthly'),
+    ]
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='client_profile')
+    account_type = models.CharField(max_length=10, choices=ACCOUNT_TYPE_CHOICES)
     first_name = models.CharField(max_length=128)
-    last_name = models.CharField(max_length=128, blank=True, null=True)
-    profile_picture = models.ImageField(upload_to='client_profile_picture_path', blank=True, null=True)
+    last_name = models.CharField(max_length=128,)
     company_name = models.CharField(max_length=128, blank=True)
-    company_description = models.TextField(blank=True)
-    location = models.CharField(max_length=255)
+    profile_picture = models.ImageField(upload_to=client_profile_picture_path, null=True, blank=True, max_length=255)
+    company_description = models.TextField(blank=True, max_length=256)
+    country = models.CharField(max_length=128)
+    location = models.CharField(max_length=128)
     industry = models.CharField(max_length=128, blank=True)
-    company_size = models.CharField(max_length=64, blank=True)
-    website = models.URLField(blank=True, null=True)
+    company_size = models.CharField(max_length=128, blank=True)
+    website = models.URLField(blank=True)
     project_types = models.JSONField(default=list, blank=True)
-    budget_range = models.CharField(max_length=64, blank=True)
-    project_frequency = models.CharField(max_length=64, blank=True)
+    budget_range = models.CharField(max_length=128, blank=True)
+    project_frequency = models.CharField(max_length=128, blank=True)
     preferred_communications = models.JSONField(default=list, blank=True)
-    working_hours = models.CharField(max_length=64, blank=True)
+    working_hours = models.CharField(max_length=128, blank=True)
     business_goals = models.JSONField(default=list, blank=True)
     current_challenges = models.JSONField(default=list, blank=True)
-    previous_experiences = models.CharField(max_length=64, blank=True)
-    expected_timeline = models.CharField(max_length=64, blank=True)
-    quality_importance = models.CharField(max_length=64, blank=True)
-    payment_method = models.CharField(max_length=64, blank=True)
-    monthly_budget = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
-    project_budget = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
-    payment_timing = models.CharField(max_length=64, blank=True)
-    verification = models.OneToOneField(Verification, on_delete=models.SET_NULL, null=True, blank=True)
+    previous_experiences = models.CharField(max_length=128, blank=True)
+    expected_timeline = models.CharField(max_length=50, blank=True)
+    quality_importance = models.CharField(max_length=50, blank=True)
+    payment_method = models.CharField(max_length=20, choices=PAYMENT_METHOD_CHOICES, blank=True)
+    monthly_budget = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    project_budget = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    payment_timing = models.CharField(max_length=20, choices=PAYMENT_TIMING_CHOICES, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
