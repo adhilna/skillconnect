@@ -1,7 +1,7 @@
 import React from "react";
 import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import axios from "axios";
+import api from "../api/api";
 
 function useQuery() {
     return new URLSearchParams(useLocation().search);
@@ -33,7 +33,7 @@ export default function ResetPasswordPage() {
         }
         setLoading(true);
         try {
-            await axios.post("http://localhost:8000/api/v1/auth/password/reset/confirm/", {
+            await api.post("/api/v1/auth/password/reset/confirm/", {
                 uid,
                 token,
                 new_password1: newPassword1,

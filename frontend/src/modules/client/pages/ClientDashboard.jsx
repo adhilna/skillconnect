@@ -15,7 +15,7 @@ import AnalyticsSection from '../components/clientDashboard/AnalyticsSection';
 import ProfileSection from '../components/clientDashboard/ProfileSection';
 import SettingsSection from '../components/clientDashboard/SettingsSection';
 import { AuthContext } from '../../../context/AuthContext';
-import axios from 'axios';
+import api from '../../../api/api';
 
 const ClientDashboard = () => {
     const { token } = useContext(AuthContext);
@@ -29,7 +29,7 @@ const ClientDashboard = () => {
 
     useEffect(() => {
         if (!token) return;
-        axios.get('http://localhost:8000/api/v1/profiles/client/profile-setup/', {
+        api.get('/api/v1/profiles/client/profile-setup/', {
             headers: { Authorization: `Bearer ${token}` }
         })
             .then(res => {
@@ -79,22 +79,59 @@ const ClientDashboard = () => {
     };
 
     const handleSave = async () => {
-        console.log('editData:', editData);
         if (!profileId) return;
-        const cleanedEditData = { ...editData };
-        delete cleanedEditData.verification;
+
+        const formData = new FormData();
+
+        // Flat fields
+        formData.append("first_name", editData.first_name || "");
+        formData.append("last_name", editData.last_name || "");
+        formData.append("account_type", editData.account_type || "");
+        formData.append("company_name", editData.company_name || "");
+        formData.append("company_description", editData.company_description || "");
+        formData.append("country", editData.country || "");
+        formData.append("location", editData.location || "");
+        formData.append("website", editData.website || "");
+        formData.append("monthly_budget", editData.monthly_budget || "");
+        formData.append("project_budget", editData.project_budget || "");
+        formData.append("budget_range", editData.budget_range || "");
+        formData.append("project_frequency", editData.project_frequency || "");
+        formData.append("expected_timeline", editData.expected_timeline || "");
+        formData.append("payment_method", editData.payment_method || "");
+        formData.append("payment_timing", editData.payment_timing || "");
+        formData.append("quality_importance", editData.quality_importance || "");
+        formData.append("working_hours", editData.working_hours || "");
+        formData.append("previous_experiences", editData.previous_experiences || "");
+        formData.append("industry", editData.industry || "");
+        formData.append("project_types", JSON.stringify(editData.project_types || []));
+        formData.append("preferred_communications", JSON.stringify(editData.preferred_communications || []));
+        formData.append("business_goals", JSON.stringify(editData.business_goals || []));
+        formData.append("current_challenges", JSON.stringify(editData.current_challenges || []));
+
+        // File field (optional - only if user updates profile pic)
+        if (typeof editData.profile_picture === "object" && editData.profile_picture instanceof File) {
+            formData.append("profile_picture", editData.profile_picture);
+        }
+
+
         try {
-            const response = await axios.put(
-                `http://localhost:8000/api/v1/profiles/client/profile-setup/${profileId}/`,
-                cleanedEditData,
-                { headers: { Authorization: `Bearer ${token}` } }
+            const response = await api.put(
+                `/api/v1/profiles/client/profile-setup/${profileId}/`,
+                formData,
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        // Do not set Content-Type manually
+                    },
+                }
             );
             setProfileData(response.data);
             setIsEditing(false);
         } catch (err) {
-            console.error('Full error response:', err.response.data);
+            console.error("Full error response:", err.response?.data || err.message);
         }
     };
+
 
     const handleCancel = () => {
         setEditData({ ...profileData });

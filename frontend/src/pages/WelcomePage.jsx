@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from "react";
-import axios from "axios";
+import api from "../api/api";
 import { useNavigate } from "react-router-dom";
 import { SyncLoader } from "react-spinners";
 import { AuthContext } from "../context/AuthContext"; // <-- Import AuthContext
@@ -21,8 +21,8 @@ const WelcomePage = () => {
                     navigate('/login');
                     return;
                 }
-                const response = await axios.get(
-                    'http://localhost:8000/api/v1/auth/users/profile/',
+                const response = await api.get(
+                    '/api/v1/auth/users/profile/',
                     { headers: { Authorization: `Bearer ${token}` } }
                 );
                 setUserData(response.data);
@@ -63,8 +63,8 @@ const WelcomePage = () => {
                         throw new Error('No access token found');
                     }
                     // PATCH request to update first_login to false
-                    const response = await axios.patch(
-                        'http://localhost:8000/api/v1/auth/users/update/',
+                    const response = await api.patch(
+                        '/api/v1/auth/users/update/',
                         { first_login: false },
                         { headers: { Authorization: `Bearer ${token}` } }
                     );

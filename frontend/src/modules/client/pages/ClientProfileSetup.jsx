@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import axios from 'axios';
+import api from '../../../api/api';
 import { useNavigate } from 'react-router-dom';
 import { Building, User, Target, CreditCard } from 'lucide-react';
 import Stepper from '../components/clientProfileSetup/Stepper';
@@ -300,8 +300,8 @@ export default function ClientProfileSetup() {
             }
 
             // 7. Submit data
-            const response = await axios.post(
-                `http://localhost:8000/api/v1/profiles/client/profile-setup/`,
+            const response = await api.post(
+                `/api/v1/profiles/client/profile-setup/`,
                 formData,
                 {
                     headers: {

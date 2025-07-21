@@ -5,7 +5,7 @@ import { Eye, EyeOff, Mail, Lock, AlertCircle } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext.jsx';
 import { FaApple } from "react-icons/fa";
 import { GoogleLogin } from '@react-oauth/google';
-import axios from 'axios';
+import api from '../api/api.js';
 import RoleSelection from '../components/Shared/RoleSelection.jsx';
 import { Link } from 'react-router-dom';
 
@@ -38,12 +38,12 @@ export default function LoginPage() {
     setIsLoading(true);
     try {
       // Step 1: Call login API
-      const response = await axios.post('http://localhost:8000/api/v1/auth/token/', { email, password });
+      const response = await api.post('/api/v1/auth/token/', { email, password });
       const { access, refresh } = response.data;
 
       // Step 2: Fetch user profile (if not returned by login API)
       // If your login API returns user data, skip this step
-      const userResponse = await axios.get('http://localhost:8000/api/v1/auth/users/profile/', {
+      const userResponse = await api.get('/api/v1/auth/users/profile/', {
         headers: { Authorization: `Bearer ${access}` }
       });
       const userData = userResponse.data;
@@ -67,7 +67,7 @@ export default function LoginPage() {
     setError('');
     setGoogleLoading(true);
     try {
-      const response = await axios.post('http://localhost:8000/api/v1/auth/users/google/', { token: googleToken });
+      const response = await api.post('/api/v1/auth/users/google/', { token: googleToken });
       if (response.data.access) {
         // Save JWT, redirect, etc.
         localStorage.setItem("access", response.data.access);
@@ -87,7 +87,7 @@ export default function LoginPage() {
     setGoogleLoading(true);
     setError('');
     try {
-      const response = await axios.post('http://localhost:8000/api/v1/auth/users/google/', {
+      const response = await api.post('/api/v1/auth/users/google/', {
         token: googleToken,
         role: selectedRole,
       });

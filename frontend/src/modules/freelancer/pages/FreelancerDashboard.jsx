@@ -7,6 +7,7 @@ import {
 import ProfileSection from '../components/freelancerDashboard/ProfileSection';
 import SettingsSection from '../components/freelancerDashboard/SettingsSection';
 import DashboardOverview from '../components/freelancerDashboard/DashboardOverview';
+import MessagesSection from '../components/freelancerDashboard/MessagesSection';
 
 
 const FreelancerDashboard = () => {
@@ -262,21 +263,6 @@ const OrdersSection = () => (
       <h4 className="text-xl font-semibold text-white mb-2">Order Management</h4>
       <p className="text-white/70 mb-6">Track and manage all your client orders</p>
       <div className="text-white/50 text-sm">Enhanced order management coming soon...</div>
-    </div>
-  </div>
-);
-
-const MessagesSection = () => (
-  <div className="space-y-6">
-    <div className="flex items-center justify-between">
-      <h3 className="text-2xl font-bold text-white">Messages</h3>
-      <span className="bg-red-500 text-white px-3 py-1 rounded-full text-sm font-medium">3 Unread</span>
-    </div>
-    <div className="bg-black/20 backdrop-blur-lg rounded-2xl border border-white/10 p-8 text-center">
-      <MessageCircle size={48} className="text-white/30 mx-auto mb-4" />
-      <h4 className="text-xl font-semibold text-white mb-2">Client Communication</h4>
-      <p className="text-white/70 mb-6">Chat with clients and manage conversations</p>
-      <div className="text-white/50 text-sm">Real-time messaging system in development...</div>
     </div>
   </div>
 );

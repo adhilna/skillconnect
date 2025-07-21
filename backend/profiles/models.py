@@ -30,7 +30,6 @@ def experience_certificate_path(instance, filename):
     ext = filename.split('.')[-1]
     return f'freelancers/certifications/experience/{instance.profile.user.id}/{instance.id}_experience.{ext}'
 
-
 # -----------------------------------
 # CUSTOM VALIDATORS
 # -----------------------------------
@@ -39,7 +38,6 @@ def validate_certificate_file(value):
     valid_extensions = ['.pdf', '.png', '.jpg', '.jpeg']
     if not any(value.name.lower().endswith(ext) for ext in valid_extensions):
         raise ValidationError('Only PDF, PNG, JPG, and JPEG files are allowed.')
-
 
 # -----------------------------------
 # SHARED MODELS

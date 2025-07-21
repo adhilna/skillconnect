@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import axios from "axios";
+import api from "../api/api";
 import { Eye, EyeOff, ArrowLeft, CheckCircle, Mail, ShieldCheck } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import PropTypes from "prop-types";
@@ -62,7 +62,7 @@ export default function ForgotPasswordPage() {
         }
         setLoading(true);
         try {
-            await axios.post("http://localhost:8000/api/v1/auth/users/forgot-password/request/", { email });
+            await api.post("/api/v1/auth/users/forgot-password/request/", { email });
             setSuccess("OTP sent to your email!");
             setFormStep(1);
             setOtpTimer(300);
@@ -81,7 +81,7 @@ export default function ForgotPasswordPage() {
         }
         setLoading(true);
         try {
-            await axios.post("http://localhost:8000/api/v1/auth/users/forgot-password/verify/", { email, otp });
+            await api.post("/api/v1/auth/users/forgot-password/verify/", { email, otp });
             setSuccess("OTP verified!");
             setFormStep(2);
         } catch (err) {
@@ -103,7 +103,7 @@ export default function ForgotPasswordPage() {
         }
         setLoading(true);
         try {
-            await axios.post("http://localhost:8000/api/v1/auth/users/forgot-password/reset/", {
+            await api.post("/api/v1/auth/users/forgot-password/reset/", {
                 email,
                 otp,
                 new_password: newPassword,
@@ -121,7 +121,7 @@ export default function ForgotPasswordPage() {
         setSuccess("");
         setLoading(true);
         try {
-            await axios.post("http://localhost:8000/api/v1/auth/users/forgot-password/request/", { email });
+            await api.post("/api/v1/auth/users/forgot-password/request/", { email });
             setOtpTimer(300);
             setResendCooldown(60);
             setSuccess("OTP resent successfully!");

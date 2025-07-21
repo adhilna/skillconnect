@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import api from '../../../api/api';
 import {
     User, Code, Languages, FileText, Link, Shield, CheckCircle
 } from 'lucide-react';
@@ -397,7 +397,7 @@ const FreelancerProfileSetup = () => {
 
 
             // Submit data
-            const response = await axios.post(`http://localhost:8000/api/v1/profiles/freelancer/profile-setup/`, formData, {
+            const response = await api.post(`/api/v1/profiles/freelancer/profile-setup/`, formData, {
                 headers: {
                     'Content-Type': 'multipart/form-data',
                     Authorization: `Bearer ${authtoken}`,
