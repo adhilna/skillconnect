@@ -1054,7 +1054,22 @@ const ProfileSection = () => {
               ))}
             </div>
 
-            {/* Empty State */}
+            {/* ➕ Add Skill Button when list exists */}
+            {isEditing && editData.skills?.length > 0 && (
+              <div className="pt-2">
+                <button
+                  onClick={() => handleArrayAdd("skills", { name: "" })}
+                  className="flex items-center gap-2 bg-gradient-to-r from-green-500/20 to-emerald-500/20 hover:from-green-500/30 hover:to-emerald-500/30 px-4 py-2 rounded-xl text-green-300 text-sm font-medium transition-all duration-300 hover:scale-105 border border-green-500/20 hover:border-green-500/30"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                  </svg>
+                  Add Skill
+                </button>
+              </div>
+            )}
+
+            {/* Empty Editing State */}
             {isEditing && (editData.skills?.length === 0) && (
               <div className="text-center py-12">
                 <div className="p-4 bg-white/5 rounded-xl border border-white/10 max-w-md mx-auto">
@@ -1064,7 +1079,18 @@ const ProfileSection = () => {
                     </svg>
                   </div>
                   <p className="text-white/50 text-sm mb-2">No skills added yet</p>
-                  <p className="text-white/30 text-xs">Add your first skill to get started!</p>
+                  <p className="text-white/30 text-xs mb-4">Add your first skill to get started!</p>
+
+                  {/* ➕ Add Skill */}
+                  <button
+                    onClick={() => handleArrayAdd("skills", { name: "" })}
+                    className="flex items-center gap-2 bg-gradient-to-r from-green-500/20 to-emerald-500/20 hover:from-green-500/30 hover:to-emerald-500/30 px-4 py-2 rounded-xl text-green-300 text-sm font-medium transition-all duration-300 hover:scale-105 border border-green-500/20 hover:border-green-500/30"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                    </svg>
+                    Add Skill
+                  </button>
                 </div>
               </div>
             )}

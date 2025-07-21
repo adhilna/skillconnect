@@ -7,7 +7,7 @@ import Sidebar from '../components/clientDashboard/Sidebar';
 import Header from '../components/clientDashboard/Header';
 import DashboardOverview from '../components/clientDashboard/DashboardOverview';
 import BrowseTalentSection from '../components/clientDashboard/BrowseTalentSection';
-import ProjectsSection from '../components/clientDashboard/ProjectsSection';
+import ProposalsSection from '../components/clientDashboard/ProposalsSection';
 import MessagesSection from '../components/clientDashboard/MessagesSection';
 import FreelancersSection from '../components/clientDashboard/FreelancersSection';
 import InvoicesSection from '../components/clientDashboard/InvoicesSection';
@@ -161,7 +161,7 @@ const ClientDashboard = () => {
             case 'browse':
                 return <BrowseTalentSection />;
             case 'projects':
-                return <ProjectsSection />;
+                return <ProposalsSection />;
             case 'messages':
                 return <MessagesSection />;
             case 'freelancers':

@@ -28,6 +28,8 @@ urlpatterns = [
     path('api/v1/auth/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('api/v1/auth/users/', include('users.urls')),
     path('api/v1/profiles/', include('profiles.urls')),
+    path('api/v1/core/', include('core.urls')),
+    path('api/v1/gigs/', include('gigs.urls')),
 ]
 
 

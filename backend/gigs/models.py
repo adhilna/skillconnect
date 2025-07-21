@@ -20,13 +20,14 @@ class Service(models.Model):
     category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True, blank=True)
     skills = models.ManyToManyField(Skill, blank=True, related_name='services')
     price = models.DecimalField(max_digits=10, decimal_places=2)
-    delivery_time = models.PositiveIntegerField(help_text="Delivery time in days")
+    delivery_time = models.PositiveIntegerField()
     revisions = models.PositiveIntegerField(default=1)
     image = models.ImageField(
     upload_to=service_image_upload_path,
     null=True,
     blank=True
     )
+    is_featured = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

@@ -205,7 +205,6 @@ class FreelancerProfileSetupViewSet(viewsets.ModelViewSet):
         context['request'] = self.request
         return context
 
-
     def perform_create(self, serializer):
         # Attach the current user to the new profile
         serializer.save(user=self.request.user)

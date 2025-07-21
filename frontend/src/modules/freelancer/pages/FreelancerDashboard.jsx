@@ -8,6 +8,7 @@ import ProfileSection from '../components/freelancerDashboard/ProfileSection';
 import SettingsSection from '../components/freelancerDashboard/SettingsSection';
 import DashboardOverview from '../components/freelancerDashboard/DashboardOverview';
 import MessagesSection from '../components/freelancerDashboard/MessagesSection';
+import ServicesSection from '../components/freelancerDashboard/ServicesSection';
 
 
 const FreelancerDashboard = () => {
@@ -16,7 +17,7 @@ const FreelancerDashboard = () => {
 
   const navigationItems = [
     { id: 'dashboard', label: 'Dashboard', icon: Home },
-    { id: 'gigs', label: 'My Gigs', icon: Briefcase },
+    { id: 'gigs', label: 'My Services', icon: Briefcase },
     { id: 'orders', label: 'Orders', icon: ShoppingCart },
     { id: 'messages', label: 'Messages', icon: MessageCircle },
     { id: 'requests', label: 'Buyer Requests', icon: Search },
@@ -30,7 +31,7 @@ const FreelancerDashboard = () => {
       case 'dashboard':
         return <DashboardOverview />;
       case 'gigs':
-        return <GigsSection />;
+        return <ServicesSection />;
       case 'orders':
         return <OrdersSection />;
       case 'messages':
@@ -106,7 +107,7 @@ const FreelancerDashboard = () => {
           <div className="mt-8 pt-6 border-t border-white/10">
             <button className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white px-4 py-3 rounded-xl font-medium hover:from-purple-600 hover:to-pink-600 transition-all duration-200 flex items-center justify-center space-x-2 shadow-lg">
               <Plus size={18} />
-              <span>Create New Gig</span>
+              <span>Create New Service</span>
             </button>
           </div>
         </div>
@@ -228,24 +229,6 @@ const OrderItem = ({ title, client, status, amount, deadline }) => {
   );
 };
 
-// Enhanced placeholder sections with better styling
-const GigsSection = () => (
-  <div className="space-y-6">
-    <div className="flex items-center justify-between">
-      <h3 className="text-2xl font-bold text-white">My Gigs</h3>
-      <button className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-6 py-2 rounded-lg font-medium hover:from-purple-600 hover:to-pink-600 transition-all duration-200 flex items-center space-x-2">
-        <Plus size={18} />
-        <span>Create New Gig</span>
-      </button>
-    </div>
-    <div className="bg-black/20 backdrop-blur-lg rounded-2xl border border-white/10 p-8 text-center">
-      <Briefcase size={48} className="text-white/30 mx-auto mb-4" />
-      <h4 className="text-xl font-semibold text-white mb-2">Gigs Management</h4>
-      <p className="text-white/70 mb-6">Create, edit, and manage your service offerings</p>
-      <div className="text-white/50 text-sm">Coming in the next update...</div>
-    </div>
-  </div>
-);
 
 const OrdersSection = () => (
   <div className="space-y-6">
