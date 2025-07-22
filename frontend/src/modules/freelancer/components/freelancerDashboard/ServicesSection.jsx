@@ -185,13 +185,8 @@ const ServicesSection = () => {
       submitData.append('revisions', parseInt(formData.revisions));
       submitData.append('is_active', formData.is_active);
       submitData.append('is_featured', formData.is_featured);
+      submitData.append('skills_input', JSON.stringify(formData.skills_input));
 
-      // Add skills as JSON string
-      if (formData.skills_input.length > 0) {
-        formData.skills_input.forEach((skill, index) => {
-          submitData.append(`skills_input[${index}][name]`, skill.name);
-        });
-      }
 
       // Add image if present
       if (formData.image) {
@@ -199,7 +194,7 @@ const ServicesSection = () => {
       }
 
       const url = editingService
-        ? `${API_BASE_URL}/${editingService.id}/`
+        ? `${API_BASE_URL}${editingService.id}/`
         : API_BASE_URL;
 
       const method = editingService ? 'PATCH' : 'POST';
