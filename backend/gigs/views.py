@@ -1,5 +1,5 @@
 from rest_framework import viewsets, permissions, status
-from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from .models import Service, Proposal
 from .serializers import ServiceSerializer, ProposalSerializer
 import pprint
@@ -88,10 +88,9 @@ class ServiceViewSet(viewsets.ModelViewSet):
 class ProposalViewSet(viewsets.ModelViewSet):
     serializer_class = ProposalSerializer
     permission_classes = [permissions.IsAuthenticated]
-    parser_classes = (MultiPartParser, FormParser)
+    parser_classes = (MultiPartParser, FormParser, JSONParser)
 
     def get_queryset(self):
-        # For current user's client profile; adjust filter as needed
         return Proposal.objects.filter(client=self.request.user.client_profile)
 
     def perform_create(self, serializer):

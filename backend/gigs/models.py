@@ -35,7 +35,6 @@ class Service(models.Model):
     def __str__(self):
         return f"{self.title} by {self.freelancer.user.username}"
 
-
 class Proposal(models.Model):
     PROJECT_SCOPE_CHOICES = [
     ("one_time", "One-time"),

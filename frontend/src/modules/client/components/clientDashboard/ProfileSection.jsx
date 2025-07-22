@@ -207,9 +207,22 @@ const ProfileSection = ({
       <div className="bg-gradient-to-r from-purple-900/30 to-blue-900/30 backdrop-blur-lg rounded-3xl border border-white/10 p-4 sm:p-6">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div className="flex items-start gap-3 sm:gap-4 w-full sm:w-auto">
-            <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-2xl flex items-center justify-center flex-shrink-0">
-              <User size={24} className="text-white" />
+            <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-2xl flex items-center justify-center overflow-hidden shadow-lg flex-shrink-0">
+              {profileData?.profile_picture ? (
+                <img
+                  src={profileData.profile_picture}
+                  alt="Profile"
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    e.target.onerror = null;
+                    e.target.style.display = 'none';
+                    e.target.nextSibling.style.display = 'flex';
+                  }}
+                />
+              ) : null}
+              <User size={24} className={`${profileData?.profile_picture ? 'hidden' : 'text-white'}`} />
             </div>
+
             <div className="flex-1">
               <h1 className="text-2xl sm:text-3xl font-bold text-white mb-2">
                 {profileData.company_name || 'Company Profile'}
@@ -285,9 +298,21 @@ const ProfileSection = ({
             <div className="lg:col-span-1">
               <div className="bg-white/5 rounded-2xl border border-white/10 p-6">
                 <div className="text-center mb-6">
-                  <div className="w-20 h-20 bg-gradient-to-r from-blue-400 to-cyan-400 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
-                    <User size={32} className="text-white" />
+                  <div className="w-20 h-20 bg-gradient-to-r from-blue-400 to-cyan-400 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg overflow-hidden">
+                    {profileData?.profile_picture ? (
+                      <img
+                        src={profileData.profile_picture}
+                        alt="Profile"
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          e.target.style.display = 'none';
+                          e.target.nextSibling.style.display = 'flex';
+                        }}
+                      />
+                    ) : null}
+                    <User size={32} className={`${profileData?.profile_picture ? 'hidden' : 'text-white'}`} />
                   </div>
+
                   <h4 className="text-xl font-semibold text-white">{profileData.company_name || 'N/A'}</h4>
                   <p className="text-white/70 text-sm capitalize">{profileData.account_type || 'N/A'} Account</p>
                   <div className="flex items-center justify-center space-x-1 mt-2">
