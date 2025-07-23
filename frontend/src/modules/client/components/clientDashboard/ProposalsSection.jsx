@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Briefcase, Plus, Edit, Eye, Clock, DollarSign, X, Users, AlertCircle, CheckCircle, Loader } from 'lucide-react';
+import api from '../../../../api/api';
 
 const ProposalsSection = () => {
     const [proposals, setProposals] = useState([]);
@@ -49,14 +50,6 @@ const ProposalsSection = () => {
         cancelled: X
     };
 
-    // API Base URL
-    const API_BASE_URL = 'http://localhost:8000/api/v1/gigs/proposals/';
-
-    // Get auth token
-    const getAuthToken = () => {
-        return localStorage.getItem('access') || sessionStorage.getItem('authtoken');
-    };
-
     // Available skills (same as services)
     const availableSkills = [
         "React", "JavaScript", "Python", "Node.js", "CSS", "HTML", "PHP", "WordPress",
@@ -68,20 +61,8 @@ const ProposalsSection = () => {
     // Fetch proposals from backend
     const fetchProposals = async () => {
         try {
-            const token = getAuthToken();
-            const response = await fetch(API_BASE_URL, {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json',
-                },
-            });
-
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-
-            const data = await response.json();
-            setProposals(data.results || data || []);
+            const response = await api.get('/api/v1/gigs/proposals/');
+            setProposals(response.data.results || response.data || []);
         } catch (err) {
             console.error('Error fetching proposals:', err);
             setError('Failed to load proposals');
@@ -91,41 +72,11 @@ const ProposalsSection = () => {
     // Fetch categories from backend
     const fetchCategories = async () => {
         try {
-            const token = getAuthToken();
-            const response = await fetch('http://localhost:8000/api/v1/core/categories/', {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json',
-                },
-            });
-
-            if (!response.ok) {
-                // Fallback to predefined categories if API fails
-                setCategories([
-                    { id: 1, name: "Web Development" },
-                    { id: 2, name: "Mobile Development" },
-                    { id: 3, name: "Writing & Translation" },
-                    { id: 4, name: "Design & Creative" },
-                    { id: 5, name: "Digital Marketing" },
-                    { id: 6, name: "Programming & Tech" },
-                    { id: 7, name: "Business" },
-                    { id: 8, name: "Lifestyle" },
-                    { id: 9, name: "Data Science & AI" },
-                    { id: 10, name: "Video & Animation" },
-                    { id: 11, name: "Music & Audio" },
-                    { id: 12, name: "Finance & Accounting" },
-                    { id: 13, name: "Engineering & Architecture" },
-                    { id: 14, name: "Education & Training" },
-                    { id: 15, name: "Legal" }
-                ]);
-                return;
-            }
-
-            const data = await response.json();
-            setCategories(data.results || data || []);
+            const response = await api.get('/api/v1/core/categories/');
+            setCategories(response.data.results || response.data || []);
         } catch (err) {
             console.error('Error fetching categories:', err);
-            // Fallback categories
+            // Fallback to static list on failure
             setCategories([
                 { id: 1, name: "Web Development" },
                 { id: 2, name: "Mobile Development" },
@@ -153,7 +104,6 @@ const ProposalsSection = () => {
             await Promise.all([fetchProposals(), fetchCategories()]);
             setLoading(false);
         };
-
         loadData();
     }, []);
 
@@ -194,7 +144,7 @@ const ProposalsSection = () => {
     };
 
     const handleSubmit = async () => {
-        // Validate required fields
+        // 1. Validate input fields
         if (!formData.title || !formData.description || !formData.category_id ||
             !formData.budget_min || !formData.budget_max || !formData.timeline_days) {
             setError('Please fill in all required fields');
@@ -205,8 +155,6 @@ const ProposalsSection = () => {
         setError(null);
 
         try {
-            const token = getAuthToken();
-
             const submitData = {
                 title: formData.title.trim(),
                 description: formData.description.trim(),
@@ -217,47 +165,28 @@ const ProposalsSection = () => {
                 project_scope: formData.project_scope || null,
                 is_urgent: formData.is_urgent,
                 is_active: formData.is_active,
-                skills_input: formData.skills_input
+                skills_input: formData.skills_input,
             };
 
-            // Include status for updates only
             if (editingProposal) {
                 submitData.status = formData.status;
             }
 
-            const url = editingProposal
-                ? `${API_BASE_URL}${editingProposal.id}/`
-                : API_BASE_URL;
+            const endpoint = editingProposal
+                ? `/api/v1/gigs/proposals/${editingProposal.id}/`
+                : `/api/v1/gigs/proposals/`;
 
-            const method = editingProposal ? 'PATCH' : 'POST';
+            const method = editingProposal ? 'patch' : 'post';
 
-            console.log('Submitting data:', submitData); // Debug log
+            const response = await api[method](endpoint, submitData);
 
-            const response = await fetch(url, {
-                method,
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(submitData)
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                console.error('API Error Response:', errorData); // Debug log
-                throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
-            }
-
-            const responseData = await response.json();
-            console.log('Success response:', responseData); // Debug log
+            const responseData = response.data;
 
             if (editingProposal) {
-                // Update existing proposal in state
                 setProposals(proposals.map(proposal =>
                     proposal.id === editingProposal.id ? responseData : proposal
                 ));
             } else {
-                // Add new proposal to state
                 setProposals([responseData, ...proposals]);
             }
 
@@ -265,8 +194,13 @@ const ProposalsSection = () => {
             setError(null);
 
         } catch (err) {
-            setError(err.message || 'Failed to save proposal. Please try again.');
             console.error('Error submitting proposal:', err);
+            const message =
+                err.response?.data?.detail ||
+                err.response?.data?.message ||
+                err.message ||
+                'Failed to save proposal. Please try again.';
+            setError(message);
         } finally {
             setSubmitLoading(false);
         }
