@@ -1,11 +1,17 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from . import views
-from .views import FreelancerProfileSetupViewSet, city_autocomplete, ClientProfileSetupViewSet
+from .views import (
+FreelancerProfileSetupViewSet,
+city_autocomplete,
+ClientProfileSetupViewSet,
+FreelancerBrowseViewSet
+)
 
 router = DefaultRouter()
 router.register(r'freelancer/profile-setup', FreelancerProfileSetupViewSet, basename='freelancer-profile')
 router.register(r'client/profile-setup', ClientProfileSetupViewSet, basename='client-profile')
+router.register(r'freelancers/browse', FreelancerBrowseViewSet, basename='freelancer-browse')
 
 urlpatterns = [
     path('', include(router.urls)),

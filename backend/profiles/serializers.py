@@ -424,3 +424,40 @@ class ClientProfileSetupSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError({'company_name': 'Company name is required for business accounts.'})
         # Add more conditional validation as needed
         return attrs
+
+class FreelancerPublicSerializer(serializers.ModelSerializer):
+    skills = SkillSerializer(many=True, read_only=True, default=list)
+    name = serializers.SerializerMethodField()
+    title = serializers.SerializerMethodField()
+    rating = serializers.SerializerMethodField()
+    review_count = serializers.SerializerMethodField()
+
+    class Meta:
+        model = FreelancerProfile
+        fields = [
+            'id',
+            'name',
+            'title',             # Computed from experiences
+            'location',
+            'rating',          # Disabled for now
+            'review_count',    # Disabled for now
+            'is_available',
+            'skills',
+            'profile_picture',   # Optional: used for avatars
+            'about',               # For description text on the card
+        ]
+
+    def get_name(self, obj):
+        return f"{obj.first_name} {obj.last_name}".strip() or obj.user.username
+
+    def get_title(self, obj):
+        experience = obj.experiences.order_by('-start_date').first()  # Get most recent based on start_date
+        return experience.role if experience else "Freelancer"
+
+    def get_rating(self, obj):
+        # Temporary placeholder rating; replace later
+        return 0
+
+    def get_review_count(self, obj):
+        # Temporary placeholder review count; replace later
+        return 0

@@ -1,13 +1,16 @@
-from rest_framework import viewsets, permissions, status
+from rest_framework import viewsets, permissions, status, filters
 from rest_framework.permissions import IsAuthenticated
 from .models import FreelancerProfile, ClientProfile
-from .serializers import FreelancerProfileSetupSerializer, ClientProfileSetupSerializer
+from .serializers import FreelancerProfileSetupSerializer, ClientProfileSetupSerializer,FreelancerPublicSerializer
+from .pagination import StandardResultsSetPagination
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework.decorators import action
 import json
 import pprint
 from rest_framework.parsers import MultiPartParser, FormParser
+from django_filters.rest_framework import DjangoFilterBackend
+
 
 CITIES = [
     # Andhra Pradesh (20 cities)
@@ -172,7 +175,6 @@ def city_autocomplete(request):
     ]
     return Response(results)
 
-
 class IsOwnerOrReadOnly(permissions.BasePermission):
     """
     Custom permission to only allow owners of an object to edit it.
@@ -184,7 +186,6 @@ class IsOwnerOrReadOnly(permissions.BasePermission):
             return True
         # Write permissions are only allowed to the owner of the profile.
         return obj.user == request.user
-
 
 class FreelancerProfileSetupViewSet(viewsets.ModelViewSet):
     """
@@ -420,3 +421,20 @@ class ClientProfileSetupViewSet(viewsets.ModelViewSet):
         print("==== [DEBUG] SERIALIZER ERRORS ====")
         pprint.pprint(serializer.errors)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class FreelancerBrowseViewSet(viewsets.ReadOnlyModelViewSet):
+    """
+    Public listing for browsing freelancers on client side.
+    """
+    queryset = FreelancerProfile.objects.all()
+    serializer_class = FreelancerPublicSerializer
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    pagination_class = StandardResultsSetPagination
+
+    filterset_fields = ['location', 'skills__name', 'is_available']
+    search_fields = ['first_name', 'last_name', 'user__username', 'about', 'skills__name']
+    ordering_fields = ['created_at']  # 'rating' removed
+
+    def get_queryset(self):
+        return super().get_queryset().select_related('user').prefetch_related('skills','experiences', 'user')

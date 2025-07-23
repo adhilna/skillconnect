@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     'corsheaders',
     'channels',
     'phonenumber_field',
+    'django_filters',
     'users',
     'profiles',
     'django_ratelimit',
