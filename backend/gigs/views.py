@@ -1,10 +1,13 @@
-from rest_framework import viewsets, permissions, status
+from rest_framework import viewsets, permissions, status, filters
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from .models import Service, Proposal
 from .serializers import ServiceSerializer, ProposalSerializer
+from .pagination import ExploreServicesPagination
 import pprint
 import json
 from rest_framework.response import Response
+import django_filters
+from django_filters.rest_framework import DjangoFilterBackend
 
 def parse_json_fields(data, fields):
     """
@@ -32,7 +35,6 @@ def parse_json_fields(data, fields):
             print(f"[ERROR] Failed to parse field '{field}': {e}")
             data[field] = []
     return data
-
 
 class ServiceViewSet(viewsets.ModelViewSet):
     serializer_class = ServiceSerializer
@@ -84,7 +86,6 @@ class ServiceViewSet(viewsets.ModelViewSet):
         serializer.save()
         return Response(serializer.data)
 
-
 class ProposalViewSet(viewsets.ModelViewSet):
     serializer_class = ProposalSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -95,3 +96,33 @@ class ProposalViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(client=self.request.user.client_profile)
+
+class ServiceFilter(django_filters.FilterSet):
+    min_price = django_filters.NumberFilter(field_name='price', lookup_expr='gte')
+    max_price = django_filters.NumberFilter(field_name='price', lookup_expr='lte')
+    delivery_time = django_filters.NumberFilter(field_name='delivery_time', lookup_expr='lte')
+    skills = django_filters.CharFilter(field_name='skills__name', lookup_expr='icontains')
+    
+    class Meta:
+        model = Service
+        fields = ['category', 'min_price', 'max_price', 'delivery_time', 'skills']
+
+class ExploreServicesViewSet(viewsets.ReadOnlyModelViewSet):
+    serializer_class = ServiceSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    pagination_class = ExploreServicesPagination
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    filterset_class = ServiceFilter
+    search_fields = [
+        'title',
+        'description',
+        'category__name',
+        'skills__name',
+        'freelancer__user__username'
+    ]
+    ordering_fields = ['price', 'delivery_time', 'created_at']
+
+    def get_queryset(self):
+        return Service.objects.filter(is_active=True) \
+                             .select_related('freelancer', 'category') \
+                             .prefetch_related('skills')

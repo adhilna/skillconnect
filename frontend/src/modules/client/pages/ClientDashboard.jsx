@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useContext } from 'react';
 import {
     Home, Search, MessageCircle, Users, BarChart3,
-    User, Settings, Briefcase, CreditCard,
+    User, Settings, Briefcase, CreditCard, Compass
 } from 'lucide-react';
 import Sidebar from '../components/clientDashboard/Sidebar';
 import Header from '../components/clientDashboard/Header';
@@ -14,6 +14,7 @@ import InvoicesSection from '../components/clientDashboard/InvoicesSection';
 import AnalyticsSection from '../components/clientDashboard/AnalyticsSection';
 import ProfileSection from '../components/clientDashboard/ProfileSection';
 import SettingsSection from '../components/clientDashboard/SettingsSection';
+import ExploreServicesSection from '../components/clientDashboard/ExploreServicesSection';
 import { AuthContext } from '../../../context/AuthContext';
 import api from '../../../api/api';
 
@@ -25,6 +26,9 @@ const ClientDashboard = () => {
     const [isEditing, setIsEditing] = useState(false);
     const [editData, setEditData] = useState(null);
     const [profileId, setProfileId] = useState(null);
+    const [freelancers, setFreelancers] = useState([]);
+    const [loadingFreelancers, setLoadingFreelancers] = useState(false);
+
 
 
     useEffect(() => {
@@ -50,6 +54,37 @@ const ClientDashboard = () => {
                 setProfileId(null);
             });
     }, [token]);
+
+    useEffect(() => {
+        const fetchFreelancers = async () => {
+            setLoadingFreelancers(true);
+            try {
+                const res = await api.get('/api/v1/profiles/freelancers/browse/', {
+                    params: { page: 1, ordering: '-rating' },
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+
+                const transformed = (res.data.results || []).map(freelancer => ({
+                    ...freelancer,
+                    availability: freelancer.is_available ? 'Available' : 'Busy',
+                    reviewCount: freelancer.review_count ?? 0,
+                    bio: freelancer.about ?? '',
+                    skills: freelancer.skills || [],
+                }));
+
+                setFreelancers(transformed);
+            } catch (err) {
+                console.error('Error fetching freelancers:', err);
+                setFreelancers([]);
+            } finally {
+                setLoadingFreelancers(false);
+            }
+        };
+
+        if (token) fetchFreelancers();
+    }, [token]);
+
+
 
     useEffect(() => {
         if (profileData) {
@@ -145,6 +180,7 @@ const ClientDashboard = () => {
     const navigationItems = [
         { id: 'dashboard', label: 'Dashboard', icon: Home },
         { id: 'browse', label: 'Browse Talent', icon: Search },
+        { id: 'explore', label: 'Explore Services', icon: Compass},
         { id: 'projects', label: 'My Projects', icon: Briefcase },
         { id: 'messages', label: 'Messages', icon: MessageCircle },
         { id: 'freelancers', label: 'My Freelancers', icon: Users },
@@ -157,9 +193,19 @@ const ClientDashboard = () => {
     const getCurrentSectionContent = () => {
         switch (activeSection) {
             case 'dashboard':
-                return <DashboardOverview profileData={profileData} />;
+                return <DashboardOverview
+                    profileData={profileData}
+                    featuredFreelancers={freelancers.slice(0, 3)} // Only top 3
+                    loading={loadingFreelancers}
+                    setActiveSection={setActiveSection}
+                />;
             case 'browse':
-                return <BrowseTalentSection />;
+                return <BrowseTalentSection
+                    preloadedFreelancers={freelancers}
+                    loading={loadingFreelancers}
+                />;
+             case 'explore':
+                return <ExploreServicesSection />;
             case 'projects':
                 return <ProposalsSection />;
             case 'messages':
@@ -183,7 +229,7 @@ const ClientDashboard = () => {
             case 'settings':
                 return <SettingsSection />;
             default:
-                return <DashboardOverview />;
+                return <DashboardOverview profileData={profileData} />;
         }
     };
 

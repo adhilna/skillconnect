@@ -59,14 +59,10 @@ class ServiceSerializer(serializers.ModelSerializer):
             freelancer=freelancer,
             **validated_data
         )
-
         for skill_dict in skills_data:
             skill, _ = Skill.objects.get_or_create(name=skill_dict['name'])
             service.skills.add(skill)
-
         return service
-
-
 
     def update(self, instance, validated_data):
         request = self.context.get('request')
@@ -90,10 +86,6 @@ class ServiceSerializer(serializers.ModelSerializer):
                 instance.skills.add(skill_obj)
 
         return instance
-
-
-from core.models import Skill  # adjust import as needed
-import json
 
 class ProposalSerializer(serializers.ModelSerializer):
     client = serializers.StringRelatedField(read_only=True)
@@ -182,3 +174,14 @@ class ProposalSerializer(serializers.ModelSerializer):
 
         return instance
 
+class ExploreServiceSerializer(serializers.ModelSerializer):
+    freelancer = FreelancerProfileSetupSerializer(read_only=True)
+    category = CategorySerializer(read_only=True)
+    skills_output = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Service
+        fields = ['id', 'title', 'description', 'category', 'skills_output', 'freelancer', 'price', 'delivery_time', 'image', 'is_featured']
+
+    def get_skills_output(self, obj):
+        return [{"id": skill.id, "name": skill.name} for skill in obj.skills.all()]

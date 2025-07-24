@@ -6,7 +6,16 @@ import ActivityItem from './ActivityItem';
 import FreelancerCard from './FreelancerCard';
 
 const DashboardOverview = (props) => {
-    const { profileData } = props;
+    const { profileData, featuredFreelancers, loading, setActiveSection } = props;
+
+    // Helper to get initials from a name string
+    const getInitials = (name) => {
+        if (!name || typeof name !== 'string') return 'NA';
+        const parts = name.trim().split(' ');
+        if (parts.length === 1) return parts[0].charAt(0).toUpperCase();
+        return parts[0].charAt(0).toUpperCase() + parts[1].charAt(0).toUpperCase();
+    };
+
     return (
         <div className="space-y-6">
             {/* Welcome Section */}
@@ -151,34 +160,31 @@ const DashboardOverview = (props) => {
             <div className="bg-black/20 backdrop-blur-lg rounded-2xl border border-white/10 p-6">
                 <div className="flex items-center justify-between mb-6">
                     <h3 className="text-xl font-semibold text-white">Recommended Freelancers</h3>
-                    <button className="text-blue-400 hover:text-blue-300 text-sm font-medium">View All</button>
+                    <button
+                        onClick={() => setActiveSection('browse')}
+                        className="text-blue-400 hover:text-blue-300 text-sm font-medium"
+                    >
+                        View All
+                    </button>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    <FreelancerCard
-                        name="Emma Watson"
-                        title="Full-Stack Developer"
-                        rating="4.9"
-                        rate="$45/hr"
-                        skills={['React', 'Node.js', 'Python']}
-                        avatar="EW"
-                    />
-                    <FreelancerCard
-                        name="James Chen"
-                        title="UI/UX Designer"
-                        rating="4.8"
-                        rate="$35/hr"
-                        skills={['Figma', 'Adobe XD', 'Sketch']}
-                        avatar="JC"
-                    />
-                    <FreelancerCard
-                        name="Maria Garcia"
-                        title="Digital Marketing Expert"
-                        rating="5.0"
-                        rate="$40/hr"
-                        skills={['SEO', 'Google Ads', 'Analytics']}
-                        avatar="MG"
-                    />
-                </div>
+
+                {loading ? (
+                    <p className="text-white">Loading freelancers...</p>
+                ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {featuredFreelancers.map((freelancer) => (
+                            <FreelancerCard
+                                key={freelancer.id}
+                                name={freelancer.name}
+                                title={freelancer.title}
+                                rating={freelancer.rating ?? 'N/A'}
+                                rate={`$${freelancer.hourly_rate || 0}/hr`}
+                                skills={freelancer.skills?.map((s) => s.name) || []}
+                                avatar={freelancer.profile_picture ?? getInitials(freelancer.name)}
+                            />
+                        ))}
+                    </div>
+                )}
             </div>
         </div>
     );
