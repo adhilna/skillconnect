@@ -3,6 +3,7 @@ import {
     Search, Filter, Star, MapPin, Clock,
     ChevronDown, ChevronLeft, ChevronRight, X, Eye
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const FreelancerCard = ({ freelancer, onViewProfile }) => {
     const getInitials = (name) =>
@@ -104,6 +105,8 @@ const BrowseTalentSection = ({ preloadedFreelancers = [], loading }) => {
         location: ''
     });
 
+    const navigate = useNavigate();
+
     const filteredFreelancers = useMemo(() => {
         return preloadedFreelancers.filter(f => {
             const name = f.name?.toLowerCase() || '';
@@ -160,7 +163,7 @@ const BrowseTalentSection = ({ preloadedFreelancers = [], loading }) => {
     };
 
     const handleViewProfile = (freelancer) => {
-        alert(`Viewing profile for ${freelancer.name} (ID: ${freelancer.id})`);
+        navigate(`/freelancers/${freelancer.id}/view`, { state: { freelancerProfileData: freelancer } });
     };
 
     return (

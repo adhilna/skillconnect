@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useContext, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
+
 import {
     Search, Filter, Star, Clock, DollarSign, ChevronDown, Grid, List,
     ChevronLeft, ChevronRight, Eye, ExternalLink
@@ -52,10 +54,15 @@ const ServiceCard = ({ service, onViewProfile, onApplyService }) => {
                             />
                         ) : (
                             <div className="w-8 h-8 bg-gradient-to-br from-blue-500 via-purple-500 to-cyan-500 rounded-full flex items-center justify-center text-white font-bold text-xs">
-                                {service.freelancer.user_details.first_name?.[0]}{service.freelancer.user_details.last_name?.[0]}
+                                {(service.freelancer?.user_details?.first_name?.[0] ?? service.freelancer?.first_name?.[0] ?? '') +
+                                    (service.freelancer?.user_details?.last_name?.[0] ?? service.freelancer?.last_name?.[0] ?? '')}
                             </div>
                         )}
                     </div>
+                    <span className="text-white/70 text-sm truncate flex-1">
+                        {(service.freelancer?.user_details?.first_name ?? service.freelancer?.first_name) ?? ''}{' '}
+                        {(service.freelancer?.user_details?.last_name ?? service.freelancer?.last_name) ?? ''}
+                    </span>
                     <span className="text-white/70 text-sm truncate flex-1">
                         {service.freelancer.user_details?.first_name || ''} {service.freelancer.user_details?.last_name || ''}
                     </span>
@@ -139,6 +146,7 @@ const ExploreServicesSection = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
     const [categories, setCategories] = useState([]);
+    const [categoriesLoading, setCategoriesLoading] = useState(false);
 
     const itemsPerPage = 9;
 
@@ -150,41 +158,39 @@ const ExploreServicesSection = () => {
         skills: ''
     });
 
-    useEffect(() => {
-        const fetchCategories = async () => {
-            try {
-                if (!token) {
-                    // If no token, set fallback immediately or handle auth differently
-                    setCategories(fallbackCategories);
-                    return;
-                }
+    const navigate = useNavigate();
 
-                const response = await fetch('http://localhost:8000/api/v1/core/categories/', {
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json',
-                    },
+    useEffect(() => {
+        if (!token) {
+            setCategories(fallbackCategories);
+            return;
+        }
+
+        const fetchCategories = async () => {
+            setCategoriesLoading(true);
+            try {
+                const response = await api.get('/api/v1/core/categories/', {
+                    headers: { Authorization: `Bearer ${token}` }
                 });
 
-                if (!response.ok) {
-                    // API request failed, use fallback categories
+                if (response.status !== 200) {
+                    // fallback if API returns error code
                     setCategories(fallbackCategories);
                     return;
                 }
 
-                const data = await response.json();
-
-                // Assuming `data` is an array of categories with `id` and `name`
-                setCategories(data);
+                setCategories(response.data);
             } catch (error) {
-                console.error("Failed to fetch categories:", error);
-                // On fetch error, use fallback categories
+                console.error('Failed to fetch categories:', error);
                 setCategories(fallbackCategories);
+            } finally {
+                setCategoriesLoading(false);
             }
         };
 
         fetchCategories();
-    }, [token, fallbackCategories]);
+    }, [token]);
+
 
     const sortOptions = [
         { value: '-created_at', label: 'Newest First' },
@@ -251,6 +257,7 @@ const ExploreServicesSection = () => {
 
         fetchServices();
     }, [token, buildQueryParams]); // include buildQueryParams here now
+
     const handleFilterChange = (key, value) => {
         setFilters(prev => ({ ...prev, [key]: value }));
         setCurrentPage(1); // reset to first page on filter change
@@ -280,10 +287,9 @@ const ExploreServicesSection = () => {
     };
 
     const handleViewProfile = (freelancer) => {
-        alert(`Viewing profile for ${freelancer.user_details.first_name} ${freelancer.user_details.last_name} (ID: ${freelancer.id})`);
-        // Replace alert with navigation logic if using React Router, e.g.
-        // navigate(`/freelancers/${freelancer.id}`);
+        navigate(`/freelancers/${freelancer.id}/view`, { state: { freelancerProfileData: freelancer } });
     };
+
 
     const handleApplyService = (service) => {
         alert(`Applying for service: ${service.title} (ID: ${service.id})`);
@@ -328,14 +334,16 @@ const ExploreServicesSection = () => {
                                 <select
                                     value={filters.category}
                                     onChange={e => handleFilterChange('category', e.target.value)}
-                                    className="w-full appearance-none bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white pr-10 focus:outline-none focus:border-blue-400 focus:bg-white/20 transition-all text-sm sm:text-base"
+                                    className="w-full appearance-none bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white pr-10 focus:outline-none focus:border-blue-400 focus:bg-white/20"
                                 >
                                     <option value="">All Categories</option>
-                                    {categories.map(cat => (
-                                        <option key={cat.id} value={cat.id} className="bg-gray-800">
-                                            {cat.name}
-                                        </option>
-                                    ))}
+                                    {categoriesLoading ? (
+                                        <option disabled>Loading categories...</option>
+                                    ) : (
+                                        categories.map(cat => (
+                                            <option key={cat.id} value={cat.id}>{cat.name}</option>
+                                        ))
+                                    )}
                                 </select>
                                 <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 text-white/50 w-5 h-5 pointer-events-none" />
                             </div>

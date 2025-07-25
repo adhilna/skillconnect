@@ -18,6 +18,7 @@ import EnterprisePage from './pages/EnterprisePage';
 import { ToastProvider } from './context/ToastContext';
 import { useToast } from './hooks/useToast';
 import ToastContainer from './components/Shared/toast/ToastContainer';
+import FreelancerProfileView from './modules/freelancer/pages/FreelancerProfileView';
 
 function App() {
   return (
@@ -39,6 +40,7 @@ function App() {
               <Route path='/enterprise' element={<EnterprisePage />} />
               <Route path='freelancer/dashboard' element={<FreelancerDashboard />} />
               <Route path='client/dashboard' element={<ClientDashboard />} />
+              <Route path="/freelancers/:id/view" element={<FreelancerProfileView />} />
             </Routes>
           </ErrorBoundary>
         </div>
