@@ -322,20 +322,21 @@ const ExploreServicesSection = () => {
             );
             console.log('Apply response:', response);
             alert('Applied successfully!');
+            setSelectedService(null);
+            setApplyModalVisible(false);
         } catch (error) {
-            console.error('Apply failed:', error.response || error);
-
-            // If backend sends a validation error with a recognizable message:
+            console.error('Full error response data:', error.response?.data);
             const detail =
                 error?.response?.data?.detail ||
                 error?.response?.data?.non_field_errors?.[0];
 
-            if (detail && detail.toLowerCase().includes('already applied')) {
-                alert('You have already applied for this service.');
+            if (detail && detail.toLowerCase().includes('already have an active order')) {
+                alert('You already have an active order for this service.');
             } else {
                 alert('Failed to apply. Please try again.');
             }
         }
+
 
 
         setSelectedService(null);

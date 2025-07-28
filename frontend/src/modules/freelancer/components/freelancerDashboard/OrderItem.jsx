@@ -1,39 +1,57 @@
-import React, { useState } from 'react';
-import { CheckCircle, Clock, AlertCircle, User, Calendar, DollarSign, MessageSquare, ChevronDown, ChevronUp } from 'lucide-react';
+import React from 'react';
+import {
+  CheckCircle,
+  Clock,
+  AlertCircle,
+  User,
+  Calendar,
+  DollarSign,
+  MessageSquare,
+  MessageCircle,
+  XCircle,
+} from 'lucide-react';
 
 const getStatusConfig = (status) => {
   switch (status) {
-    case 'pending': 
+    case 'pending':
       return {
         bg: 'bg-gradient-to-r from-amber-500/10 to-yellow-500/10',
         border: 'border-amber-400/30',
         text: 'text-amber-400',
         icon: Clock,
-        badge: 'bg-amber-500/20 text-amber-300 border-amber-400/40'
+        badge: 'bg-amber-500/20 text-amber-300 border-amber-400/40',
       };
-    case 'accepted': 
+    case 'accepted':
       return {
         bg: 'bg-gradient-to-r from-emerald-500/10 to-green-500/10',
         border: 'border-emerald-400/30',
         text: 'text-emerald-400',
         icon: CheckCircle,
-        badge: 'bg-emerald-500/20 text-emerald-300 border-emerald-400/40'
+        badge: 'bg-emerald-500/20 text-emerald-300 border-emerald-400/40',
       };
-    case 'rejected': 
+    case 'cancelled':
+      return {
+        bg: 'bg-gradient-to-r from-yellow-600/10 to-yellow-500/10',
+        border: 'border-yellow-400/30',
+        text: 'text-yellow-400',
+        icon: XCircle,
+        badge: 'bg-yellow-500/20 text-yellow-300 border-yellow-400/40',
+      };
+    case 'rejected':
       return {
         bg: 'bg-gradient-to-r from-red-500/10 to-rose-500/10',
         border: 'border-red-400/30',
         text: 'text-red-400',
         icon: AlertCircle,
-        badge: 'bg-red-500/20 text-red-300 border-red-400/40'
+        badge: 'bg-red-500/20 text-red-300 border-red-400/40',
       };
-    default: 
+    default:
       return {
         bg: 'bg-gradient-to-r from-slate-500/10 to-gray-500/10',
         border: 'border-slate-400/30',
         text: 'text-slate-400',
         icon: AlertCircle,
-        badge: 'bg-slate-500/20 text-slate-300 border-slate-400/40'
+        badge: 'bg-slate-500/20 text-slate-300 border-slate-400/40',
       };
   }
 };
@@ -47,9 +65,9 @@ const OrderItem = ({
   message,
   createdAt,
   onAccept,
-  onReject
+  onReject,
+  onCancel, // new prop
 }) => {
-  const [isExpanded, setIsExpanded] = useState(false);
   const statusConfig = getStatusConfig(status);
   const StatusIcon = statusConfig.icon;
 
@@ -58,135 +76,161 @@ const OrderItem = ({
     return new Date(dateString).toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric',
-      year: 'numeric',
       hour: '2-digit',
-      minute: '2-digit'
+      minute: '2-digit',
     });
   };
 
-  return (
-    <div className={`
-      relative overflow-hidden rounded-2xl border backdrop-blur-sm transition-all duration-300 hover:scale-[1.02] hover:shadow-xl
-      ${statusConfig.bg} ${statusConfig.border}
-      transform hover:-translate-y-1
-    `}>
-      {/* Subtle gradient overlay */}
-      <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent pointer-events-none" />
-      
-      <div className="relative p-6">
-        {/* Header Section */}
-        <div className="flex flex-col lg:flex-row lg:justify-between lg:items-start gap-4 mb-4">
-          {/* Left Section - Order Info */}
-          <div className="flex-1 min-w-0">
-            <div className="flex items-start justify-between mb-2">
-              <h3 className="text-white font-bold text-xl leading-tight pr-4 break-words">
-                {title}
-              </h3>
-              {/* Status Badge */}
-              <span className={`
-                inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold border shrink-0
-                ${statusConfig.badge}
-              `}>
-                <StatusIcon size={14} className="mr-1.5" />
-                <span className="capitalize">{status}</span>
-              </span>
-            </div>
-            
-            {/* Client Info */}
-            <div className="flex items-center text-slate-300 mb-2">
-              <User size={16} className="mr-2 text-slate-400" />
-              <span className="font-medium">{client}</span>
-            </div>
+  const handleMessage = () => {
+    // You can implement your messaging logic here
+    console.log('Open message with client:', client);
+    // Example: navigate to message page or open modal
+  };
 
-            {/* Created Date */}
-            <div className="flex items-center text-slate-400 text-sm">
-              <Calendar size={14} className="mr-2" />
-              <span>Ordered on {formatDate(createdAt)}</span>
+  return (
+    <div
+      className={`
+      relative overflow-hidden rounded-xl border backdrop-blur-sm transition-all duration-200 hover:scale-[1.01]
+      ${statusConfig.bg} ${statusConfig.border}
+    `}
+    >
+      <div className="absolute inset-0 bg-gradient-to-br from-white/3 to-transparent pointer-events-none" />
+
+      <div className="relative p-4">
+        {/* Compact Header */}
+        <div className="flex items-start justify-between mb-3">
+          <div className="flex-1 min-w-0 pr-4">
+            <h3 className="text-white font-semibold text-lg leading-tight mb-1 truncate">
+              {title}
+            </h3>
+
+            <div className="flex items-center justify-between text-sm">
+              <div className="flex items-center text-slate-300">
+                <User size={14} className="mr-1.5 text-slate-400" />
+                <span>{client}</span>
+              </div>
+              <div className="flex items-center text-slate-400">
+                <Calendar size={12} className="mr-1" />
+                <span>{formatDate(createdAt)}</span>
+              </div>
             </div>
           </div>
 
-          {/* Right Section - Amount & Deadline */}
-          <div className="flex lg:flex-col gap-4 lg:gap-2 lg:items-end">
-            <div className="flex items-center">
-              <DollarSign size={16} className="text-emerald-400 mr-1" />
-              <span className="text-emerald-400 font-bold text-lg">{amount}</span>
-            </div>
-            <div className="text-slate-300 text-sm lg:text-right">
-              <span className="text-slate-400">Delivery: </span>
-              <span className="font-medium">{deadline}</span>
-            </div>
+          {/* Status Badge */}
+          <span
+            className={`
+            inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border shrink-0
+            ${statusConfig.badge}
+          `}
+          >
+            <StatusIcon size={12} className="mr-1" />
+            <span className="capitalize">{status}</span>
+          </span>
+        </div>
+
+        {/* Amount and Deadline */}
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center">
+            <DollarSign size={16} className="text-emerald-400 mr-1" />
+            <span className="text-emerald-400 font-bold">{amount}</span>
+          </div>
+          <div className="text-slate-300 text-sm">
+            <span className="text-slate-400">Delivery: </span>
+            <span className="font-medium">{deadline}</span>
           </div>
         </div>
 
-        {/* Message Section */}
+        {/* Message Preview */}
         {message && (
-          <div className="mb-4">
-            <button
-              onClick={() => setIsExpanded(!isExpanded)}
-              className="flex items-center text-slate-300 hover:text-white transition-colors mb-2"
-            >
-              <MessageSquare size={16} className="mr-2 text-blue-400" />
-              <span className="font-medium">Client Message</span>
-              {isExpanded ? <ChevronUp size={16} className="ml-2" /> : <ChevronDown size={16} className="ml-2" />}
-            </button>
-            
-            <div className={`
-              overflow-hidden transition-all duration-300 ease-in-out
-              ${isExpanded ? 'max-h-96 opacity-100' : 'max-h-16 opacity-80'}
-            `}>
-              <div className="bg-slate-800/50 rounded-lg p-4 border border-slate-600/30">
-                <p className={`text-slate-200 leading-relaxed ${!isExpanded ? 'line-clamp-2' : ''}`}>
-                  {message}
-                </p>
+          <div className="mb-3 p-3 bg-slate-800/40 rounded-lg border border-slate-600/20">
+            <div className="flex items-center mb-1">
+              <MessageSquare size={14} className="mr-2 text-blue-400" />
+              <span className="text-slate-300 text-sm font-medium">Client Message</span>
+            </div>
+            <p className="text-slate-200 text-sm line-clamp-2 leading-relaxed">{message}</p>
+          </div>
+        )}
+
+        {/* Action Buttons */}
+        <div className="flex gap-2">
+          {status === 'pending' && (onAccept || onReject) && (
+            <>
+              {onAccept && (
+                <button
+                  onClick={onAccept}
+                  className="flex-1 bg-gradient-to-r from-emerald-500 to-green-500 hover:from-emerald-600 hover:to-green-600 text-white font-medium py-2 px-4 rounded-lg transition-all duration-200 flex items-center justify-center text-sm"
+                >
+                  <CheckCircle size={16} className="mr-1.5" />
+                  Accept
+                </button>
+              )}
+              {onReject && (
+                <button
+                  onClick={onReject}
+                  className="flex-1 bg-gradient-to-r from-red-500 to-rose-500 hover:from-red-600 hover:to-rose-600 text-white font-medium py-2 px-4 rounded-lg transition-all duration-200 flex items-center justify-center text-sm"
+                >
+                  <AlertCircle size={16} className="mr-1.5" />
+                  Reject
+                </button>
+              )}
+            </>
+          )}
+
+          {status === 'accepted' && (
+            <>
+              <button
+                onClick={handleMessage}
+                className="flex-1 bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white font-medium py-2 px-4 rounded-lg transition-all duration-200 flex items-center justify-center text-sm"
+              >
+                <MessageCircle size={16} className="mr-1.5" />
+                Message Client
+              </button>
+              {/* Cancel button */}
+              {onCancel && (
+                <button
+                  onClick={onCancel}
+                  className="flex-1 bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-600 hover:to-amber-600 text-white font-medium py-2 px-4 rounded-lg transition-all duration-200 flex items-center justify-center text-sm"
+                >
+                  <XCircle size={16} className="mr-1.5" />
+                  Cancel
+                </button>
+              )}
+            </>
+          )}
+        </div>
+
+        {/* Status Messages - Compact */}
+        {status === 'accepted' && (
+          <div className="mt-3 p-2 bg-emerald-500/10 border border-emerald-400/20 rounded-lg">
+            <div className="flex items-center">
+              <CheckCircle size={16} className="text-emerald-400 mr-2" />
+              <div>
+                <p className="text-emerald-300 font-medium text-sm">Order Accepted</p>
+                <p className="text-emerald-400/80 text-xs">Start working on this project!</p>
               </div>
             </div>
           </div>
         )}
 
-        {/* Action Buttons for Pending Orders */}
-        {status === 'pending' && (onAccept || onReject) && (
-          <div className="flex flex-col sm:flex-row gap-3 mt-6">
-            {onAccept && (
-              <button
-                onClick={onAccept}
-                className="flex-1 bg-gradient-to-r from-emerald-500 to-green-500 hover:from-emerald-600 hover:to-green-600 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-200 transform hover:scale-105 hover:shadow-lg flex items-center justify-center"
-              >
-                <CheckCircle size={18} className="mr-2" />
-                Accept Order
-              </button>
-            )}
-            {onReject && (
-              <button
-                onClick={onReject}
-                className="flex-1 bg-gradient-to-r from-red-500 to-rose-500 hover:from-red-600 hover:to-rose-600 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-200 transform hover:scale-105 hover:shadow-lg flex items-center justify-center"
-              >
-                <AlertCircle size={18} className="mr-2" />
-                Reject Order
-              </button>
-            )}
-          </div>
-        )}
-
-        {/* Status Messages */}
-        {status === 'accepted' && (
-          <div className="mt-4 p-4 bg-emerald-500/10 border border-emerald-400/20 rounded-xl">
+        {status === 'cancelled' && (
+          <div className="mt-3 p-2 bg-yellow-500/10 border border-yellow-400/20 rounded-lg">
             <div className="flex items-center">
-              <CheckCircle size={18} className="text-emerald-400 mr-3" />
+              <XCircle size={16} className="text-yellow-400 mr-2" />
               <div>
-                <p className="text-emerald-300 font-semibold">Order Accepted</p>
-                <p className="text-emerald-400/80 text-sm">You have successfully accepted this order. Start working on it!</p>
+                <p className="text-yellow-300 font-medium text-sm">Order Cancelled</p>
+                <p className="text-yellow-400/80 text-xs">This order has been cancelled.</p>
               </div>
             </div>
           </div>
         )}
 
         {status === 'rejected' && (
-          <div className="mt-4 p-4 bg-red-500/10 border border-red-400/20 rounded-xl">
+          <div className="mt-3 p-2 bg-red-500/10 border border-red-400/20 rounded-lg">
             <div className="flex items-center">
-              <AlertCircle size={18} className="text-red-400 mr-3" />
+              <AlertCircle size={16} className="text-red-400 mr-2" />
               <div>
-                <p className="text-red-300 font-semibold">Order Rejected</p>
-                <p className="text-red-400/80 text-sm">This order has been declined.</p>
+                <p className="text-red-300 font-medium text-sm">Order Rejected</p>
+                <p className="text-red-400/80 text-xs">This order has been declined.</p>
               </div>
             </div>
           </div>

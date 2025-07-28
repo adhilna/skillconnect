@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import api from '../../../api/api';
 import { AuthContext } from '../../../context/AuthContext';
+import NotificationDropdown from '../components/notifications/NotificationDropdown';
 import ProfileSection from '../components/freelancerDashboard/ProfileSection';
 import SettingsSection from '../components/freelancerDashboard/SettingsSection';
 import DashboardOverview from '../components/freelancerDashboard/DashboardOverview';
@@ -72,7 +73,6 @@ const FreelancerDashboard = () => {
       if (token) fetchClients();
     }
   }, [activeSection, token]);
-
 
   const getCurrentSectionContent = () => {
     switch (activeSection) {
@@ -193,10 +193,11 @@ const FreelancerDashboard = () => {
                 <span className="text-white/70 text-sm">{new Date().toLocaleDateString()}</span>
               </div>
 
-              <button className="relative p-2 text-white/70 hover:text-white rounded-lg hover:bg-white/10 transition-colors">
+              {/* <button className="relative p-2 text-white/70 hover:text-white rounded-lg hover:bg-white/10 transition-colors">
                 <Bell size={20} />
                 <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-pulse"></span>
-              </button>
+              </button> */}
+              <NotificationDropdown />
 
               <div className="flex items-center space-x-3">
                 <div className="w-10 h-10 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full flex items-center justify-center shadow-lg">

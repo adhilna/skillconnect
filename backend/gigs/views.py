@@ -9,7 +9,8 @@ from rest_framework.response import Response
 import django_filters
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.exceptions import ValidationError
-from django.db import IntegrityError
+from channels.layers import get_channel_layer
+from asgiref.sync import async_to_sync
 
 class IsClientCreatePermission(permissions.BasePermission):
     def has_permission(self, request, view):
@@ -164,24 +165,50 @@ class ServiceOrderViewSet(viewsets.ModelViewSet):
         return super().get_queryset()
 
     def perform_create(self, serializer):
-        serializer.save()
+        order = serializer.save()  # Save the new order instance
+
+        # Prepare to send a notification to the freelancer
+        channel_layer = get_channel_layer()
+        group_name = f"user_{order.freelancer.user.id}"  # The freelancer's user group
+
+        notification_data = {
+    'type': 'send_notification',
+    'message': {
+        'notification': {  # Wrap inside 'notification'
+            'id': order.id,
+            'title': order.service.title,
+            'client': str(order.client),
+            'status': order.status,
+            'text': f"New order received from {order.client} for service '{order.service.title}'.",
+            'created_at': str(order.created_at),
+        }
+    }
+}
+
+        # Send the notification asynchronously to the group channel
+        async_to_sync(channel_layer.group_send)(group_name, notification_data)
 
 
     def partial_update(self, request, *args, **kwargs):
         order = self.get_object()
 
-        # Only assigned freelancer can update the order
         if order.freelancer.user != request.user:
             raise PermissionDenied("You can only update your own orders.")
 
         new_status = request.data.get('status', None)
-        if order.status != 'pending':
-            return Response({'error': 'Order status can only be changed from pending.'},
-                            status=status.HTTP_400_BAD_REQUEST)
-        if new_status not in ['accepted', 'rejected']:
-            return Response({'error': "Status must be 'accepted' or 'rejected'."}, status=status.HTTP_400_BAD_REQUEST)
+        if not new_status:
+            return Response({'error': 'Missing status field.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        order.status = new_status
-        order.save()
-        serializer = self.get_serializer(order)
+        allowed_statuses = ['accepted', 'rejected', 'cancelled']
+
+        if new_status.lower() not in allowed_statuses:
+            return Response(
+                {'error': f"Status must be one of {allowed_statuses}."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        serializer = self.get_serializer(order, data={'status': new_status.lower()}, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
         return Response(serializer.data)

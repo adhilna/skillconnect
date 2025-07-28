@@ -5,6 +5,8 @@ from profiles.models import FreelancerProfile, ClientProfile
 from core.models import Skill, Category
 from core.serializers import CategorySerializer, SkillSerializer
 import json
+from channels.layers import get_channel_layer
+from asgiref.sync import async_to_sync
 
 
 class ServiceSerializer(serializers.ModelSerializer):
@@ -215,12 +217,12 @@ class ServiceOrderSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'client', 'freelancer', 'service', 'created_at', 'updated_at']
 
     def create(self, validated_data):
-        request = self.context['request']
-        client_profile = request.user.client_profile  # your ClientProfile model on user
+        request = self.context.get('request')
+        client_profile = request.user.client_profile
         service = validated_data['service']
         message = validated_data.get('message', '')
 
-        return ServiceOrder.objects.create(
+        order = ServiceOrder.objects.create(
             client=client_profile,
             freelancer=service.freelancer,
             service=service,
@@ -228,26 +230,61 @@ class ServiceOrderSerializer(serializers.ModelSerializer):
             status='pending'
         )
 
-    def validate(self, attrs):
-        request = self.context['request']
-        client_profile = request.user.client_profile
-        service = attrs.get('service')
+        # Send real-time notification via Channels
+        channel_layer = get_channel_layer()
+        group_name = f"user_{order.freelancer.user.id}"
 
-        # Check if client already has an active order (pending or accepted) for the service
-        if ServiceOrder.objects.filter(
-            client=client_profile,
-            service=service,
-            status__in=['pending', 'accepted']
-        ).exists():
-            raise serializers.ValidationError("You already have an active order for this service.")
+        notification_data = {
+            'type': 'send_notification',
+            'message': {
+                'id': order.id,
+                'title': order.service.title,
+                'client': str(order.client),
+                'status': order.status,
+                'message': order.message,
+                'created_at': str(order.created_at),
+                'text': f"New order received from {order.client} for service '{order.service.title}'."
+            }
+        }
+
+        async_to_sync(channel_layer.group_send)(group_name, notification_data)
+
+        return order
+
+    def validate(self, attrs):
+        # request = self.context.get('request')
+        # client_profile = request.user.client_profile
+        # service = attrs.get('service')
+
+        # # Prevent duplicate active orders (pending or accepted) by same client & service
+        # if ServiceOrder.objects.filter(
+        #     client=client_profile,
+        #     service=service,
+        #     status__in=['pending', 'accepted']
+        # ).exists():
+        #     raise serializers.ValidationError("You already have an active order for this service.")
 
         return attrs
 
     def validate_status(self, value):
-        instance = getattr(self, 'instance', None)
-        if instance:
-            if instance.status != 'pending':
-                raise serializers.ValidationError("Status can only be changed from 'pending'.")
-            if value not in ['accepted', 'rejected']:
-                raise serializers.ValidationError("Status must be 'accepted' or 'rejected'.")
+        # instance = getattr(self, 'instance', None)
+        # if instance:
+        #     current_status = instance.status.lower()
+        #     new_status = value.lower()
+
+        #     allowed_transitions = {
+        #         'pending': ['accepted', 'rejected'],
+        #         'accepted': ['completed', 'canceled'],
+        #         'rejected': [],
+        #         'completed': [],
+        #         'canceled': [],
+        #     }
+
+        #     if current_status not in allowed_transitions:
+        #         raise serializers.ValidationError(f"Unknown current status '{current_status}'.")
+
+        #     if new_status not in allowed_transitions[current_status]:
+        #         raise serializers.ValidationError(
+        #             f"Order status can only be changed from '{current_status}' to one of {allowed_transitions[current_status]}."
+        #         )
         return value

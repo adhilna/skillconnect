@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'rest_framework_simplejwt',
+    'daphne',
     'django_extensions',
     'corsheaders',
     'channels',
@@ -82,6 +83,9 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'skillconnect.wsgi.application'
+
+ASGI_APPLICATION = 'skillconnect.asgi.application'
+
 
 
 # Database
@@ -189,3 +193,12 @@ CACHES = {
 GOOGLE_CLIENT_ID = "177280873690-gfuk3olcl1ue5ue3c693jdd7850tk9uf.apps.googleusercontent.com"
 
 SECURE_CROSS_ORIGIN_OPENER_POLICY = 'same-origin-allow-popups'
+
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [("127.0.0.1", 6379)],  # adjust if remote Redis
+        },
+    },
+}
