@@ -3,6 +3,7 @@ import {
     Home, Search, MessageCircle, Users, BarChart3,
     User, Settings, Briefcase, CreditCard, Compass
 } from 'lucide-react';
+import { useLocation } from 'react-router-dom';
 import Sidebar from '../components/clientDashboard/Sidebar';
 import Header from '../components/clientDashboard/Header';
 import DashboardOverview from '../components/clientDashboard/DashboardOverview';
@@ -20,6 +21,7 @@ import api from '../../../api/api';
 
 const ClientDashboard = () => {
     const { token } = useContext(AuthContext);
+    const location = useLocation();
     const [activeSection, setActiveSection] = useState('dashboard');
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [profileData, setProfileData] = useState(null);
@@ -29,7 +31,11 @@ const ClientDashboard = () => {
     const [freelancers, setFreelancers] = useState([]);
     const [loadingFreelancers, setLoadingFreelancers] = useState(false);
 
-
+    useEffect(() => {
+        if (location.state?.section) {
+            setActiveSection(location.state.section);
+        }
+    }, [location.state]);
 
     useEffect(() => {
         if (!token) return;
@@ -83,8 +89,6 @@ const ClientDashboard = () => {
 
         if (token) fetchFreelancers();
     }, [token]);
-
-
 
     useEffect(() => {
         if (profileData) {
@@ -180,7 +184,7 @@ const ClientDashboard = () => {
     const navigationItems = [
         { id: 'dashboard', label: 'Dashboard', icon: Home },
         { id: 'browse', label: 'Browse Talent', icon: Search },
-        { id: 'explore', label: 'Explore Services', icon: Compass},
+        { id: 'explore', label: 'Explore Services', icon: Compass },
         { id: 'projects', label: 'My Projects', icon: Briefcase },
         { id: 'messages', label: 'Messages', icon: MessageCircle },
         { id: 'freelancers', label: 'My Freelancers', icon: Users },
@@ -204,7 +208,7 @@ const ClientDashboard = () => {
                     preloadedFreelancers={freelancers}
                     loading={loadingFreelancers}
                 />;
-             case 'explore':
+            case 'explore':
                 return <ExploreServicesSection />;
             case 'projects':
                 return <ProposalsSection />;

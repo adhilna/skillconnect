@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
 import { useToast } from "../../../../hooks/useToast";
 import {
   User,
@@ -35,35 +34,13 @@ import {
   AlertCircle,
   Loader2,
 } from "lucide-react";
-
-// API Configuration
-const API_BASE_URL = "http://localhost:8000/api/v1/profiles/freelancer/profile-setup";
-
-// Utility functions
-const getAuthToken = () => {
-  return localStorage.getItem('access') || sessionStorage.getItem('authtoken');
-};
-
-const createApiHeaders = (isMultipart = false) => {
-  const token = getAuthToken();
-  const headers = {
-    'Authorization': `Bearer ${token}`,
-  };
-
-  if (!isMultipart) {
-    headers['Content-Type'] = 'application/json';
-  }
-
-  return headers;
-};
+import api from '../../../../api/api';
 
 // API service functions
 const apiService = {
   async getProfile() {
     try {
-      const response = await axios.get(`${API_BASE_URL}/me/`, {
-        headers: createApiHeaders(),
-      });
+      const response = await api.get('/api/v1/profiles/freelancer/profile-setup/me/');
       return { data: response.data, error: null };
     } catch (error) {
       return { data: null, error: error.response?.data || error.message };
@@ -72,8 +49,8 @@ const apiService = {
 
   async updateProfile(formData) {
     try {
-      const response = await axios.patch(`${API_BASE_URL}/me/`, formData, {
-        headers: createApiHeaders(true),
+      const response = await api.patch('/api/v1/profiles/freelancer/profile-setup/me/', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }, // formData requires this
       });
       return { data: response.data, error: null };
     } catch (error) {
@@ -83,8 +60,8 @@ const apiService = {
 
   async createProfile(formData) {
     try {
-      const response = await axios.post(`${API_BASE_URL}/`, formData, {
-        headers: createApiHeaders(true),
+      const response = await api.post('/api/v1/profiles/freelancer/profile-setup/', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
       });
       return { data: response.data, error: null };
     } catch (error) {

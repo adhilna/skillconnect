@@ -1,6 +1,6 @@
 from rest_framework import serializers
-from .models import Service, Proposal
-from profiles.serializers import FreelancerProfileSetupSerializer
+from .models import Service, Proposal, ServiceOrder
+from profiles.serializers import FreelancerProfileSetupSerializer, FreelancerPublicDetailSerializer, ClientPublicMinimalSerializer, FreelancerPublicMinimalSerializer
 from profiles.models import FreelancerProfile, ClientProfile
 from core.models import Skill, Category
 from core.serializers import CategorySerializer, SkillSerializer
@@ -175,7 +175,7 @@ class ProposalSerializer(serializers.ModelSerializer):
         return instance
 
 class ExploreServiceSerializer(serializers.ModelSerializer):
-    freelancer = FreelancerProfileSetupSerializer(read_only=True)
+    freelancer = FreelancerPublicDetailSerializer(read_only=True)
     category = CategorySerializer(read_only=True)
     skills_output = serializers.SerializerMethodField()
 
@@ -185,3 +185,69 @@ class ExploreServiceSerializer(serializers.ModelSerializer):
 
     def get_skills_output(self, obj):
         return [{"id": skill.id, "name": skill.name} for skill in obj.skills.all()]
+
+class ServiceOrderSerializer(serializers.ModelSerializer):
+    client = ClientPublicMinimalSerializer(read_only=True)
+    service = ServiceSerializer(read_only=True)
+
+    service_id = serializers.PrimaryKeyRelatedField(
+        queryset=Service.objects.all(),
+        source='service',
+        write_only=True,
+        required=True
+    )
+    message = serializers.CharField(required=False, allow_blank=True)
+    status = serializers.ChoiceField(choices=ServiceOrder.STATUS_CHOICES, required=False)
+
+    class Meta:
+        model = ServiceOrder
+        fields = [
+            'id',
+            'client',
+            'freelancer',
+            'service',
+            'service_id',
+            'message',
+            'status',
+            'created_at',
+            'updated_at',
+        ]
+        read_only_fields = ['id', 'client', 'freelancer', 'service', 'created_at', 'updated_at']
+
+    def create(self, validated_data):
+        request = self.context['request']
+        client_profile = request.user.client_profile  # your ClientProfile model on user
+        service = validated_data['service']
+        message = validated_data.get('message', '')
+
+        return ServiceOrder.objects.create(
+            client=client_profile,
+            freelancer=service.freelancer,
+            service=service,
+            message=message,
+            status='pending'
+        )
+
+    def validate(self, attrs):
+        request = self.context['request']
+        client_profile = request.user.client_profile
+        service = attrs.get('service')
+
+        # Check if client already has an active order (pending or accepted) for the service
+        if ServiceOrder.objects.filter(
+            client=client_profile,
+            service=service,
+            status__in=['pending', 'accepted']
+        ).exists():
+            raise serializers.ValidationError("You already have an active order for this service.")
+
+        return attrs
+
+    def validate_status(self, value):
+        instance = getattr(self, 'instance', None)
+        if instance:
+            if instance.status != 'pending':
+                raise serializers.ValidationError("Status can only be changed from 'pending'.")
+            if value not in ['accepted', 'rejected']:
+                raise serializers.ValidationError("Status must be 'accepted' or 'rejected'.")
+        return value

@@ -5,13 +5,15 @@ from .views import (
 FreelancerProfileSetupViewSet,
 city_autocomplete,
 ClientProfileSetupViewSet,
-FreelancerBrowseViewSet
+FreelancerBrowseViewSet,
+ClientBrowseViewSet
 )
 
 router = DefaultRouter()
 router.register(r'freelancer/profile-setup', FreelancerProfileSetupViewSet, basename='freelancer-profile')
 router.register(r'client/profile-setup', ClientProfileSetupViewSet, basename='client-profile')
 router.register(r'freelancers/browse', FreelancerBrowseViewSet, basename='freelancer-browse')
+router.register(r'clients/browse', ClientBrowseViewSet, basename='client-browse')
 
 urlpatterns = [
     path('', include(router.urls)),

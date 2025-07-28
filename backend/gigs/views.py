@@ -1,13 +1,29 @@
 from rest_framework import viewsets, permissions, status, filters
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
-from .models import Service, Proposal
-from .serializers import ServiceSerializer, ProposalSerializer
+from .models import Service, Proposal, ServiceOrder
+from .serializers import ServiceSerializer, ProposalSerializer, ServiceOrderSerializer
 from .pagination import ExploreServicesPagination
 import pprint
 import json
 from rest_framework.response import Response
 import django_filters
 from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework.exceptions import ValidationError
+from django.db import IntegrityError
+
+class IsClientCreatePermission(permissions.BasePermission):
+    def has_permission(self, request, view):
+        # Only users with client_profile can create
+        if view.action == 'create':
+            return request.user and request.user.is_authenticated and hasattr(request.user, 'client_profile')
+        return True
+
+class IsFreelancerPermission(permissions.BasePermission):
+    def has_permission(self, request, view):
+        # Only users with freelancer_profile can list or update orders
+        if view.action in ['list', 'partial_update']:
+            return request.user and request.user.is_authenticated and hasattr(request.user, 'freelancer_profile')
+        return True
 
 def parse_json_fields(data, fields):
     """
@@ -126,3 +142,46 @@ class ExploreServicesViewSet(viewsets.ReadOnlyModelViewSet):
         return Service.objects.filter(is_active=True) \
                              .select_related('freelancer', 'category') \
                              .prefetch_related('skills')
+
+class ServiceOrderViewSet(viewsets.ModelViewSet):
+    queryset = ServiceOrder.objects.all().order_by('-created_at')
+    serializer_class = ServiceOrderSerializer
+
+    def get_permissions(self):
+        if self.action == 'create':
+            return [permissions.IsAuthenticated(), IsClientCreatePermission()]
+        elif self.action in ['list', 'partial_update']:
+            return [permissions.IsAuthenticated(), IsFreelancerPermission()]
+        else:
+            return [permissions.IsAuthenticated()]
+
+    def get_queryset(self):
+        user = self.request.user
+        if self.action == 'list':
+            if hasattr(user, 'freelancer_profile'):
+                return ServiceOrder.objects.filter(freelancer=user.freelancer_profile).order_by('-created_at')
+            return ServiceOrder.objects.none()
+        return super().get_queryset()
+
+    def perform_create(self, serializer):
+        serializer.save()
+
+
+    def partial_update(self, request, *args, **kwargs):
+        order = self.get_object()
+
+        # Only assigned freelancer can update the order
+        if order.freelancer.user != request.user:
+            raise PermissionDenied("You can only update your own orders.")
+
+        new_status = request.data.get('status', None)
+        if order.status != 'pending':
+            return Response({'error': 'Order status can only be changed from pending.'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        if new_status not in ['accepted', 'rejected']:
+            return Response({'error': "Status must be 'accepted' or 'rejected'."}, status=status.HTTP_400_BAD_REQUEST)
+
+        order.status = new_status
+        order.save()
+        serializer = self.get_serializer(order)
+        return Response(serializer.data)

@@ -425,7 +425,7 @@ class ClientProfileSetupSerializer(serializers.ModelSerializer):
         # Add more conditional validation as needed
         return attrs
 
-class FreelancerPublicSerializer(serializers.ModelSerializer):
+class FreelancerPublicMinimalSerializer(serializers.ModelSerializer):
     skills = SkillSerializer(many=True, read_only=True, default=list)
     name = serializers.SerializerMethodField()
     title = serializers.SerializerMethodField()
@@ -439,25 +439,84 @@ class FreelancerPublicSerializer(serializers.ModelSerializer):
             'name',
             'title',             # Computed from experiences
             'location',
-            'rating',          # Disabled for now
-            'review_count',    # Disabled for now
+            'rating',            # Placeholder for now
+            'review_count',      # Placeholder for now
             'is_available',
             'skills',
             'profile_picture',   # Optional: used for avatars
-            'about',               # For description text on the card
+            'about',             # Description snippet
         ]
 
     def get_name(self, obj):
         return f"{obj.first_name} {obj.last_name}".strip() or obj.user.username
 
     def get_title(self, obj):
-        experience = obj.experiences.order_by('-start_date').first()  # Get most recent based on start_date
+        experience = obj.experiences.order_by('-start_date').first()
         return experience.role if experience else "Freelancer"
 
     def get_rating(self, obj):
-        # Temporary placeholder rating; replace later
+        # Replace with actual rating calculation if available
         return 0
 
     def get_review_count(self, obj):
-        # Temporary placeholder review count; replace later
+        # Replace with actual review count if available
         return 0
+
+class FreelancerPublicDetailSerializer(FreelancerPublicMinimalSerializer):
+    educations_output = EducationSerializer(many=True, read_only=True)
+    experiences_output = ExperienceSerializer(many=True, read_only=True)
+    languages_output = LanguageSerializer(many=True, read_only=True)
+    portfolios_output = PortfolioSerializer(many=True, read_only=True)
+    social_links_output = SocialLinksSerializer(source='user.social_links', read_only=True)
+    verification_output = VerificationSerializer(source='user.verification', read_only=True)
+
+    class Meta(FreelancerPublicMinimalSerializer.Meta):
+        fields = FreelancerPublicMinimalSerializer.Meta.fields + [
+            'age',
+            'country',
+            'educations_output',
+            'experiences_output',
+            'languages_output',
+            'portfolios_output',
+            'social_links_output',
+            'verification_output',
+            'created_at',
+            'updated_at',
+            # Add other detailed fields if needed
+        ]
+
+class ClientPublicMinimalSerializer(serializers.ModelSerializer):
+    name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = ClientProfile
+        fields = [
+            'id',
+            'name',
+            'account_type',
+            'company_name',
+            'profile_picture',
+            'company_description',
+            'country',
+            'location',
+            'industry',
+        ]
+
+    def get_name(self, obj):
+        return f"{obj.first_name} {obj.last_name}".strip() or obj.user.username
+
+class ClientPublicDetailSerializer(ClientPublicMinimalSerializer):
+    class Meta(ClientPublicMinimalSerializer.Meta):
+        fields = ClientPublicMinimalSerializer.Meta.fields + [
+            'website',
+            'company_size',
+            'project_types',
+            'budget_range',
+            'project_frequency',
+            'business_goals',
+            'current_challenges',
+            'working_hours',
+            'preferred_communications',
+            'payment_method',
+            'payment_timing',
+        ]

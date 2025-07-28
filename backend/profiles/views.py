@@ -1,7 +1,14 @@
 from rest_framework import viewsets, permissions, status, filters
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from .models import FreelancerProfile, ClientProfile
-from .serializers import FreelancerProfileSetupSerializer, ClientProfileSetupSerializer,FreelancerPublicSerializer
+from .serializers import(
+    FreelancerProfileSetupSerializer,
+    ClientProfileSetupSerializer,
+    FreelancerPublicMinimalSerializer,
+    FreelancerPublicDetailSerializer,
+    ClientPublicMinimalSerializer,
+    ClientPublicDetailSerializer,
+)
 from .pagination import StandardResultsSetPagination
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
@@ -371,16 +378,6 @@ class ClientProfileSetupViewSet(viewsets.ModelViewSet):
 
         data = request.data.copy()
 
-        # If you have any JSON fields, parse them here (for now, assuming none)
-        # Example: if you add a JSON field in future, parse as below:
-        # for field in ['project_types', 'business_goals', ...]:
-        #     if field in data and isinstance(data[field], str):
-        #         try:
-        #             data[field] = json.loads(data[field])
-        #         except Exception as e:
-        #             print(f"[DEBUG] JSON parse error in {field}: {e}")
-        #             data[field] = []
-
         serializer = self.get_serializer(data=data)
         if not serializer.is_valid():
             print("==== [DEBUG] SERIALIZER ERRORS ====")
@@ -424,17 +421,37 @@ class ClientProfileSetupViewSet(viewsets.ModelViewSet):
 
 class FreelancerBrowseViewSet(viewsets.ReadOnlyModelViewSet):
     """
-    Public listing for browsing freelancers on client side.
+    API endpoint that allows freelancers to be viewed.
+    Lists minimal data, detail returns full profile.
     """
-    queryset = FreelancerProfile.objects.all()
-    serializer_class = FreelancerPublicSerializer
+    queryset = FreelancerProfile.objects.all().select_related('user').prefetch_related('skills', 'educations', 'experiences', 'languages', 'portfolios')
+
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     pagination_class = StandardResultsSetPagination
 
     filterset_fields = ['location', 'skills__name', 'is_available']
     search_fields = ['first_name', 'last_name', 'user__username', 'about', 'skills__name']
-    ordering_fields = ['created_at']  # 'rating' removed
+    ordering_fields = ['created_at', 'updated_at']
 
-    def get_queryset(self):
-        return super().get_queryset().select_related('user').prefetch_related('skills','experiences', 'user')
+    def get_serializer_class(self):
+        if self.action == 'list':
+            return FreelancerPublicMinimalSerializer
+        return FreelancerPublicDetailSerializer
+
+class ClientBrowseViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = ClientProfile.objects.all()
+    permission_classes = [AllowAny]  # or custom, if you want login to see
+
+    def get_serializer_class(self):
+        # List: minimal data; Retrieve: full data
+        if self.action == 'list':
+            return ClientPublicMinimalSerializer
+        return ClientPublicDetailSerializer
+
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    pagination_class = StandardResultsSetPagination
+    search_fields = ['company_name', 'first_name', 'last_name', 'industry', 'company_description']
+    filterset_fields = ['country', 'location', 'industry']  # Add others if needed.
+    ordering_fields = ['created_at', 'company_name']

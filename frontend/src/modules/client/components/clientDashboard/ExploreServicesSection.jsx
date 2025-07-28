@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useContext, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-
+import ApplyServiceModal from './ApplyServiceModal';
 import {
     Search, Filter, Star, Clock, DollarSign, ChevronDown, Grid, List,
     ChevronLeft, ChevronRight, Eye, ExternalLink
@@ -148,6 +148,10 @@ const ExploreServicesSection = () => {
     const [categories, setCategories] = useState([]);
     const [categoriesLoading, setCategoriesLoading] = useState(false);
 
+    const [applyModalVisible, setApplyModalVisible] = useState(false);
+    const [selectedService, setSelectedService] = useState(null);
+
+
     const itemsPerPage = 9;
 
     const [filters, setFilters] = useState({
@@ -292,8 +296,50 @@ const ExploreServicesSection = () => {
 
 
     const handleApplyService = (service) => {
-        alert(`Applying for service: ${service.title} (ID: ${service.id})`);
-        // Implement actual apply functionality here
+        setSelectedService(service);
+        setApplyModalVisible(true);
+    };
+
+    const handleCancelApply = () => {
+        setSelectedService(null);
+        setApplyModalVisible(false);
+    };
+
+    const handleSendApply = async (message) => {
+        console.log('Applying for service:', selectedService, 'with message:', message);
+        if (!selectedService || !token) return;
+
+        try {
+            const response = await api.post(
+                '/api/v1/gigs/service-orders/',
+                {
+                    service_id: selectedService.id,
+                    message: message,
+                },
+                {
+                    headers: { Authorization: `Bearer ${token}` },
+                }
+            );
+            console.log('Apply response:', response);
+            alert('Applied successfully!');
+        } catch (error) {
+            console.error('Apply failed:', error.response || error);
+
+            // If backend sends a validation error with a recognizable message:
+            const detail =
+                error?.response?.data?.detail ||
+                error?.response?.data?.non_field_errors?.[0];
+
+            if (detail && detail.toLowerCase().includes('already applied')) {
+                alert('You have already applied for this service.');
+            } else {
+                alert('Failed to apply. Please try again.');
+            }
+        }
+
+
+        setSelectedService(null);
+        setApplyModalVisible(false);
     };
 
     // Calculate showing range for current page display
@@ -537,6 +583,12 @@ const ExploreServicesSection = () => {
                         </button>
                     </div>
                 )}
+                <ApplyServiceModal
+                    service={selectedService}
+                    visible={applyModalVisible}
+                    onCancel={handleCancelApply}
+                    onSubmit={handleSendApply}
+                />
             </div>
         </div>
     );

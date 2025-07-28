@@ -87,38 +87,41 @@ const FreelancerProfileView = () => {
     const [error, setError] = useState('');
 
     useEffect(() => {
-        if (profile) return;
+    const hasValidData = profile && profile.id;
+    if (hasValidData) return;
 
-        if (!token) {
-            setError('Authentication required');
+    if (!token) {
+        setError('Authentication required');
+        setLoading(false);
+        return;
+    }
+
+    const fetchProfile = async () => {
+        setLoading(true);
+        setError('');
+        try {
+            const response = await api.get(`/api/v1/profiles/freelancers/browse/${id}/`, {
+                headers: { Authorization: `Bearer ${token}` },
+            });
+            setProfile(response.data);
+        } catch (err) {
+            console.error(err);
+            setError('Failed to load profile.');
+        } finally {
             setLoading(false);
-            return;
         }
+    };
 
-        const fetchProfile = async () => {
-            setLoading(true);
-            setError('');
-            try {
-                const response = await api.get(`/api/v1/profiles/freelancers/${id}/`, {
-                    headers: { Authorization: `Bearer ${token}` },
-                });
-                setProfile(response.data);
-            } catch (err) {
-                console.error(err);
-                setError('Failed to load profile.');
-            } finally {
-                setLoading(false);
-            }
-        };
+    fetchProfile();
 
-        fetchProfile();
-    }, [id, profile, token]);
+}, [id, profile, token]);
+
 
     if (loading) {
         return (
             <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 flex items-center justify-center">
                 <div className="text-center space-y-4">
-                    <div className="w-8 h-8 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto"></div>
+                    <div className="w-8 h-8 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto" />
                     <div className="space-y-2">
                         <p className="text-white text-lg font-medium">Loading profile...</p>
                         <p className="text-white/60">Please wait while we fetch the details</p>
@@ -167,13 +170,13 @@ const FreelancerProfileView = () => {
         location: loc,
         age,
         country,
-        educations_output,
-        experiences_output,
-        skills_output,
-        languages_output,
-        portfolios_output,
-        social_links_output,
-        verification_output,
+        educations_output = [],
+        experiences_output = [],
+        skills_output = [],
+        languages_output = [],
+        portfolios_output = [],
+        social_links_output = {},
+        verification_output = {},
         is_available,
     } = profile;
 
@@ -183,11 +186,12 @@ const FreelancerProfileView = () => {
                 {/* Header */}
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <button
-                        onClick={() => navigate('/client/dashboard')}
+                        onClick={() => navigate('/client/dashboard', { state: { section: 'explore' } })}
                         className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/10 backdrop-blur-xl border border-white/20 text-white/90 hover:bg-white/20 transition-colors"
+                        aria-label="Back to Dashboard"
                     >
                         <ArrowLeft className="w-4 h-4" />
-                        <span className="font-medium">Back to Dashboard</span>
+                        <span className="font-medium">Back to Explore</span>
                     </button>
 
                     <div className="flex items-center gap-2 text-white/60">
@@ -210,10 +214,14 @@ const FreelancerProfileView = () => {
                                 />
                             </div>
                             {/* Status Indicator */}
-                            <div className={`absolute -bottom-1 -right-1 w-8 h-8 rounded-full border-2 border-white flex items-center justify-center ${is_available ? 'bg-green-500' : 'bg-red-500'
-                                }`}>
-                                <div className={`w-2 h-2 rounded-full ${is_available ? 'bg-green-700' : 'bg-red-700'
-                                    }`}></div>
+                            <div
+                                className={`absolute -bottom-1 -right-1 w-8 h-8 rounded-full border-2 border-white flex items-center justify-center ${is_available ? 'bg-green-500' : 'bg-red-500'
+                                    }`}
+                            >
+                                <div
+                                    className={`w-2 h-2 rounded-full ${is_available ? 'bg-green-700' : 'bg-red-700'
+                                        }`}
+                                />
                             </div>
                         </div>
 
@@ -235,10 +243,14 @@ const FreelancerProfileView = () => {
 
                                 {/* Availability Status */}
                                 <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-white/20">
-                                    <div className={`w-2 h-2 rounded-full ${is_available ? 'bg-green-400' : 'bg-red-400'
-                                        }`}></div>
-                                    <span className={`text-sm font-medium ${is_available ? 'text-green-200' : 'text-red-200'
-                                        }`}>
+                                    <div
+                                        className={`w-2 h-2 rounded-full ${is_available ? 'bg-green-400' : 'bg-red-400'
+                                            }`}
+                                    />
+                                    <span
+                                        className={`text-sm font-medium ${is_available ? 'text-green-200' : 'text-red-200'
+                                            }`}
+                                    >
                                         {is_available ? 'Available for Work' : 'Currently Busy'}
                                     </span>
                                 </div>
@@ -252,7 +264,7 @@ const FreelancerProfileView = () => {
                                         <span className="text-sm">{loc}</span>
                                     </div>
                                 )}
-                                {age && (
+                                {age !== undefined && age !== null && (
                                     <div className="flex items-center gap-2">
                                         <UserPlus className="w-4 h-4" />
                                         <span className="text-sm">{age} years</span>
@@ -349,7 +361,6 @@ const FreelancerProfileView = () => {
                             <Briefcase className="w-5 h-5 text-white/60" />
                             <h2 className="text-xl font-semibold text-white">Experience</h2>
                         </div>
-
                         {experiences_output?.length ? (
                             <div className="space-y-6">
                                 {experiences_output.map((exp, index) => (
@@ -410,7 +421,6 @@ const FreelancerProfileView = () => {
                             <GraduationCap className="w-5 h-5 text-white/60" />
                             <h2 className="text-xl font-semibold text-white">Education</h2>
                         </div>
-
                         {educations_output?.length ? (
                             <div className="space-y-6">
                                 {educations_output.map((edu, index) => (
@@ -503,7 +513,7 @@ const FreelancerProfileView = () => {
                         <div className="space-y-4">
                             <div className="flex items-center gap-3">
                                 <Globe className="w-5 h-5 text-white/60" />
-                                <h2 className="text-xl font-semibold text-white">Social Links</h2>
+                                <h2 className="text-2xl font-semibold text-white">Social Links</h2>
                             </div>
 
                             <div className="flex gap-3 flex-wrap">
@@ -554,15 +564,27 @@ const FreelancerProfileView = () => {
                         <div className="space-y-4">
                             <div className="flex items-center gap-3">
                                 <CheckCircle className="w-5 h-5 text-white/60" />
-                                <h2 className="text-xl font-semibold text-white">Verifications</h2>
+                                <h2 className="text-2xl font-semibold text-white">Verifications</h2>
                             </div>
 
                             {verification_output ? (
                                 <div className="grid grid-cols-2 gap-3">
-                                    <VerificationBadge verified={verification_output.email_verified} label="Email" />
-                                    <VerificationBadge verified={verification_output.phone_verified} label="Phone" />
-                                    <VerificationBadge verified={verification_output.id_verified} label="ID" />
-                                    <VerificationBadge verified={verification_output.video_verified} label="Video" />
+                                    <VerificationBadge
+                                        verified={verification_output.email_verified}
+                                        label="Email"
+                                    />
+                                    <VerificationBadge
+                                        verified={verification_output.phone_verified}
+                                        label="Phone"
+                                    />
+                                    <VerificationBadge
+                                        verified={verification_output.id_verified}
+                                        label="ID"
+                                    />
+                                    <VerificationBadge
+                                        verified={verification_output.video_verified}
+                                        label="Video"
+                                    />
                                 </div>
                             ) : (
                                 <p className="text-white/60 italic">No verification data available yet.</p>

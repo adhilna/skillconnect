@@ -19,6 +19,7 @@ import { ToastProvider } from './context/ToastContext';
 import { useToast } from './hooks/useToast';
 import ToastContainer from './components/Shared/toast/ToastContainer';
 import FreelancerProfileView from './modules/freelancer/pages/FreelancerProfileView';
+import ClientProfileView from './modules/client/pages/ClientProfileView';
 
 function App() {
   return (
@@ -41,6 +42,7 @@ function App() {
               <Route path='freelancer/dashboard' element={<FreelancerDashboard />} />
               <Route path='client/dashboard' element={<ClientDashboard />} />
               <Route path="/freelancers/:id/view" element={<FreelancerProfileView />} />
+              <Route path="/freelancer/clients/:id" element={<ClientProfileView />} />
             </Routes>
           </ErrorBoundary>
         </div>

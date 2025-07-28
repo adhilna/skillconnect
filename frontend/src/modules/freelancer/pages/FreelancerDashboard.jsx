@@ -1,22 +1,33 @@
-import React, { useState } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
 import {
-  Home, Briefcase, ShoppingCart, MessageCircle,Search, BarChart3,
-  User, Settings, Bell, Menu, X, DollarSign, Star,TrendingUp,Clock,
+  Home, Briefcase, ShoppingCart, MessageCircle, Search, BarChart3,
+  User, Settings, Bell, Menu, X, DollarSign, Star, TrendingUp, Clock,
   Eye, Plus, Filter, Calendar, CheckCircle, AlertCircle,
 } from 'lucide-react';
+import api from '../../../api/api';
+import { AuthContext } from '../../../context/AuthContext';
 import ProfileSection from '../components/freelancerDashboard/ProfileSection';
 import SettingsSection from '../components/freelancerDashboard/SettingsSection';
 import DashboardOverview from '../components/freelancerDashboard/DashboardOverview';
 import MessagesSection from '../components/freelancerDashboard/MessagesSection';
 import ServicesSection from '../components/freelancerDashboard/ServicesSection';
+import BrowseClientSection from '../components/freelancerDashboard/BrowseClientSection';
+import OrderSection from '../components/freelancerDashboard/OrderSection';
 
 
 const FreelancerDashboard = () => {
   const [activeSection, setActiveSection] = useState('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
+  const [clients, setClients] = useState([]);
+  const [loadingClients, setLoadingClients] = useState(false);
+  const [clientsError, setClientsError] = useState(null);
+
+  const { token } = useContext(AuthContext);
+
   const navigationItems = [
     { id: 'dashboard', label: 'Dashboard', icon: Home },
+    { id: 'browse', label: 'Browse Clients', icon: Search },
     { id: 'gigs', label: 'My Services', icon: Briefcase },
     { id: 'orders', label: 'Orders', icon: ShoppingCart },
     { id: 'messages', label: 'Messages', icon: MessageCircle },
@@ -26,14 +37,57 @@ const FreelancerDashboard = () => {
     { id: 'settings', label: 'Settings', icon: Settings },
   ];
 
+  useEffect(() => {
+    if (activeSection === 'browse') {
+      const fetchClients = async () => {
+        setLoadingClients(true);
+        setClientsError(null);
+        try {
+          const res = await api.get('/api/v1/profiles/clients/browse/', {
+            params: { page: 1, ordering: '-created_at' }, // adjust as needed
+            headers: { Authorization: `Bearer ${token}` }, // omit if your api adds it globally
+          });
+
+          // Transform data to your desired shape for minimal listing
+          const transformedClients = (res.data.results || []).map(client => ({
+            id: client.id,
+            companyName: client.company_name,
+            profilePicture: client.profile_picture,
+            location: client.location,
+            country: client.country,
+            industry: client.industry,
+            accountType: client.account_type,
+          }));
+
+          setClients(transformedClients);
+        } catch (err) {
+          console.error('Error fetching clients:', err);
+          setClientsError('Failed to load clients');
+          setClients([]);
+        } finally {
+          setLoadingClients(false);
+        }
+      };
+
+      if (token) fetchClients();
+    }
+  }, [activeSection, token]);
+
+
   const getCurrentSectionContent = () => {
     switch (activeSection) {
       case 'dashboard':
         return <DashboardOverview />;
+      case 'browse':
+        return <BrowseClientSection
+          clients={clients}
+          loading={loadingClients}
+          error={clientsError}
+        />
       case 'gigs':
         return <ServicesSection />;
       case 'orders':
-        return <OrdersSection />;
+        return <OrderSection />;
       case 'messages':
         return <MessagesSection />;
       case 'requests':
@@ -86,8 +140,8 @@ const FreelancerDashboard = () => {
                     setSidebarOpen(false);
                   }}
                   className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 group ${activeSection === item.id
-                      ? 'bg-gradient-to-r from-purple-500/20 to-pink-500/20 text-white shadow-lg border border-purple-500/30'
-                      : 'text-white/70 hover:text-white hover:bg-white/10'
+                    ? 'bg-gradient-to-r from-purple-500/20 to-pink-500/20 text-white shadow-lg border border-purple-500/30'
+                    : 'text-white/70 hover:text-white hover:bg-white/10'
                     }`}
                 >
                   <Icon size={20} className="group-hover:scale-110 transition-transform" />
@@ -230,26 +284,6 @@ const OrderItem = ({ title, client, status, amount, deadline }) => {
 };
 
 
-const OrdersSection = () => (
-  <div className="space-y-6">
-    <div className="flex items-center justify-between">
-      <h3 className="text-2xl font-bold text-white">Orders</h3>
-      <div className="flex items-center space-x-2">
-        <button className="bg-white/10 text-white px-4 py-2 rounded-lg font-medium hover:bg-white/20 transition-colors flex items-center space-x-2">
-          <Filter size={16} />
-          <span>Filter</span>
-        </button>
-      </div>
-    </div>
-    <div className="bg-black/20 backdrop-blur-lg rounded-2xl border border-white/10 p-8 text-center">
-      <ShoppingCart size={48} className="text-white/30 mx-auto mb-4" />
-      <h4 className="text-xl font-semibold text-white mb-2">Order Management</h4>
-      <p className="text-white/70 mb-6">Track and manage all your client orders</p>
-      <div className="text-white/50 text-sm">Enhanced order management coming soon...</div>
-    </div>
-  </div>
-);
-
 const RequestsSection = () => (
   <div className="space-y-6">
     <div className="flex items-center justify-between">
@@ -278,6 +312,5 @@ const AnalyticsSection = () => (
     </div>
   </div>
 );
-
 
 export default FreelancerDashboard;
