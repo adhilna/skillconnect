@@ -109,3 +109,25 @@ class ServiceOrder(models.Model):
 
     def __str__(self):
         return f"Order #{self.id} by {self.client.first_name} {self.client.last_name} for {self.service.title}"
+
+class ProposalOrder(models.Model):
+    proposal = models.ForeignKey(Proposal, on_delete=models.CASCADE, related_name='orders')
+    client = models.ForeignKey(ClientProfile, on_delete=models.CASCADE, related_name='proposal_orders')
+    freelancer = models.ForeignKey(FreelancerProfile, on_delete=models.CASCADE, related_name='proposal_orders')
+    message = models.TextField(blank=True, null=True)  # Message from freelancer
+
+    STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('accepted', 'Accepted'),
+        ('rejected', 'Rejected'),
+        ('completed', 'Completed'),
+        ('cancelled', 'Cancelled'),
+    ]
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+
+    def __str__(self):
+        return f"ProposalOrder #{self.id} by {self.freelancer.user} for {self.proposal.title}"

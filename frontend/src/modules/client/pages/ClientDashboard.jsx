@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useContext } from 'react';
 import {
     Home, Search, MessageCircle, Users, BarChart3,
-    User, Settings, Briefcase, CreditCard, Compass
+    User, Settings, Briefcase, CreditCard, Compass, ShoppingCart
 } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
 import Sidebar from '../components/clientDashboard/Sidebar';
@@ -18,6 +18,7 @@ import SettingsSection from '../components/clientDashboard/SettingsSection';
 import ExploreServicesSection from '../components/clientDashboard/ExploreServicesSection';
 import { AuthContext } from '../../../context/AuthContext';
 import api from '../../../api/api';
+import OrderSection from '../components/clientDashboard/OrderSection';
 
 const ClientDashboard = () => {
     const { token } = useContext(AuthContext);
@@ -185,7 +186,8 @@ const ClientDashboard = () => {
         { id: 'dashboard', label: 'Dashboard', icon: Home },
         { id: 'browse', label: 'Browse Talent', icon: Search },
         { id: 'explore', label: 'Explore Services', icon: Compass },
-        { id: 'projects', label: 'My Projects', icon: Briefcase },
+        { id: 'proposals', label: 'My Proposals', icon: Briefcase },
+        { id: 'orders', label: 'Orders', icon: ShoppingCart },
         { id: 'messages', label: 'Messages', icon: MessageCircle },
         { id: 'freelancers', label: 'My Freelancers', icon: Users },
         { id: 'invoices', label: 'Invoices & Payments', icon: CreditCard },
@@ -210,8 +212,10 @@ const ClientDashboard = () => {
                 />;
             case 'explore':
                 return <ExploreServicesSection />;
-            case 'projects':
+            case 'proposals':
                 return <ProposalsSection />;
+            case 'orders':
+                return <OrderSection />;
             case 'messages':
                 return <MessagesSection />;
             case 'freelancers':

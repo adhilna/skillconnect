@@ -1,6 +1,6 @@
 from rest_framework import serializers
-from .models import Service, Proposal, ServiceOrder
-from profiles.serializers import FreelancerProfileSetupSerializer, FreelancerPublicDetailSerializer, ClientPublicMinimalSerializer, ClientPublicDetailSerializer
+from .models import Service, Proposal, ServiceOrder, ProposalOrder
+from profiles.serializers import FreelancerProfileSetupSerializer, FreelancerPublicDetailSerializer, ClientPublicMinimalSerializer, ClientPublicDetailSerializer, FreelancerPublicMinimalSerializer
 from profiles.models import FreelancerProfile, ClientProfile
 from core.models import Skill, Category
 from core.serializers import CategorySerializer, SkillSerializer
@@ -305,3 +305,46 @@ class ServiceOrderSerializer(serializers.ModelSerializer):
         #             f"Order status can only be changed from '{current_status}' to one of {allowed_transitions[current_status]}."
         #         )
         return value
+
+class ProposalOrderSerializer(serializers.ModelSerializer):
+    proposal = ProposalSerializer(read_only=True)
+    client = ClientPublicMinimalSerializer(read_only=True)
+    freelancer = FreelancerPublicMinimalSerializer(read_only=True)
+
+    proposal_id = serializers.PrimaryKeyRelatedField(
+        queryset=Proposal.objects.all(),
+        source='proposal',
+        write_only=True
+    )
+    message = serializers.CharField(required=False, allow_blank=True)
+    status = serializers.ChoiceField(choices=ProposalOrder.STATUS_CHOICES, required=False)
+
+    class Meta:
+        model = ProposalOrder
+        fields = [
+            'id', 'proposal', 'proposal_id', 'client', 'freelancer', 'message',
+            'status', 'created_at', 'updated_at'
+        ]
+        read_only_fields = ['id', 'proposal', 'client', 'freelancer', 'status', 'created_at', 'updated_at']
+
+    def create(self, validated_data):
+        request = self.context.get('request')
+        freelancer_profile = request.user.freelancer_profile
+        proposal = validated_data['proposal']
+        client_profile = proposal.client  # Proposal already has client
+        message = validated_data.get('message', '')
+
+        order = ProposalOrder.objects.create(
+            proposal=proposal,
+            client=client_profile,
+            freelancer=freelancer_profile,
+            message=message,
+            status='pending'
+        )
+        # (Optional: add notifications here)
+        return order
+
+    def validate(self, attrs):
+        # (Optional: Add validation to prevent multiple active applications by the same freelancer)
+        return attrs
+

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+// import { useNavigate } from 'react-router-dom';
 import ApplyProposalModal from './ApplyProposalModal'
 import {
     Search, Filter, Star, Clock, DollarSign, ChevronDown, Grid, List,
@@ -7,10 +7,11 @@ import {
 } from 'lucide-react';
 import api from '../../../../api/api';
 import { AuthContext } from '../../../../context/AuthContext';
+import { Link } from 'react-router-dom';
 
 // ProposalCard mirrors ServiceCard but adapted fields for proposal
 // ProposalCard component updated to match your API payload structure
-const ProposalCard = ({ proposal, onViewClient, onApplyProposal }) => {
+const ProposalCard = ({ proposal, onApplyProposal }) => {
     return (
         <div className="group bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 overflow-hidden hover:bg-white/10 hover:border-blue-400/30 hover:shadow-xl hover:shadow-blue-500/10 transition-all duration-300 hover:-translate-y-2 relative">
             {proposal.is_featured && (
@@ -46,13 +47,13 @@ const ProposalCard = ({ proposal, onViewClient, onApplyProposal }) => {
                             <ExternalLink size={16} />
                             <span>Apply Now</span>
                         </button>
-                        <button
-                            onClick={() => onViewClient(proposal.client)}
+                        <Link
+                            to={`/freelancer/clients/${proposal.client.id}`}
                             className="bg-white/10 backdrop-blur-sm text-white px-4 py-3 rounded-xl font-medium hover:bg-white/20 transition-all duration-200 shadow-lg hover:shadow-xl flex items-center justify-center space-x-2 text-sm border border-white/20 hover:border-white/40 hover:scale-105 min-w-[120px]"
                         >
                             <Eye size={16} />
-                            <span>View Client</span>
-                        </button>
+                            <span>View Profile</span>
+                        </Link>
                     </div>
                 </div>
             </div>
@@ -126,7 +127,7 @@ const ProposalCard = ({ proposal, onViewClient, onApplyProposal }) => {
                 <div className="flex items-center justify-between mt-3 pt-3 border-t border-white/5">
                     <div className="flex items-center gap-2">
                         <div className={`w-2 h-2 rounded-full ${proposal.status === 'open' ? 'bg-green-400' :
-                                proposal.status === 'closed' ? 'bg-red-400' : 'bg-yellow-400'
+                            proposal.status === 'closed' ? 'bg-red-400' : 'bg-yellow-400'
                             }`}></div>
                         <span className="text-white/60 text-xs capitalize">{proposal.status}</span>
                     </div>
@@ -186,7 +187,7 @@ const ExploreProposalsSection = () => {
         skills: ''
     });
 
-    const navigate = useNavigate();
+    // const navigate = useNavigate();
 
     useEffect(() => {
         if (!token) {
@@ -311,10 +312,6 @@ const ExploreProposalsSection = () => {
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
-    const handleViewClient = (client) => {
-        navigate(`/clients/${client.id}/view`, { state: { clientProfileData: client } });
-    };
-
     const handleApplyProposal = (proposal) => {
         setSelectedProposal(proposal);
         setApplyModalVisible(true);
@@ -330,7 +327,7 @@ const ExploreProposalsSection = () => {
 
         try {
             const response = await api.post(
-                '/api/v1/proposals/applications/',
+                '/api/v1/gigs/proposal-orders/',
                 {
                     proposal_id: selectedProposal.id,
                     message: message,
@@ -541,7 +538,6 @@ const ExploreProposalsSection = () => {
                         <ProposalCard
                             key={proposal.id}
                             proposal={proposal}
-                            onViewClient={handleViewClient}
                             onApplyProposal={handleApplyProposal}
                         />
                     ))}
