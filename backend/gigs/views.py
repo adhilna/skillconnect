@@ -2,7 +2,7 @@ from rest_framework import viewsets, permissions, status, filters
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from .models import Service, Proposal, ServiceOrder, ProposalOrder
 from .serializers import ServiceSerializer, ProposalSerializer, ServiceOrderSerializer, ExploreProposalSerializer, ProposalOrderSerializer
-from .pagination import ExploreServicesPagination
+from .pagination import ExploreServicesPagination, StandardResultsSetPagination
 import pprint
 import json
 from rest_framework.response import Response
@@ -171,6 +171,7 @@ class ExploreProposalsViewSet(viewsets.ReadOnlyModelViewSet):
 class ServiceOrderViewSet(viewsets.ModelViewSet):
     queryset = ServiceOrder.objects.all().order_by('-created_at')
     serializer_class = ServiceOrderSerializer
+    pagination_class = StandardResultsSetPagination
 
     def get_permissions(self):
         if self.action == 'create':
@@ -240,6 +241,7 @@ class ServiceOrderViewSet(viewsets.ModelViewSet):
 class ProposalOrderViewSet(viewsets.ModelViewSet):
     queryset = ProposalOrder.objects.all().order_by('-created_at')
     serializer_class = ProposalOrderSerializer
+    pagination_class = StandardResultsSetPagination
 
     def get_permissions(self):
         if self.action == 'create':

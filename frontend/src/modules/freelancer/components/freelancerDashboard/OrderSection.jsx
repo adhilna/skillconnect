@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useContext, useRef } from 'react';
-import { ShoppingCart, Filter, X } from 'lucide-react';
+import { ShoppingCart, Filter, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import api from '../../../../api/api'; // adjust this path as needed
 import { AuthContext } from '../../../../context/AuthContext';
 import OrderItem from './OrderItem';
+
 
 const OrderSection = ({ selectedOrderId, onSelectOrder }) => {
   const { token } = useContext(AuthContext);
@@ -11,6 +12,12 @@ const OrderSection = ({ selectedOrderId, onSelectOrder }) => {
   const [error, setError] = useState(null);
   const [activeFilter, setActiveFilter] = useState('all');
   const [showFilters, setShowFilters] = useState(false);
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalOrdersCount, setTotalOrdersCount] = useState(0);
+  const itemsPerPage = 6;
+  const totalPages = Math.ceil(totalOrdersCount / itemsPerPage);
+
 
   const orderRefs = useRef({});
 
@@ -33,6 +40,7 @@ const OrderSection = ({ selectedOrderId, onSelectOrder }) => {
             ? response.data
             : response.data.results || []
         );
+        setTotalOrdersCount(response.data.count || 0);
       } catch (err) {
         console.error('Failed to fetch orders:', err);
         setError('Failed to load orders.');
@@ -43,7 +51,7 @@ const OrderSection = ({ selectedOrderId, onSelectOrder }) => {
     };
 
     fetchOrders();
-  }, [token]);
+  }, [token, currentPage]);
 
   const handleStatusChange = async (orderId, newStatus) => {
     if (!token) return;
@@ -121,6 +129,11 @@ const OrderSection = ({ selectedOrderId, onSelectOrder }) => {
       count: orders.filter((o) => o.status === 'rejected').length,
     },
   ];
+
+  const handlePageChange = (page) => {
+    if (page < 1 || page > totalPages) return;
+    setCurrentPage(page);
+  };
 
   return (
     <div className="space-y-6">
@@ -240,6 +253,50 @@ const OrderSection = ({ selectedOrderId, onSelectOrder }) => {
           className="fixed inset-0 z-5"
           onClick={() => setShowFilters(false)}
         />
+      )}
+      {totalPages > 1 && (
+        <div className="flex justify-center gap-2 pt-8 flex-wrap">
+          <button
+            onClick={() => handlePageChange(currentPage - 1)}
+            disabled={currentPage === 1}
+            className="px-3 py-2 bg-white/10 text-white rounded-lg disabled:opacity-50 hover:bg-white/20 transition-all"
+          >
+            <ChevronLeft size={18} />
+          </button>
+
+          {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
+            let pageNum;
+            if (totalPages <= 5) {
+              pageNum = i + 1;
+            } else if (currentPage <= 3) {
+              pageNum = i + 1;
+            } else if (currentPage >= totalPages - 2) {
+              pageNum = totalPages - 4 + i;
+            } else {
+              pageNum = currentPage - 2 + i;
+            }
+            return (
+              <button
+                key={pageNum}
+                onClick={() => handlePageChange(pageNum)}
+                className={`px-4 py-2 rounded-lg transition-all ${pageNum === currentPage
+                  ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white'
+                  : 'text-white bg-white/10 hover:bg-white/20'
+                  }`}
+              >
+                {pageNum}
+              </button>
+            );
+          })}
+
+          <button
+            onClick={() => handlePageChange(currentPage + 1)}
+            disabled={currentPage === totalPages}
+            className="px-3 py-2 bg-white/10 text-white rounded-lg disabled:opacity-50 hover:bg-white/20 transition-all"
+          >
+            <ChevronRight size={18} />
+          </button>
+        </div>
       )}
     </div>
   );

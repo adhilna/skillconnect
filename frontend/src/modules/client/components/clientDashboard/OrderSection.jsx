@@ -2,6 +2,8 @@ import React, { useState, useEffect, useContext, useRef } from 'react';
 import api from '../../../../api/api';
 import { AuthContext } from '../../../../context/AuthContext';
 import OrderItem from './OrderItem';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
+
 
 const ClientProposalOrdersSection = ({ selectedOrderId, onSelectOrder }) => {
     const { token } = useContext(AuthContext);
@@ -14,8 +16,16 @@ const ClientProposalOrdersSection = ({ selectedOrderId, onSelectOrder }) => {
 
     // Pagination vars
     const [currentPage, setCurrentPage] = useState(1);
-    const [totalPages, setTotalPages] = useState(1);
-    // const itemsPerPage = 10;
+    const [totalOrdersCount, setTotalOrdersCount] = useState(0);
+
+    const itemsPerPage = 6;
+    const totalPages = Math.ceil(totalOrdersCount / itemsPerPage);
+
+    const handlePageChange = (page) => {
+        if (page < 1 || page > totalPages) return;
+        setCurrentPage(page);
+    };
+
 
     useEffect(() => {
         if (selectedOrderId && orderRefs.current[selectedOrderId]) {
@@ -42,8 +52,8 @@ const ClientProposalOrdersSection = ({ selectedOrderId, onSelectOrder }) => {
                 console.log('API response data:', response.data);
                 console.log('orders state:', orders);
                 console.log('filteredOrders:', filteredOrders);
-                setOrders(response.data || []);
-                // setTotalPages(Math.ceil(response.data.count / itemsPerPage));
+                setOrders(response.data.results || []);
+                setTotalOrdersCount(response.data.count || 0);
             } catch (err) {
                 console.error('Failed to fetch proposal orders:', err);
                 setError('Failed to load proposal orders.');
@@ -199,7 +209,52 @@ const ClientProposalOrdersSection = ({ selectedOrderId, onSelectOrder }) => {
                 </div>
             )}
 
-            {/* TODO: Add Pagination Controls Here if needed */}
+            {totalPages > 1 && (
+                <div className="flex justify-center gap-2 pt-8 flex-wrap">
+                    <button
+                        onClick={() => handlePageChange(currentPage - 1)}
+                        disabled={currentPage === 1}
+                        className="px-3 py-2 bg-white/10 text-white rounded-lg disabled:opacity-50 hover:bg-white/20 transition-all"
+                    >
+                        <ChevronLeft size={18} />
+                    </button>
+
+                    {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
+                        let pageNum;
+                        if (totalPages <= 5) {
+                            pageNum = i + 1;
+                        } else if (currentPage <= 3) {
+                            pageNum = i + 1;
+                        } else if (currentPage >= totalPages - 2) {
+                            pageNum = totalPages - 4 + i;
+                        } else {
+                            pageNum = currentPage - 2 + i;
+                        }
+                        return (
+                            <button
+                                key={pageNum}
+                                onClick={() => handlePageChange(pageNum)}
+                                className={`px-4 py-2 rounded-lg transition-all ${pageNum === currentPage
+                                    ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white'
+                                    : 'text-white bg-white/10 hover:bg-white/20'
+                                    }`}
+                            >
+                                {pageNum}
+                            </button>
+                        );
+                    })}
+
+                    <button
+                        onClick={() => handlePageChange(currentPage + 1)}
+                        disabled={currentPage === totalPages}
+                        className="px-3 py-2 bg-white/10 text-white rounded-lg disabled:opacity-50 hover:bg-white/20 transition-all"
+                    >
+                        <ChevronRight size={18} />
+                    </button>
+                </div>
+            )}
+
+
         </div>
     );
 };
