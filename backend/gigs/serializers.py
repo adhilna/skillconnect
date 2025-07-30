@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from .models import Service, Proposal, ServiceOrder
-from profiles.serializers import FreelancerProfileSetupSerializer, FreelancerPublicDetailSerializer, ClientPublicMinimalSerializer, FreelancerPublicMinimalSerializer
+from profiles.serializers import FreelancerProfileSetupSerializer, FreelancerPublicDetailSerializer, ClientPublicMinimalSerializer, ClientPublicDetailSerializer
 from profiles.models import FreelancerProfile, ClientProfile
 from core.models import Skill, Category
 from core.serializers import CategorySerializer, SkillSerializer
@@ -187,6 +187,23 @@ class ExploreServiceSerializer(serializers.ModelSerializer):
 
     def get_skills_output(self, obj):
         return [{"id": skill.id, "name": skill.name} for skill in obj.skills.all()]
+
+class ExploreProposalSerializer(serializers.ModelSerializer):
+    client = ClientPublicDetailSerializer(read_only=True)
+    category = CategorySerializer(read_only=True)
+    skills_output = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Proposal
+        fields = ['id', 'title', 'description', 'category', 'category_id',
+            'skills_output', 'budget_min', 'budget_max', 'timeline_days',
+            'project_scope', 'is_urgent', 'client',
+            'status', 'is_active', 'created_at', 'updated_at']
+
+    def get_skills_output(self, obj):
+        return [{"id": skill.id, "name": skill.name} for skill in obj.required_skills.all()]
+
+
 
 class ServiceOrderSerializer(serializers.ModelSerializer):
     client = ClientPublicMinimalSerializer(read_only=True)

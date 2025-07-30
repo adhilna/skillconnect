@@ -2,7 +2,7 @@ import React, { useState, useContext, useEffect } from 'react';
 import {
   Home, Briefcase, ShoppingCart, MessageCircle, Search, BarChart3,
   User, Settings, Bell, Menu, X, DollarSign, Star, TrendingUp, Clock,
-  Eye, Plus, Filter, Calendar, CheckCircle, AlertCircle,
+  Eye, Plus, Filter, Calendar, CheckCircle, AlertCircle, Compass
 } from 'lucide-react';
 import api from '../../../api/api';
 import { AuthContext } from '../../../context/AuthContext';
@@ -14,6 +14,7 @@ import MessagesSection from '../components/freelancerDashboard/MessagesSection';
 import ServicesSection from '../components/freelancerDashboard/ServicesSection';
 import BrowseClientSection from '../components/freelancerDashboard/BrowseClientSection';
 import OrderSection from '../components/freelancerDashboard/OrderSection';
+import ExploreProposalsSection from '../components/freelancerDashboard/ExploreProposalsSection';
 
 
 const FreelancerDashboard = () => {
@@ -29,6 +30,7 @@ const FreelancerDashboard = () => {
   const navigationItems = [
     { id: 'dashboard', label: 'Dashboard', icon: Home },
     { id: 'browse', label: 'Browse Clients', icon: Search },
+    { id: 'explore', label: 'Explore Proposals', icon: Compass },
     { id: 'gigs', label: 'My Services', icon: Briefcase },
     { id: 'orders', label: 'Orders', icon: ShoppingCart },
     { id: 'messages', label: 'Messages', icon: MessageCircle },
@@ -84,6 +86,8 @@ const FreelancerDashboard = () => {
           loading={loadingClients}
           error={clientsError}
         />
+      case 'explore':
+        return <ExploreProposalsSection />;
       case 'gigs':
         return <ServicesSection />;
       case 'orders':

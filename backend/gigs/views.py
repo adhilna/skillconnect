@@ -1,7 +1,7 @@
 from rest_framework import viewsets, permissions, status, filters
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from .models import Service, Proposal, ServiceOrder
-from .serializers import ServiceSerializer, ProposalSerializer, ServiceOrderSerializer
+from .serializers import ServiceSerializer, ProposalSerializer, ServiceOrderSerializer, ExploreProposalSerializer
 from .pagination import ExploreServicesPagination
 import pprint
 import json
@@ -119,7 +119,7 @@ class ServiceFilter(django_filters.FilterSet):
     max_price = django_filters.NumberFilter(field_name='price', lookup_expr='lte')
     delivery_time = django_filters.NumberFilter(field_name='delivery_time', lookup_expr='lte')
     skills = django_filters.CharFilter(field_name='skills__name', lookup_expr='icontains')
-    
+
     class Meta:
         model = Service
         fields = ['category', 'min_price', 'max_price', 'delivery_time', 'skills']
@@ -212,3 +212,29 @@ class ServiceOrderViewSet(viewsets.ModelViewSet):
         serializer.save()
 
         return Response(serializer.data)
+
+class ExploreProposalFilter(django_filters.FilterSet):
+    min_budget = django_filters.NumberFilter(field_name='budget_min', lookup_expr='gte')
+    max_budget = django_filters.NumberFilter(field_name='budget_max', lookup_expr='lte')
+    delivery_time = django_filters.NumberFilter(field_name='timeline_days', lookup_expr='lte')
+    skills = django_filters.CharFilter(field_name='required_skills__name', lookup_expr='icontains')
+
+    class Meta:
+        model = Proposal
+        fields = ['category', 'min_budget', 'max_budget', 'delivery_time', 'skills']
+
+
+class ExploreProposalsViewSet(viewsets.ReadOnlyModelViewSet):
+    serializer_class = ExploreProposalSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    pagination_class = ExploreServicesPagination
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    filterset_class = ExploreProposalFilter
+    search_fields = ['title', 'description', 'category__name', 'skills__name', 'client__user__username']
+    ordering_fields = ['budget', 'delivery_time', 'created_at']
+
+    def get_queryset(self):
+        return Proposal.objects.filter(is_active=True) \
+            .select_related('client', 'category') \
+            .prefetch_related('required_skills')
+
