@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Bell, X } from 'lucide-react';
 import useNotificationsWebSocket from './useNotificationsWebSocket';
 
-const NotificationDropdown = () => {
+const NotificationDropdown = ({ onNotificationClick }) => {
     const notifications = useNotificationsWebSocket();
     const [isOpen, setIsOpen] = useState(false);
     const [viewedNotifications, setViewedNotifications] = useState(new Set());
@@ -131,7 +131,10 @@ const NotificationDropdown = () => {
                                                      transition-all duration-300 ease-out
                                                      transform hover:translate-x-1 hover:shadow-lg
                                                      group shadow-lg"
-                                            onClick={() => alert('Update soon')}
+                                            onClick={() => {
+                                                if (onNotificationClick) onNotificationClick(notif);
+                                                setIsOpen(false); // close dropdown after click
+                                            }}
                                         >
                                             {/* Glass effect overlay for message box */}
                                             <div className="absolute inset-0 bg-gradient-to-r from-white/5 via-white/10 to-white/5 

@@ -2,7 +2,7 @@ import React from 'react';
 import { Menu, Calendar, Bell, User } from 'lucide-react';
 import NotificationDropdown from '../notifications/NotificationDropdown';
 
-const Header = ({ activeSection, setSidebarOpen, profileData, firstLetter }) => (
+const Header = ({ activeSection, setSidebarOpen, profileData, firstLetter, onNotificationClick }) => (
     <header className="bg-black/20 backdrop-blur-lg border-b border-white/10 px-6 py-4 sticky top-0 z-30">
         <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
@@ -24,11 +24,7 @@ const Header = ({ activeSection, setSidebarOpen, profileData, firstLetter }) => 
                     <Calendar size={16} className="text-white/70" />
                     <span className="text-white/70 text-sm">{new Date().toLocaleDateString()}</span>
                 </div>
-                {/* <button className="relative p-2 text-white/70 hover:text-white rounded-lg hover:bg-white/10 transition-colors">
-                    <Bell size={20} />
-                    <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-pulse"></span>
-                </button> */}
-                <NotificationDropdown />
+                <NotificationDropdown onNotificationClick={onNotificationClick} />
                 <div className="flex items-center space-x-3">
                     <div className="w-10 h-10 bg-gradient-to-r from-blue-400 to-cyan-400 rounded-full flex items-center justify-center shadow-lg">
                         <span className="text-white font-bold text-lg">

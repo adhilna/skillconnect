@@ -71,8 +71,8 @@ const chatListData = [
 const Message = ({ sender, text, time, isMe, status }) => (
   <div className={`flex mb-4 ${isMe ? 'justify-end' : 'justify-start'}`}>
     <div className={`max-w-xs lg:max-w-md px-4 py-2 rounded-2xl ${isMe
-        ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white'
-        : 'bg-white/10 text-white border border-white/20'
+      ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white'
+      : 'bg-white/10 text-white border border-white/20'
       }`}>
       {!isMe && <div className="font-medium text-sm opacity-80 mb-1">{sender}</div>}
       <p className="text-sm">{text}</p>

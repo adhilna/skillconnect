@@ -1,16 +1,18 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect, useContext, useRef } from 'react';
 import { ShoppingCart, Filter, X } from 'lucide-react';
 import api from '../../../../api/api'; // adjust this path as needed
 import { AuthContext } from '../../../../context/AuthContext';
 import OrderItem from './OrderItem';
 
-const OrderSection = () => {
+const OrderSection = ({ selectedOrderId, onSelectOrder }) => {
   const { token } = useContext(AuthContext);
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [activeFilter, setActiveFilter] = useState('all');
   const [showFilters, setShowFilters] = useState(false);
+
+  const orderRefs = useRef({});
 
   useEffect(() => {
     if (!token) return;
@@ -76,6 +78,14 @@ const OrderSection = () => {
     }
   };
 
+  useEffect(() => {
+    if (selectedOrderId && orderRefs.current[selectedOrderId]) {
+      orderRefs.current[selectedOrderId].scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+      // Optionally: you can highlight visually by adding a CSS class
+    }
+  }, [selectedOrderId]);
+
   // Sort orders: pending first, then accepted, then cancelled, then rejected
   const sortedOrders = [...orders].sort((a, b) => {
     const statusOrder = { pending: 0, accepted: 1, cancelled: 2, rejected: 3 };
@@ -138,8 +148,8 @@ const OrderSection = () => {
                       setShowFilters(false);
                     }}
                     className={`w-full text-left px-3 py-2 rounded-lg transition-colors flex items-center justify-between ${activeFilter === option.value
-                        ? 'bg-white/20 text-white'
-                        : 'text-white/70 hover:bg-white/10 hover:text-white'
+                      ? 'bg-white/20 text-white'
+                      : 'text-white/70 hover:bg-white/10 hover:text-white'
                       }`}
                   >
                     <span>{option.label}</span>
@@ -180,23 +190,30 @@ const OrderSection = () => {
       ) : filteredOrders.length > 0 ? (
         <div className="space-y-4">
           {filteredOrders.map((order) => (
-            <OrderItem
+            <div
               key={order.id}
-              title={order.service?.title ?? 'No Title'}
-              client={order.client?.name ?? 'Unknown Client'}
-              status={order.status}
-              amount={order.service?.price ? `$${order.service.price}` : 'N/A'}
-              deadline={
-                order.service?.delivery_time
-                  ? `${order.service.delivery_time} days`
-                  : 'N/A'
-              }
-              message={order.message}
-              createdAt={order.created_at}
-              onAccept={() => handleStatusChange(order.id, 'accepted')}
-              onReject={() => handleStatusChange(order.id, 'rejected')}
-              onCancel={() => handleCancel(order.id)} // New cancellation handler
-            />
+              ref={(el) => { orderRefs.current[order.id] = el; }}
+              className={`${order.id === selectedOrderId ? 'ring-2 ring-purple-500 rounded-lg' : ''}`}
+              onClick={() => onSelectOrder && onSelectOrder(order.id)}
+            >
+              <OrderItem
+                key={order.id}
+                title={order.service?.title ?? 'No Title'}
+                client={order.client?.name ?? 'Unknown Client'}
+                status={order.status}
+                amount={order.service?.price ? `$${order.service.price}` : 'N/A'}
+                deadline={
+                  order.service?.delivery_time
+                    ? `${order.service.delivery_time} days`
+                    : 'N/A'
+                }
+                message={order.message}
+                createdAt={order.created_at}
+                onAccept={() => handleStatusChange(order.id, 'accepted')}
+                onReject={() => handleStatusChange(order.id, 'rejected')}
+                onCancel={() => handleCancel(order.id)}
+              />
+            </div>
           ))}
         </div>
       ) : (

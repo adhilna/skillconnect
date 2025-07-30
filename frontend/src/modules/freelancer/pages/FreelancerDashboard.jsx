@@ -21,6 +21,9 @@ const FreelancerDashboard = () => {
   const [activeSection, setActiveSection] = useState('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
+  const [selectedOrderId, setSelectedOrderId] = useState(null);
+
+
   const [clients, setClients] = useState([]);
   const [loadingClients, setLoadingClients] = useState(false);
   const [clientsError, setClientsError] = useState(null);
@@ -91,7 +94,10 @@ const FreelancerDashboard = () => {
       case 'gigs':
         return <ServicesSection />;
       case 'orders':
-        return <OrderSection />;
+        return <OrderSection
+          selectedOrderId={selectedOrderId}
+          onSelectOrder={setSelectedOrderId}
+        />;
       case 'messages':
         return <MessagesSection />;
       case 'requests':
@@ -201,7 +207,12 @@ const FreelancerDashboard = () => {
                 <Bell size={20} />
                 <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-pulse"></span>
               </button> */}
-              <NotificationDropdown />
+              <NotificationDropdown
+                onNotificationClick={(notif) => {
+                  setActiveSection('orders');     // Switch to orders tab
+                  setSelectedOrderId(notif.id);   // Set to specific order ID
+                }}
+              />
 
               <div className="flex items-center space-x-3">
                 <div className="w-10 h-10 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full flex items-center justify-center shadow-lg">

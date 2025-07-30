@@ -1,19 +1,28 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect, useContext, useRef } from 'react';
 import api from '../../../../api/api';
 import { AuthContext } from '../../../../context/AuthContext';
 import OrderItem from './OrderItem';
 
-const ClientProposalOrdersSection = () => {
+const ClientProposalOrdersSection = ({ selectedOrderId, onSelectOrder }) => {
     const { token } = useContext(AuthContext);
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const [activeFilter, setActiveFilter] = useState('all');
 
+    const orderRefs = useRef({});
+
     // Pagination vars
     const [currentPage, setCurrentPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
     // const itemsPerPage = 10;
+
+    useEffect(() => {
+        if (selectedOrderId && orderRefs.current[selectedOrderId]) {
+            orderRefs.current[selectedOrderId].scrollIntoView({ behavior: 'smooth', block: 'center' });
+            // Optionally highlight with CSS
+        }
+    }, [selectedOrderId]);
 
     // Fetch proposal orders from backend
     useEffect(() => {
@@ -157,24 +166,31 @@ const ClientProposalOrdersSection = () => {
             ) : filteredOrders.length > 0 ? (
                 <div className="space-y-4">
                     {filteredOrders.map((order) => (
-                        <OrderItem
+                        <div
                             key={order.id}
-                            proposalTitle={order.proposal?.title ?? 'No Title'}
-                            freelancerName={order.freelancer?.name ?? 'Unknown Freelancer'}
-                            status={order.status}
-                            amountRange={
-                                order.proposal
-                                    ? `$${order.proposal.budget_min} - $${order.proposal.budget_max}`
-                                    : 'N/A'
-                            }
-                            timelineDays={order.proposal?.timeline_days ?? 'N/A'}
-                            message={order.message}
-                            createdAt={order.created_at}
-                            onAccept={() => handleStatusChange(order.id, 'accepted')}
-                            onReject={() => handleStatusChange(order.id, 'rejected')}
-                            onCancel={() => handleCancel(order.id)}
-                            onMessage={() => handleMessage(order)}
-                        />
+                            ref={el => orderRefs.current[order.id] = el}
+                            className={`${order.id === selectedOrderId ? 'ring-2 ring-blue-500 rounded-lg' : ''}`} // example highlight
+                            onClick={() => onSelectOrder && onSelectOrder(order.id)}
+                        >
+                            <OrderItem
+                                key={order.id}
+                                proposalTitle={order.proposal?.title ?? 'No Title'}
+                                freelancerName={order.freelancer?.name ?? 'Unknown Freelancer'}
+                                status={order.status}
+                                amountRange={
+                                    order.proposal
+                                        ? `$${order.proposal.budget_min} - $${order.proposal.budget_max}`
+                                        : 'N/A'
+                                }
+                                timelineDays={order.proposal?.timeline_days ?? 'N/A'}
+                                message={order.message}
+                                createdAt={order.created_at}
+                                onAccept={() => handleStatusChange(order.id, 'accepted')}
+                                onReject={() => handleStatusChange(order.id, 'rejected')}
+                                onCancel={() => handleCancel(order.id)}
+                                onMessage={() => handleMessage(order)}
+                            />
+                        </div>
                     ))}
                 </div>
             ) : (

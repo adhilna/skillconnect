@@ -20,6 +20,7 @@ import { AuthContext } from '../../../context/AuthContext';
 import api from '../../../api/api';
 import OrderSection from '../components/clientDashboard/OrderSection';
 
+
 const ClientDashboard = () => {
     const { token } = useContext(AuthContext);
     const location = useLocation();
@@ -31,6 +32,8 @@ const ClientDashboard = () => {
     const [profileId, setProfileId] = useState(null);
     const [freelancers, setFreelancers] = useState([]);
     const [loadingFreelancers, setLoadingFreelancers] = useState(false);
+    const [selectedOrderId, setSelectedOrderId] = useState(null);
+
 
     useEffect(() => {
         if (location.state?.section) {
@@ -213,7 +216,10 @@ const ClientDashboard = () => {
             case 'explore':
                 return <ExploreServicesSection />;
             case 'proposals':
-                return <ProposalsSection />;
+                return <ProposalsSection
+                    selectedOrderId={selectedOrderId}
+                    onSelectOrder={setSelectedOrderId}
+                />;
             case 'orders':
                 return <OrderSection />;
             case 'messages':
@@ -268,6 +274,10 @@ const ClientDashboard = () => {
                     setSidebarOpen={setSidebarOpen}
                     profileData={profileData}
                     firstLetter={firstLetter}
+                    onNotificationClick={(notif) => {
+                        setActiveSection('orders');
+                        setSelectedOrderId(notif.id);
+                    }}
                 />
 
                 {/* Page Content */}
