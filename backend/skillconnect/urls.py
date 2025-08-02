@@ -30,6 +30,7 @@ urlpatterns = [
     path('api/v1/profiles/', include('profiles.urls')),
     path('api/v1/core/', include('core.urls')),
     path('api/v1/gigs/', include('gigs.urls')),
+    path('api/v1/messaging/', include('messaging.urls')),
 ]
 
 
