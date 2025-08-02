@@ -273,7 +273,6 @@ const ProfileSection = () => {
     setLoading(false);
   };
 
-
   const handleInputChange = (field, value) => {
     setEditData(prev => {
       if (field.includes('.')) {

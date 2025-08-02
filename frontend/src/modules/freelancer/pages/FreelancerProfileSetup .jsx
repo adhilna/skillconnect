@@ -360,8 +360,6 @@ const FreelancerProfileSetup = () => {
             formData.append('social_links_input', JSON.stringify(backendData.social_links));
             formData.append('verification_input', JSON.stringify(backendData.verification));
 
-            // formData.append('data', JSON.stringify(payload));
-
             // Append profile picture if exists
             if (backendData.profile_picture && typeof backendData.profile_picture !== 'string') {
                 formData.append('profile_picture', backendData.profile_picture);

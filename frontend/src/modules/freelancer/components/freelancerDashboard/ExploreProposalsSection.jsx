@@ -8,6 +8,7 @@ import {
 import api from '../../../../api/api';
 import { AuthContext } from '../../../../context/AuthContext';
 import { Link } from 'react-router-dom';
+import { useToast } from '../../../../hooks/useToast';
 
 // ProposalCard mirrors ServiceCard but adapted fields for proposal
 // ProposalCard component updated to match your API payload structure
@@ -177,6 +178,8 @@ const ExploreProposalsSection = () => {
     const [applyModalVisible, setApplyModalVisible] = useState(false);
     const [selectedProposal, setSelectedProposal] = useState(null);
 
+    const { success, error, warning } = useToast();
+
     const itemsPerPage = 9;
 
     const [filters, setFilters] = useState({
@@ -326,7 +329,7 @@ const ExploreProposalsSection = () => {
         if (!selectedProposal || !token) return;
 
         try {
-            const response = await api.post(
+            await api.post(
                 '/api/v1/gigs/proposal-orders/',
                 {
                     proposal_id: selectedProposal.id,
@@ -336,19 +339,19 @@ const ExploreProposalsSection = () => {
                     headers: { Authorization: `Bearer ${token}` },
                 }
             );
-            alert('Applied successfully!', response);
+            success('Applied successfully!');
             setSelectedProposal(null);
             setApplyModalVisible(false);
-        } catch (error) {
-            console.error('Apply error:', error.response?.data);
+        } catch (err) {
+            console.error('Apply error:', err.response?.data);
             const detail =
                 error?.response?.data?.detail ||
                 error?.response?.data?.non_field_errors?.[0];
 
             if (detail && detail.toLowerCase().includes('already have an active application')) {
-                alert('You already have an active application for this proposal.');
+                warning('You already have an active application for this proposal.');
             } else {
-                alert('Failed to apply. Please try again.');
+                error('Failed to apply. Please try again.');
             }
 
             setSelectedProposal(null);

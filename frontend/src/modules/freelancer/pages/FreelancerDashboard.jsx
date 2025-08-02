@@ -202,11 +202,6 @@ const FreelancerDashboard = () => {
                 <Calendar size={16} className="text-white/70" />
                 <span className="text-white/70 text-sm">{new Date().toLocaleDateString()}</span>
               </div>
-
-              {/* <button className="relative p-2 text-white/70 hover:text-white rounded-lg hover:bg-white/10 transition-colors">
-                <Bell size={20} />
-                <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-pulse"></span>
-              </button> */}
               <NotificationDropdown
                 onNotificationClick={(notif) => {
                   setActiveSection('orders');     // Switch to orders tab

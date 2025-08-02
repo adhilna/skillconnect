@@ -5,7 +5,7 @@ export const ToastContext = createContext(); // ✅ Make sure this is exported
 export const ToastProvider = ({ children }) => {
     const [toasts, setToasts] = useState([]);
 
-    const addToast = useCallback((message, type = 'info', duration = 5000) => {
+    const addToast = useCallback((message, type = 'info', duration = 2000) => {
         const id = Date.now() + Math.random();
         const toast = { id, message, type, duration };
 
