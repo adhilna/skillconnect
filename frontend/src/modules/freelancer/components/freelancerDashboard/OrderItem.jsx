@@ -66,7 +66,10 @@ const OrderItem = ({
   createdAt,
   onAccept,
   onReject,
-  onCancel, // new prop
+  onCancel,
+  orderType,
+  orderId,
+  onMessageClick,
 }) => {
   const statusConfig = getStatusConfig(status);
   const StatusIcon = statusConfig.icon;
@@ -82,9 +85,11 @@ const OrderItem = ({
   };
 
   const handleMessage = () => {
-    // You can implement your messaging logic here
-    console.log('Open message with client:', client);
-    // Example: navigate to message page or open modal
+    if (onMessageClick && orderType && orderId) {
+      onMessageClick(orderType, orderId);
+    } else {
+      alert('Cannot open chat: missing required info.');
+    }
   };
 
   return (

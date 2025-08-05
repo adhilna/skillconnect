@@ -2,6 +2,7 @@ from django.db import models
 from django.conf import settings
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
+from profiles.models import ClientProfile, FreelancerProfile
 
 User = settings.AUTH_USER_MODEL
 
@@ -17,12 +18,12 @@ class Conversation(models.Model):
 
     # Explicit participant roles linked to your profile models
     client = models.ForeignKey(
-        'profiles.ClientProfile',
+        ClientProfile,
         on_delete=models.CASCADE,
         related_name='client_conversations'
     )
     freelancer = models.ForeignKey(
-        'profiles.FreelancerProfile',
+        FreelancerProfile,
         on_delete=models.CASCADE,
         related_name='freelancer_conversations'
     )
@@ -137,7 +138,6 @@ class Message(models.Model):
     is_active = models.BooleanField(default=True)  # Soft delete support
 
     reactions = models.JSONField(default=dict, blank=True)  # emoji reactions: {"👍": 2, "❤️": 1}
-
     class Meta:
         ordering = ['created_at']
         indexes = [

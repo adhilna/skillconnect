@@ -50,7 +50,7 @@ INSTALLED_APPS = [
     'users',
     'profiles',
     'django_ratelimit',
-    'gigs',
+    'gigs.apps.GigsConfig',
     'core',
     'messaging',
 ]

@@ -3,28 +3,64 @@ from rest_framework.response import Response
 from django.contrib.contenttypes.models import ContentType
 from django.shortcuts import get_object_or_404
 from django.db.models import Q
-
+import logging
 from .models import Conversation, Message
 from .serializers import (
     ConversationSerializer,
     MessageSerializer,
     MessageCreateSerializer,
 )
+from channels.layers import get_channel_layer
+from asgiref.sync import async_to_sync
+
 
 # --- Custom Permission: Only participants can access
 
+logger = logging.getLogger(__name__)
+
 class IsParticipantPermission(permissions.BasePermission):
-    """
-    Allow access only to the client or freelancer assigned to the conversation.
-    """
+    def has_permission(self, request, view):
+        logger.debug(f"Has_permission called with user: {request.user}, method: {request.method}, kwargs: {view.kwargs}")
+
+        if request.method in permissions.SAFE_METHODS:
+            logger.debug("Safe method allowed")
+            return True
+
+        conversation_id = view.kwargs.get('conversation_id')
+        logger.debug(f"conversation_id from URL kwargs: {conversation_id}")
+
+        if conversation_id:
+            result = self._is_user_participant(request.user, conversation_id)
+            logger.debug(f"User participant check result: {result}")
+            return result
+
+        if hasattr(view, 'basename') and view.basename == 'conversation' and request.method == 'POST':
+            logger.debug("Allowing conversation creation POST")
+            return True
+
+        logger.debug("Permission denied in has_permission")
+        return False
+
     def has_object_permission(self, request, view, obj):
-        user = request.user
-        client_profile = getattr(user, "clientprofile", None)
-        freelancer_profile = getattr(user, "freelancerprofile", None)
-        return (
-            getattr(obj, "client", None) == client_profile or
-            getattr(obj, "freelancer", None) == freelancer_profile
-        )
+        result = self._is_user_participant(request.user, obj.id)
+        logger.debug(f"Has_object_permission check: {result}")
+        return result
+
+    def _is_user_participant(self, user, conversation_id):
+        try:
+            conversation = Conversation.objects.get(id=conversation_id)
+        except Conversation.DoesNotExist:
+            return False
+
+        client_profile = getattr(user, 'client_profile', None)
+        freelancer_profile = getattr(user, 'freelancer_profile', None)
+
+        client_ok = client_profile is not None and conversation.client == client_profile
+        freelancer_ok = freelancer_profile is not None and conversation.freelancer == freelancer_profile
+
+        print(f"Permission check for user {user.id}: client_ok={client_ok}, freelancer_ok={freelancer_ok}")
+
+        return client_ok or freelancer_ok
 
 # --- Conversation ViewSet
 
@@ -51,7 +87,6 @@ class ConversationViewSet(viewsets.ModelViewSet):
                 "order_type": "Must be 'serviceorder' or 'proposalorder'."
             })
 
-        # Dynamically load correct model
         from gigs.models import ServiceOrder, ProposalOrder
         model = ServiceOrder if order_type == "serviceorder" else ProposalOrder
 
@@ -60,13 +95,14 @@ class ConversationViewSet(viewsets.ModelViewSet):
         except model.DoesNotExist:
             raise serializers.ValidationError({"order_id": "Order not found."})
 
-        # Determine participants
         client = order.client
-        freelancer = order.service.freelancer if order_type == "serviceorder" else order.selected_freelancer
+        if order_type == "serviceorder":
+            freelancer = order.service.freelancer
+        else:  # proposalorder
+            freelancer = order.freelancer
 
-        # Prevent duplicate conversations
         content_type = ContentType.objects.get_for_model(model)
-        convo, _ = Conversation.objects.get_or_create(
+        convo, created = Conversation.objects.get_or_create(
             content_type=content_type,
             object_id=order.id,
             client=client,
@@ -91,8 +127,32 @@ class MessageViewSet(viewsets.ModelViewSet):
         self.check_object_permissions(self.request, conversation)
         return Message.objects.filter(conversation=conversation).order_by("created_at")
 
-    def perform_create(self, serializer):
-        conversation_id = self.kwargs.get("conversation_id")
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        conversation_id = self.kwargs.get('conversation_id')
         conversation = get_object_or_404(Conversation, id=conversation_id)
-        self.check_object_permissions(self.request, conversation)
-        serializer.save(sender=self.request.user, conversation=conversation)
+        context['conversation'] = conversation
+        return context
+
+    def perform_create(self, serializer):
+        conversation = self.get_serializer_context()['conversation']
+        msg = serializer.save(sender=self.request.user, conversation=conversation)
+
+        # Broadcast new message to connected websocket clients
+        from channels.layers import get_channel_layer
+        from asgiref.sync import async_to_sync
+        from .serializers import MessageSerializer
+
+        channel_layer = get_channel_layer()
+        group_name = f"chat_{conversation.id}"
+        serialized = MessageSerializer(msg).data
+
+        async_to_sync(channel_layer.group_send)(
+            group_name,
+            {
+                'type': 'chat_message',
+                'message': serialized,
+            }
+        )
+
+

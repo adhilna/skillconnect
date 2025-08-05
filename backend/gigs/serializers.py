@@ -8,7 +8,6 @@ import json
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 
-
 class ServiceSerializer(serializers.ModelSerializer):
     skills_output = serializers.SerializerMethodField()
     category = CategorySerializer(read_only=True)
@@ -203,8 +202,6 @@ class ExploreProposalSerializer(serializers.ModelSerializer):
     def get_skills_output(self, obj):
         return [{"id": skill.id, "name": skill.name} for skill in obj.required_skills.all()]
 
-
-
 class ServiceOrderSerializer(serializers.ModelSerializer):
     client = ClientPublicMinimalSerializer(read_only=True)
     service = ServiceSerializer(read_only=True)
@@ -347,4 +344,3 @@ class ProposalOrderSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
         # (Optional: Add validation to prevent multiple active applications by the same freelancer)
         return attrs
-

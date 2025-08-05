@@ -66,7 +66,9 @@ const OrderItem = ({
     onAccept,
     onReject,
     onCancel,
-    onMessage,
+    orderType,
+    orderId,
+    onMessageClick,
 }) => {
     const statusConfig = getStatusConfig(status);
     const StatusIcon = statusConfig.icon;
@@ -79,6 +81,14 @@ const OrderItem = ({
             hour: '2-digit',
             minute: '2-digit',
         });
+    };
+
+    const handleMessage = () => {
+        if (onMessageClick && orderType && orderId) {
+            onMessageClick(orderType, orderId);
+        } else {
+            alert('Cannot open chat: missing required info.');
+        }
     };
 
     return (
@@ -172,7 +182,7 @@ const OrderItem = ({
                     {status === 'accepted' && (
                         <>
                             <button
-                                onClick={onMessage}
+                                onClick={handleMessage}
                                 className="flex-1 bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white font-medium py-2 px-4 rounded-lg transition-all duration-200 flex items-center justify-center text-sm"
                             >
                                 <MessageCircle size={16} className="mr-1.5" />

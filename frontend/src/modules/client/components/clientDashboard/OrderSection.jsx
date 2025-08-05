@@ -5,7 +5,7 @@ import OrderItem from './OrderItem';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 
-const ClientProposalOrdersSection = ({ selectedOrderId, onSelectOrder }) => {
+const ClientProposalOrdersSection = ({ selectedOrderId, onSelectOrder, onStartChat }) => {
     const { token } = useContext(AuthContext);
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(false);
@@ -98,10 +98,30 @@ const ClientProposalOrdersSection = ({ selectedOrderId, onSelectOrder }) => {
         }
     };
 
-    const handleMessage = (order) => {
-        // Implement message functionality or navigation to chat etc.
-        console.log('Message freelancer:', order.freelancer);
+    const handleMessageClick = async (orderType, orderId) => {
+        if (!token) {
+            alert("You need to login to chat.");
+            return;
+        }
+
+        try {
+            const response = await api.post(
+                '/api/v1/messaging/conversations/',
+                { order_type: orderType, order_id: orderId },
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+            const conversationId = response.data.id;
+            if (onStartChat) {
+                onStartChat(conversationId);  // Tell dashboard to open chat UI in messages section
+            } else {
+                alert('Chat handler not found.');
+            }
+        } catch (error) {
+            console.error("Failed to open chat:", error.response?.data || error.message);
+            alert("Failed to open chat. Please try again later.");
+        }
     };
+
 
     // Sort orders pending > accepted > cancelled > rejected
     const sortedOrders = [...orders].sort((a, b) => {
@@ -198,7 +218,9 @@ const ClientProposalOrdersSection = ({ selectedOrderId, onSelectOrder }) => {
                                 onAccept={() => handleStatusChange(order.id, 'accepted')}
                                 onReject={() => handleStatusChange(order.id, 'rejected')}
                                 onCancel={() => handleCancel(order.id)}
-                                onMessage={() => handleMessage(order)}
+                                orderType="proposalorder"
+                                orderId={order.id}
+                                onMessageClick={handleMessageClick}
                             />
                         </div>
                     ))}

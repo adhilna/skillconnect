@@ -11,6 +11,8 @@ from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.exceptions import ValidationError
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
+from .utils import create_conversation_if_not_exists
+from django.shortcuts import get_object_or_404
 
 class IsClientPermission(permissions.BasePermission):
     def has_permission(self, request, view):
@@ -297,3 +299,12 @@ class ProposalOrderViewSet(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(serializer.data)
+
+def accept_order(request, pk):
+    order = get_object_or_404(ServiceOrder, pk=pk)
+    order.status = "accepted"
+    order.save()
+
+    create_conversation_if_not_exists(order)
+
+    return Response({'detail': 'Order accepted & conversation started'})

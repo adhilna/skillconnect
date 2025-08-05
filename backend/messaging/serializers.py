@@ -74,6 +74,10 @@ class MessageCreateSerializer(serializers.ModelSerializer):
         attachment_file = validated_data.pop('attachment_file', None)
         attachment = None
 
+        # Remove keys if present to avoid duplicates
+        validated_data.pop('sender', None)
+        validated_data.pop('conversation', None)
+
         if attachment_file:
             attachment = Attachment.objects.create(file=attachment_file)
 
@@ -85,26 +89,46 @@ class MessageCreateSerializer(serializers.ModelSerializer):
         )
         return message
 
+
+
 class ConversationSerializer(serializers.ModelSerializer):
     client_id = serializers.IntegerField(source='client.id', read_only=True)
     freelancer_id = serializers.IntegerField(source='freelancer.id', read_only=True)
     order_type = serializers.SerializerMethodField()
     order_id = serializers.SerializerMethodField()
-    last_message = serializers.SerializerMethodField()
+
+    client_name = serializers.SerializerMethodField()
+    client_profile_pic = serializers.SerializerMethodField()
+
+    freelancer_name = serializers.SerializerMethodField()
+    freelancer_profile_pic = serializers.SerializerMethodField()
+
+    service_title = serializers.SerializerMethodField()
+    service_price = serializers.SerializerMethodField()
+    service_deadline = serializers.SerializerMethodField()
+
+    # Keep last_message or remove it, up to you
 
     class Meta:
         model = Conversation
         fields = [
             'id',
             'client_id',
+            'client_name',
+            'client_profile_pic',
             'freelancer_id',
+            'freelancer_name',
+            'freelancer_profile_pic',
             'order_type',
             'order_id',
             'is_active',
             'created_at',
             'updated_at',
             'metadata',
-            'last_message',
+            # 'last_message',
+            'service_title',
+            'service_price',
+            'service_deadline',
         ]
         read_only_fields = ['created_at', 'updated_at', 'metadata', 'is_active']
 
@@ -114,14 +138,100 @@ class ConversationSerializer(serializers.ModelSerializer):
     def get_order_id(self, obj):
         return obj.object_id
 
-    def get_last_message(self, obj):
-        latest = obj.messages.order_by('-created_at').first()
-        if latest:
-            return {
-                'id': latest.id,
-                'content': latest.content,
-                'timestamp': latest.created_at,
-                'sender_id': latest.sender.id,
-                'message_type': latest.message_type,
-            }
+    def get_client_name(self, obj):
+        client = obj.client
+        if client:
+            first = getattr(client, 'first_name', '')
+            last = getattr(client, 'last_name', '')
+            full_name = f"{first} {last}".strip()
+            return full_name
         return None
+
+
+    def get_client_profile_pic(self, obj):
+        if obj.client and obj.client.profile_picture:
+            # Assuming profile_picture is an ImageField or URLField
+            request = self.context.get('request')
+            url = obj.client.profile_picture.url
+            if request is not None:
+                return request.build_absolute_uri(url)
+            return url
+        return None
+
+    def get_freelancer_name(self, obj):
+        freelancer = obj.freelancer
+        if freelancer:
+            first = getattr(freelancer, 'first_name', '')
+            last = getattr(freelancer, 'last_name', '')
+            full_name = f"{first} {last}".strip()
+            return full_name
+        return None
+
+    def get_freelancer_profile_pic(self, obj):
+        if obj.freelancer and obj.freelancer.profile_picture:
+            request = self.context.get('request')
+            url = obj.freelancer.profile_picture.url
+            if request is not None:
+                return request.build_absolute_uri(url)
+            return url
+        return None
+
+    def get_service_title(self, obj):
+        order = self._get_order(obj)
+        if order:
+            order_type = obj.content_type.model
+            if order_type == 'serviceorder':
+                service = getattr(order, 'service', None)
+                if service:
+                    return service.title
+            elif order_type == 'proposalorder':
+                proposal = getattr(order, 'proposal', None)
+                if proposal:
+                    return getattr(proposal, 'title', None)
+        return None
+
+
+    def get_service_price(self, obj):
+        order = self._get_order(obj)
+        if order:
+            order_type = obj.content_type.model
+            if order_type == 'serviceorder':
+                service = getattr(order, 'service', None)
+                if service and hasattr(service, 'price'):
+                    return f"${service.price}"
+            elif order_type == 'proposalorder':
+                proposal = getattr(order, 'proposal', None)
+                if proposal:
+                    budget_min = getattr(proposal, 'budget_min', None)
+                    budget_max = getattr(proposal, 'budget_max', None)
+                    if budget_min and budget_max:
+                        return f"${budget_min} - ${budget_max}"
+                    elif budget_min:
+                        return f"From ${budget_min}"
+        return None
+
+
+    def get_service_deadline(self, obj):
+        order = self._get_order(obj)
+        if order:
+            order_type = obj.content_type.model
+            if order_type == 'serviceorder':
+                service = getattr(order, 'service', None)
+                if service and hasattr(service, 'delivery_time'):
+                    return f"{service.delivery_time} days"
+            elif order_type == 'proposalorder':
+                proposal = getattr(order, 'proposal', None)
+                if proposal:
+                    timeline = getattr(proposal, 'timeline_days', None)  # or whatever deadline field exists
+                    if timeline:
+                        return f"{timeline} days"
+        return None
+
+
+
+    def _get_order(self, obj):
+        """
+        Helper to fetch the actual order instance related to the conversation
+        using GenericForeignKey content_type + object_id
+        """
+        return obj.content_type.get_object_for_this_type(id=obj.object_id)

@@ -109,6 +109,7 @@ class ServiceOrder(models.Model):
 
     def __str__(self):
         return f"Order #{self.id} by {self.client.first_name} {self.client.last_name} for {self.service.title}"
+
 class ProposalOrder(models.Model):
     proposal = models.ForeignKey(Proposal, on_delete=models.CASCADE, related_name='orders')
     client = models.ForeignKey(ClientProfile, on_delete=models.CASCADE, related_name='proposal_orders')

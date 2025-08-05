@@ -9,7 +9,7 @@ import Header from '../components/clientDashboard/Header';
 import DashboardOverview from '../components/clientDashboard/DashboardOverview';
 import BrowseTalentSection from '../components/clientDashboard/BrowseTalentSection';
 import ProposalsSection from '../components/clientDashboard/ProposalsSection';
-import MessagesSection from '../components/clientDashboard/MessagesSection';
+import MessagesSection from '../components/clientDashboard/messagesSection';
 import FreelancersSection from '../components/clientDashboard/FreelancersSection';
 import InvoicesSection from '../components/clientDashboard/InvoicesSection';
 import AnalyticsSection from '../components/clientDashboard/AnalyticsSection';
@@ -34,12 +34,19 @@ const ClientDashboard = () => {
     const [loadingFreelancers, setLoadingFreelancers] = useState(false);
     const [selectedOrderId, setSelectedOrderId] = useState(null);
 
+    const [activeConversationId, setActiveConversationId] = useState(null);
+
 
     useEffect(() => {
         if (location.state?.section) {
             setActiveSection(location.state.section);
         }
     }, [location.state]);
+
+    const startChatForConversation = (conversationId) => {
+        setActiveConversationId(conversationId);
+        setActiveSection('messages');
+    };
 
     useEffect(() => {
         if (!token) return;
@@ -221,9 +228,15 @@ const ClientDashboard = () => {
                     onSelectOrder={setSelectedOrderId}
                 />;
             case 'orders':
-                return <OrderSection />;
+                return <OrderSection
+                    selectedOrderId={selectedOrderId}
+                    onSelectOrder={setSelectedOrderId}
+                    onStartChat={startChatForConversation}
+                />;
             case 'messages':
-                return <MessagesSection />;
+                return <MessagesSection
+                conversationId={activeConversationId}
+                />;
             case 'freelancers':
                 return <FreelancersSection />;
             case 'invoices':

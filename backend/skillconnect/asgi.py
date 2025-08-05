@@ -10,11 +10,12 @@ django.setup()
 
 # Now import middleware and routing
 from gigs.middleware import JWTAuthMiddleware
-from gigs.routing import websocket_urlpatterns
+from gigs.routing import websocket_urlpatterns as gigs_websocket_urlpatterns
+from messaging.routing import websocket_urlpatterns as messaging_websocket_urlpatterns
 
 application = ProtocolTypeRouter({
     "http": get_asgi_application(),
     "websocket": JWTAuthMiddleware(
-        URLRouter(websocket_urlpatterns)
+        URLRouter(gigs_websocket_urlpatterns + messaging_websocket_urlpatterns)
     ),
 })

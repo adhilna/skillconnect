@@ -81,8 +81,8 @@ class LoginSerializer(serializers.Serializer):
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['email', 'role', 'first_login']
-        read_only_fields = ['email', 'role']
+        fields = ['id', 'email', 'role', 'first_login']
+        read_only_fields = ['id', 'email', 'role']
 
 class OTPSerializer(serializers.Serializer):
     email = serializers.EmailField()

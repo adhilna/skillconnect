@@ -5,7 +5,7 @@ import { AuthContext } from '../../../../context/AuthContext';
 import OrderItem from './OrderItem';
 
 
-const OrderSection = ({ selectedOrderId, onSelectOrder }) => {
+const OrderSection = ({ selectedOrderId, onSelectOrder, onStartChat }) => {
   const { token } = useContext(AuthContext);
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -17,7 +17,6 @@ const OrderSection = ({ selectedOrderId, onSelectOrder }) => {
   const [totalOrdersCount, setTotalOrdersCount] = useState(0);
   const itemsPerPage = 6;
   const totalPages = Math.ceil(totalOrdersCount / itemsPerPage);
-
 
   const orderRefs = useRef({});
 
@@ -83,6 +82,30 @@ const OrderSection = ({ selectedOrderId, onSelectOrder }) => {
       );
     } catch (err) {
       alert('Failed to cancel the order.', err);
+    }
+  };
+
+  const handleMessageClick = async (orderType, orderId) => {
+    if (!token) {
+      alert("You need to login to chat.");
+      return;
+    }
+
+    try {
+      const response = await api.post(
+        '/api/v1/messaging/conversations/',
+        { order_type: orderType, order_id: orderId },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      const conversationId = response.data.id;
+      if (onStartChat) {
+        onStartChat(conversationId);  // Tell dashboard to open chat UI in messages section
+      } else {
+        alert('Chat handler not found.');
+      }
+    } catch (error) {
+      console.error("Failed to open chat:", error.response?.data || error.message);
+      alert("Failed to open chat. Please try again later.");
     }
   };
 
@@ -225,6 +248,9 @@ const OrderSection = ({ selectedOrderId, onSelectOrder }) => {
                 onAccept={() => handleStatusChange(order.id, 'accepted')}
                 onReject={() => handleStatusChange(order.id, 'rejected')}
                 onCancel={() => handleCancel(order.id)}
+                orderType="serviceorder"
+                orderId={order.id}
+                onMessageClick={handleMessageClick}
               />
             </div>
           ))}

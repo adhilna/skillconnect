@@ -22,6 +22,7 @@ const FreelancerDashboard = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const [selectedOrderId, setSelectedOrderId] = useState(null);
+  const [activeConversationId, setActiveConversationId] = useState(null);
 
 
   const [clients, setClients] = useState([]);
@@ -79,6 +80,11 @@ const FreelancerDashboard = () => {
     }
   }, [activeSection, token]);
 
+  const startChatForConversation = (conversationId) => {
+    setActiveConversationId(conversationId);
+    setActiveSection('messages');
+  };
+
   const getCurrentSectionContent = () => {
     switch (activeSection) {
       case 'dashboard':
@@ -97,9 +103,12 @@ const FreelancerDashboard = () => {
         return <OrderSection
           selectedOrderId={selectedOrderId}
           onSelectOrder={setSelectedOrderId}
+          onStartChat={startChatForConversation}
         />;
       case 'messages':
-        return <MessagesSection />;
+        return <MessagesSection
+          conversationId={activeConversationId}
+        />;
       case 'requests':
         return <RequestsSection />;
       case 'analytics':
