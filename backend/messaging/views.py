@@ -4,7 +4,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.shortcuts import get_object_or_404
 from django.db.models import Q
 import logging
-from .models import Conversation, Message
+from .models import Conversation, Message, ConversationReadStatus
 from .serializers import (
     ConversationSerializer,
     MessageSerializer,
@@ -12,6 +12,7 @@ from .serializers import (
 )
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
+from django.utils.timezone import now
 
 
 # --- Custom Permission: Only participants can access
@@ -138,11 +139,6 @@ class MessageViewSet(viewsets.ModelViewSet):
         conversation = self.get_serializer_context()['conversation']
         msg = serializer.save(sender=self.request.user, conversation=conversation)
 
-        # Broadcast new message to connected websocket clients
-        from channels.layers import get_channel_layer
-        from asgiref.sync import async_to_sync
-        from .serializers import MessageSerializer
-
         channel_layer = get_channel_layer()
         group_name = f"chat_{conversation.id}"
         serialized = MessageSerializer(msg).data
@@ -155,4 +151,23 @@ class MessageViewSet(viewsets.ModelViewSet):
             }
         )
 
+    def list(self, request, *args, **kwargs):
+        conversation_id = kwargs.get("conversation_id")
+        conversation = get_object_or_404(Conversation, id=conversation_id)
+        self.check_object_permissions(request, conversation)
 
+        # Update last_read_at timestamp for the user on this conversation
+        ConversationReadStatus.objects.update_or_create(
+            user=request.user,
+            conversation=conversation,
+            defaults={'last_read_at': now()}
+        )
+
+        queryset = self.filter_queryset(self.get_queryset())
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)

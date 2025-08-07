@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Attachment, Message, Conversation
+from .models import Attachment, Message, Conversation, ConversationReadStatus
 
 class AttachmentSerializer(serializers.ModelSerializer):
     class Meta:
@@ -89,7 +89,12 @@ class MessageCreateSerializer(serializers.ModelSerializer):
         )
         return message
 
+class LastMessageSerializer(serializers.ModelSerializer):
+    sender_id = serializers.IntegerField(source='sender.id')
 
+    class Meta:
+        model = Message
+        fields = ['id', 'content', 'created_at', 'sender_id']
 
 class ConversationSerializer(serializers.ModelSerializer):
     client_id = serializers.IntegerField(source='client.id', read_only=True)
@@ -106,6 +111,10 @@ class ConversationSerializer(serializers.ModelSerializer):
     service_title = serializers.SerializerMethodField()
     service_price = serializers.SerializerMethodField()
     service_deadline = serializers.SerializerMethodField()
+
+    last_message = serializers.SerializerMethodField()
+
+    unread_count = serializers.SerializerMethodField()
 
     # Keep last_message or remove it, up to you
 
@@ -125,7 +134,8 @@ class ConversationSerializer(serializers.ModelSerializer):
             'created_at',
             'updated_at',
             'metadata',
-            # 'last_message',
+            'last_message',
+            'unread_count',
             'service_title',
             'service_price',
             'service_deadline',
@@ -146,7 +156,6 @@ class ConversationSerializer(serializers.ModelSerializer):
             full_name = f"{first} {last}".strip()
             return full_name
         return None
-
 
     def get_client_profile_pic(self, obj):
         if obj.client and obj.client.profile_picture:
@@ -190,7 +199,6 @@ class ConversationSerializer(serializers.ModelSerializer):
                     return getattr(proposal, 'title', None)
         return None
 
-
     def get_service_price(self, obj):
         order = self._get_order(obj)
         if order:
@@ -210,7 +218,6 @@ class ConversationSerializer(serializers.ModelSerializer):
                         return f"From ${budget_min}"
         return None
 
-
     def get_service_deadline(self, obj):
         order = self._get_order(obj)
         if order:
@@ -227,11 +234,31 @@ class ConversationSerializer(serializers.ModelSerializer):
                         return f"{timeline} days"
         return None
 
-
-
     def _get_order(self, obj):
         """
         Helper to fetch the actual order instance related to the conversation
         using GenericForeignKey content_type + object_id
         """
         return obj.content_type.get_object_for_this_type(id=obj.object_id)
+
+    def get_last_message(self, obj):
+        last_msg = obj.messages.filter(is_active=True).order_by('-created_at').first()
+        if last_msg:
+            return LastMessageSerializer(last_msg).data
+        return None
+
+    def get_unread_count(self, obj):
+        user = self.context.get('request').user
+        if not user.is_authenticated:
+            return 0
+
+        try:
+            last_read = obj.read_statuses.get(user=user).last_read_at
+        except ConversationReadStatus.DoesNotExist:
+            last_read = None
+
+        if last_read:
+            unread = obj.messages.filter(created_at__gt=last_read, is_active=True).exclude(sender=user).count()
+        else:
+            unread = obj.messages.exclude(sender=user).count()
+        return unread

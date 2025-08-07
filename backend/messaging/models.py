@@ -147,3 +147,11 @@ class Message(models.Model):
 
     def __str__(self):
         return f"Message #{self.pk} in Conversation #{self.conversation.pk} from User #{self.sender_id}"
+
+class ConversationReadStatus(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='conversation_reads')
+    conversation = models.ForeignKey(Conversation, on_delete=models.CASCADE, related_name='read_statuses')
+    last_read_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ('user', 'conversation')

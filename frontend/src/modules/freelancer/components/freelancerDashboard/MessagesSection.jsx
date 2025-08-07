@@ -1,4 +1,4 @@
-import React, { useState, useContext, useEffect } from 'react';
+import React, { useState, useContext, useEffect, useRef } from 'react';
 import api from '../../../../api/api';
 import { AuthContext } from '../../../../context/AuthContext';
 import { MessageCircle } from 'lucide-react';
@@ -24,6 +24,7 @@ const FreelancerChatDashboard = ({ conversationId }) => {
   const [showAttachmentMenu, setShowAttachmentMenu] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const socketRef = useRef(null);
 
   const isMobile = window.innerWidth < 768;
 
@@ -51,12 +52,9 @@ const FreelancerChatDashboard = ({ conversationId }) => {
           avatar: convo.client_profile_pic || '',
           lastMessage: convo.last_message?.content || '',
           time: convo.last_message
-            ? new Date(convo.last_message.timestamp).toLocaleTimeString([], {
-              hour: '2-digit',
-              minute: '2-digit',
-            })
+            ? new Date(convo.last_message.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
             : '',
-          unread: 0,
+          unread: convo.unread_count || 0,
           online: false,
           project: convo.service_title || `Order #${convo.order_id}`,
           budget: convo.service_price || '—',
@@ -158,16 +156,18 @@ const FreelancerChatDashboard = ({ conversationId }) => {
   useEffect(() => {
     if (!selectedChat || !token) return;
 
-    let socket;
+
     let isMounted = true;
 
     const backendHost = 'localhost:8000';
     const wsProtocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
     const wsUrl = `${wsProtocol}://${backendHost}/ws/messaging/chat/${selectedChat.id}/?token=${token}`;
+    socketRef.current = new WebSocket(wsUrl);
+
+    const socket = socketRef.current;
+
 
     try {
-      socket = new WebSocket(wsUrl);
-
       socket.onopen = () => {
         if (!isMounted) {
           socket.close();
@@ -191,36 +191,64 @@ const FreelancerChatDashboard = ({ conversationId }) => {
         if (!isMounted) return;
 
         const data = JSON.parse(event.data);
-        const isSenderMe = Number(data.sender_id) === Number(user.id);
 
-        console.log('Received WS message:', { id: data.id, isMe: isSenderMe, sender_id: data.sender_id, userId: user.id });
+        // Handle different incoming event types:
+        if (data.type === 'chat_message' || (!data.type && data.id)) {
+          // Normal chat message event (some backend messages might lack explicit type)
+          const isSenderMe = Number(data.sender_id) === Number(user.id);
 
-        const newMsg = {
-          ...data,
-          sender: isSenderMe ? 'Me' : selectedChat.name,
-          isMe: isSenderMe,
-          text: data.content,
-          time: new Date(data.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          status: data.status,
-          type: data.message_type,
-          reactions: data.reactions || {},
-          fileData: data.attachment ? {
-            name: data.attachment.file_name,
-            type: data.attachment.file_type || '',
-            size: `${(data.attachment.file_size / 1024).toFixed(1)} KB`,
-            url: data.attachment.file,
-          } : null,
-          paymentData: data.message_type === 'payment' ? {
-            amount: data.payment_amount,
-            description: data.content,
-            status: data.payment_status,
-            isRequest: true,
-            onPayment: () => alert('Implement payment logic'),
-          } : null,
-          voiceData: data.message_type === 'voice' ? { duration: data.voice_duration || '0:00' } : null,
-        };
+          const newMsg = {
+            ...data,
+            sender: isSenderMe ? 'Me' : selectedChat.name,
+            isMe: isSenderMe,
+            text: data.content,
+            time: new Date(data.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            status: data.status,
+            type: data.message_type,
+            reactions: data.reactions || {},
+            fileData: data.attachment ? {
+              name: data.attachment.file_name,
+              type: data.attachment.file_type || '',
+              size: `${(data.attachment.file_size / 1024).toFixed(1)} KB`,
+              url: data.attachment.file,
+            } : null,
+            paymentData: data.message_type === 'payment' ? {
+              amount: data.payment_amount,
+              description: data.content,
+              status: data.payment_status,
+              isRequest: true,
+              onPayment: () => alert('Implement payment logic'),
+            } : null,
+            voiceData: data.message_type === 'voice' ? { duration: data.voice_duration || '0:00' } : null,
+          };
 
-        setMessages(prev => sortMessages([...prev, newMsg]));
+          setMessages(prev => sortMessages([...prev, newMsg]));
+          return;
+        }
+
+        if (data.type === 'read') {
+          // Clear unread badge for the conversation that was read
+          setChatListData(prevChats =>
+            prevChats.map(chat =>
+              chat.id === data.conversation_id ? { ...chat, unread: 0 } : chat
+            )
+          );
+
+          return;
+        }
+
+        if (data.type === 'typing') {
+          // Update typing indicator for this conversation
+          setChatListData(prevChats =>
+            prevChats.map(chat =>
+              chat.id === data.conversation_id ? { ...chat, typing: data.typing } : chat
+            )
+          );
+          return;
+        }
+
+        // Optional: log if unknown message type is received
+        console.warn('Unknown WebSocket message type:', data);
       };
     } catch (error) {
       console.error("WebSocket initialization error", error);
@@ -399,6 +427,8 @@ const FreelancerChatDashboard = ({ conversationId }) => {
               newMessage={newMessage}
               setNewMessage={setNewMessage}
               onSend={handleSendMessage}
+              socket={socketRef.current}
+              selectedChat={selectedChat}
               attachedFiles={attachedFiles}
               onRemoveFile={(index) =>
                 setAttachedFiles((files) => files.filter((_, i) => i !== index))
