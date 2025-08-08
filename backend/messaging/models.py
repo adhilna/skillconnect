@@ -1,8 +1,10 @@
 from django.db import models
+from django.db.models import Q
 from django.conf import settings
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from profiles.models import ClientProfile, FreelancerProfile
+from gigs.models import ServiceOrder, ProposalOrder
 
 User = settings.AUTH_USER_MODEL
 
@@ -155,3 +157,49 @@ class ConversationReadStatus(models.Model):
 
     class Meta:
         unique_together = ('user', 'conversation')
+
+class Contract(models.Model):
+    STATUS_CHOICES = [
+        ('draft', 'Draft'),
+        ('pending', 'Pending Client Acceptance'),
+        ('accepted', 'Accepted'),
+        ('rejected', 'Rejected'),
+    ]
+    WORKFLOW_STEPS = [
+        'planning', 'draft', 'submitted', 'negotiation',
+        'accepted', 'started', 'milestone-1',
+        'review', 'completed', 'paid',
+    ]
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    deadline = models.DateField()
+    terms = models.TextField(blank=True)
+    milestones = models.TextField(blank=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='draft')
+    workflow_status = models.CharField(max_length=50, choices=[(step, step) for step in WORKFLOW_STEPS], default='planning')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    service_order = models.ForeignKey(
+        ServiceOrder,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='contract'
+    )
+    proposal_order = models.ForeignKey(
+        ProposalOrder,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='contract'
+    )
+
+    class Meta:
+        constraints = [
+            models.CheckConstraint(
+                check=(
+                    Q(service_order__isnull=False, proposal_order__isnull=True) |
+                    Q(service_order__isnull=True, proposal_order__isnull=False)
+                ),
+                name='contract_order_exclusive'
+            )
+        ]

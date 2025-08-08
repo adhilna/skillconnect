@@ -488,10 +488,18 @@ const ClientChatDashboard = ({ conversationId }) => {
 
                 const chats = res.data.map(convo => {
                     const name = convo.freelancer_name || `Freelancer ${convo.freelancer_id || ''}`;
-                    const avatar = convo.freelancer_profile_pic || ''; // fallback image or initials as needed
+                    const avatar = convo.freelancer_profile_pic || '';
                     const project = convo.service_title && convo.service_title.trim() !== '' ? convo.service_title : `Order #${convo.order_id}`;
-                    const budget = convo.service_price && convo.service_price !== 'null' ? convo.service_price : '';  // or '—'
+                    const budget = convo.service_price && convo.service_price !== 'null' ? convo.service_price : '';
                     const lastMessageContent = convo.last_message?.content || '';
+
+                    // Normalize orderType
+                    let normalizedOrderType = 'service';
+                    if (convo.order_type) {
+                        const type = convo.order_type.toLowerCase();
+                        if (type === 'proposalorder' || type === 'proposal') normalizedOrderType = 'proposal';
+                        else if (type === 'serviceorder' || type === 'service') normalizedOrderType = 'service';
+                    }
 
                     return {
                         id: convo.id,
@@ -508,8 +516,11 @@ const ClientChatDashboard = ({ conversationId }) => {
                         deadline: convo.service_deadline || '—',
                         status: convo.status || 'Active',
                         typing: convo.freelancer_typing || false,
+                        orderType: normalizedOrderType,
+                        orderId: convo.order_id,
                     };
                 });
+
 
 
                 setChatListData(chats);
@@ -971,6 +982,9 @@ const ClientChatDashboard = ({ conversationId }) => {
                             budget={selectedChat.budget}
                             deadline={selectedChat.deadline}
                             status={selectedChat.status}
+                            token={token}
+                            orderType={selectedChat.orderType}
+                            orderId={selectedChat.orderId}
                         />
 
                         {/* Messages Area */}

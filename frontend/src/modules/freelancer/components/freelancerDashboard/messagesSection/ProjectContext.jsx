@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Calendar, FileText, Clock, CheckCircle, X, ChevronDown, ChevronUp, Minimize2 } from 'lucide-react';
+import api from '../../../../../api/api';
 
-const ProjectContext = ({ project, budget, deadline, status }) => {
+const ProjectContext = ({ project, budget, deadline, status, token, orderType, orderId }) => {
     // Mock contract state
     const [contract, setContract] = useState(null); // null = no contract, 'pending', 'accepted', 'rejected'
     const [currentWorkflowStatus, setCurrentWorkflowStatus] = useState('planning');
@@ -14,6 +15,8 @@ const ProjectContext = ({ project, budget, deadline, status }) => {
         milestones: ''
     });
     const [isMinimized, setIsMinimized] = useState(false);
+    const [loadingContract, setLoadingContract] = useState(false);
+    const [error, setError] = useState(null);
 
     // Workflow steps
     const workflowSteps = [
@@ -29,21 +32,48 @@ const ProjectContext = ({ project, budget, deadline, status }) => {
         { value: 'paid', label: 'Paid' }
     ];
 
+    useEffect(() => {
+        if (!orderType || !orderId) return;  // wait until you have these props
+
+        setLoadingContract(true);
+        setError(null);
+
+        api.get(`/api/v1/messaging/contracts/?order_type=${orderType}&order_id=${orderId}`, {
+            headers: { Authorization: `Bearer ${token}` },
+        })
+            .then((response) => {
+                if (response.data.length > 0) {
+                    const c = response.data[0];
+                    setContract(c);
+                    setCurrentWorkflowStatus(c.workflow_status || 'planning');
+                    setContractForm({
+                        amount: c.amount || '',
+                        deadline: c.deadline || '',
+                        terms: c.terms || '',
+                        milestones: c.milestones || '',
+                    });
+                } else {
+                    setContract(null);
+                    setCurrentWorkflowStatus('planning');
+                    setContractForm({
+                        amount: '',
+                        deadline: '',
+                        terms: '',
+                        milestones: '',
+                    });
+                }
+            })
+            .catch((err) => {
+                setError('Failed to load contract data.');
+                console.error(err);
+            })
+            .finally(() => {
+                setLoadingContract(false);
+            });
+    }, [orderType, orderId, token]);
+
     // Modal controls
     const handleMakeContract = () => setIsModalOpen(true);
-
-    const handleSendContract = () => {
-        setContract('pending');
-        setIsModalOpen(false);
-        setContractForm({
-            amount: '',
-            deadline: '',
-            terms: '',
-            milestones: ''
-        });
-        // Simulate client response:
-        setTimeout(() => setContract('accepted'), 3000); // change to 'rejected' to demo rejection
-    };
 
     const handleCloseModal = () => {
         setIsModalOpen(false);
@@ -55,9 +85,84 @@ const ProjectContext = ({ project, budget, deadline, status }) => {
         });
     };
 
+    const handleSendContract = () => {
+        // Make sure you have orderType and orderId available, not conversationId
+        if (!orderType || !orderId) {
+            console.error('Order type or order ID not available');
+            return;
+        }
+
+        // Basic validation (optional, add more before sending)
+        if (!contractForm.amount || !contractForm.deadline) {
+            alert('Please fill in at least amount and deadline');
+            return;
+        }
+
+        // Create contract payload dynamically based on orderType
+        const payload = {
+            amount: contractForm.amount,
+            deadline: contractForm.deadline,
+            terms: contractForm.terms,
+            milestones: contractForm.milestones,
+            status: 'pending',
+            workflow_status: 'planning',
+        };
+
+        // Add order_type and order_id instead of FK field names
+        let normalizedOrderType;
+        if (orderType.toLowerCase().startsWith('service')) {
+            normalizedOrderType = 'service';
+        } else if (orderType.toLowerCase().startsWith('proposal')) {
+            normalizedOrderType = 'proposal';
+        } else {
+            console.error('Invalid orderType:', orderType);
+            alert('Failed to send contract due to invalid order type');
+            return;
+        }
+
+        payload.order_type = normalizedOrderType;
+        payload.order_id = orderId;
+
+
+        api.post('/api/v1/messaging/contracts/', payload, {
+            headers: { Authorization: `Bearer ${token}` },
+        })
+            .then((response) => {
+                setContract(response.data);
+                setCurrentWorkflowStatus(response.data.workflow_status || 'planning');
+                setIsModalOpen(false);
+                setContractForm({
+                    amount: '',
+                    deadline: '',
+                    terms: '',
+                    milestones: '',
+                });
+            })
+            .catch((error) => {
+                alert('Failed to send contract. Please try again.');
+                console.error(error);
+            });
+    };
+
     const handleStatusUpdate = (newStatus) => {
-        setCurrentWorkflowStatus(newStatus);
-        setIsDropdownOpen(false);
+        if (!contract || !contract.id) return;
+
+        api.patch(
+            `/api/v1/messaging/contracts/${contract.id}/`,
+            { workflow_status: newStatus },
+            {
+                headers: { Authorization: `Bearer ${token}` },
+            }
+        )
+            .then((response) => {
+                setContract(response.data);
+                setCurrentWorkflowStatus(response.data.workflow_status);
+                setIsDropdownOpen(false);
+            })
+            .catch((error) => {
+                alert('Failed to update workflow status.');
+                console.error(error);
+            });
     };
 
     const handleInputChange = (field, value) => {
@@ -69,7 +174,9 @@ const ProjectContext = ({ project, budget, deadline, status }) => {
 
     // Progress visual (10 steps)
     const renderProgressBar = () => {
-        const currentIndex = workflowSteps.findIndex(s => s.value === currentWorkflowStatus);
+        const currentIndex = workflowSteps.findIndex(
+            (s) => s.value === currentWorkflowStatus
+        );
 
         return (
             <div className="w-full mt-3 mb-1 px-2 select-none">
@@ -121,9 +228,14 @@ const ProjectContext = ({ project, budget, deadline, status }) => {
         );
     };
 
-
     // Center area
     const renderCenterContent = () => {
+        if (loadingContract) {
+            return <div className="text-center text-gray-400 mt-4">Loading contract data...</div>;
+        }
+        if (error) {
+            return <div className="text-center text-red-500 mt-4">{error}</div>;
+        }
         if (!contract) {
             // No contract
             return (
@@ -138,7 +250,10 @@ const ProjectContext = ({ project, budget, deadline, status }) => {
                 </div>
             );
         }
-        if (contract === 'pending') {
+
+        const contractStatus = contract.status;
+
+        if (contractStatus === 'pending') {
             return (
                 <div className="flex justify-center mt-2">
                     <div className="bg-yellow-500/20 text-yellow-300 px-4 py-2 rounded-lg flex items-center gap-2">
@@ -148,7 +263,7 @@ const ProjectContext = ({ project, budget, deadline, status }) => {
                 </div>
             );
         }
-        if (contract === 'accepted') {
+        if (contractStatus === 'accepted') {
             return (
                 <div className="flex flex-col items-center mt-2 gap-2">
                     <div className="bg-green-500/20 text-green-300 px-4 py-2 rounded-lg flex items-center gap-2 w-full justify-between">
@@ -197,6 +312,24 @@ const ProjectContext = ({ project, budget, deadline, status }) => {
                                     </div>
                                 )}
                             </div>
+                            {/* Contract details */}
+                            <div className="mt-3 bg-gray-900 p-3 rounded-lg w-full max-w-xl space-y-2 text-sm text-gray-300">
+                                <div>
+                                    <strong>Amount: </strong>${contract.amount}
+                                </div>
+                                <div>
+                                    <strong>Deadline: </strong>
+                                    {new Date(contract.deadline).toLocaleDateString()}
+                                </div>
+                                <div>
+                                    <strong>Terms: </strong>
+                                    <pre className="whitespace-pre-wrap">{contract.terms || '-'}</pre>
+                                </div>
+                                <div>
+                                    <strong>Milestones: </strong>
+                                    <pre className="whitespace-pre-wrap">{contract.milestones || '-'}</pre>
+                                </div>
+                            </div>
                         </>
                     )}
 
@@ -219,6 +352,11 @@ const ProjectContext = ({ project, budget, deadline, status }) => {
                 </div>
             );
         }
+        return (
+            <div className="flex justify-center mt-2">
+                <span className="text-gray-400">Unknown contract status.</span>
+            </div>
+        );
     };
 
     return (

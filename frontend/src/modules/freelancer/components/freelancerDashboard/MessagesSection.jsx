@@ -46,25 +46,43 @@ const FreelancerChatDashboard = ({ conversationId }) => {
         const res = await api.get('/api/v1/messaging/conversations/', {
           headers: { Authorization: `Bearer ${token}` },
         });
-        const chats = res.data.map((convo) => ({
-          id: convo.id,
-          name: convo.client_name || `Client ${convo.client_id}`,
-          avatar: convo.client_profile_pic || '',
-          lastMessage: convo.last_message?.content || '',
-          time: convo.last_message
-            ? new Date(convo.last_message.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-            : '',
-          unread: convo.unread_count || 0,
-          online: false,
-          project: convo.service_title || `Order #${convo.order_id}`,
-          budget: convo.service_price || '—',
-          deadline: convo.service_deadline || '—',
-          status: 'Active',
-          typing: false,
-        }));
+
+        const chats = res.data.map((convo) => {
+          // Normalize orderType to always be 'service' or 'proposal'
+          let normalizedOrderType = 'service';
+          if (convo.order_type) {
+            const type = convo.order_type.toLowerCase();
+            if (type === 'proposalorder' || type === 'proposal') normalizedOrderType = 'proposal';
+            else if (type === 'serviceorder' || type === 'service') normalizedOrderType = 'service';
+          }
+
+          return {
+            id: convo.id,
+            name: convo.client_name || `Client ${convo.client_id}`,
+            avatar: convo.client_profile_pic || '',
+            lastMessage: convo.last_message?.content || '',
+            time: convo.last_message
+              ? new Date(convo.last_message.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+              : '',
+            unread: convo.unread_count || 0,
+            online: false,
+            project: convo.service_title || `Order #${convo.order_id}`,
+            budget: convo.service_price || '—',
+            deadline: convo.service_deadline || '—',
+            status: 'Active',
+            typing: false,
+
+            orderId: convo.order_id,                      // The order PK you need for contracts
+            orderType: normalizedOrderType,               // Always 'service' or 'proposal'
+            serviceOrderId: convo.service_order_id || null,      // Fixes previous typo
+            proposalOrderId: convo.proposal_order_id || null,
+          };
+        });
+
         setChatListData(chats);
       } catch (error) {
         console.error('Failed to fetch conversations:', error);
+        console.log(selectedChat.orderType, selectedChat.orderId);
       } finally {
         setLoadingChats(false);
       }
@@ -413,6 +431,9 @@ const FreelancerChatDashboard = ({ conversationId }) => {
               budget={selectedChat.budget}
               deadline={selectedChat.deadline}
               status={selectedChat.status}
+              orderType={selectedChat.orderType}
+              orderId={selectedChat.orderId}
+              token={token}
             />
 
             <ChatMessages

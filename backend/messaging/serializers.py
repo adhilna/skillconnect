@@ -1,5 +1,7 @@
 from rest_framework import serializers
-from .models import Attachment, Message, Conversation, ConversationReadStatus
+from .models import Attachment, Message, Conversation, ConversationReadStatus, Contract
+from gigs.models import ServiceOrder, ProposalOrder
+from django.shortcuts import get_object_or_404
 
 class AttachmentSerializer(serializers.ModelSerializer):
     class Meta:
@@ -101,6 +103,8 @@ class ConversationSerializer(serializers.ModelSerializer):
     freelancer_id = serializers.IntegerField(source='freelancer.id', read_only=True)
     order_type = serializers.SerializerMethodField()
     order_id = serializers.SerializerMethodField()
+    service_order_id = serializers.SerializerMethodField()
+    proposal_order_id = serializers.SerializerMethodField()
 
     client_name = serializers.SerializerMethodField()
     client_profile_pic = serializers.SerializerMethodField()
@@ -139,6 +143,9 @@ class ConversationSerializer(serializers.ModelSerializer):
             'service_title',
             'service_price',
             'service_deadline',
+            'service_order_id',
+            'proposal_order_id',
+
         ]
         read_only_fields = ['created_at', 'updated_at', 'metadata', 'is_active']
 
@@ -262,3 +269,81 @@ class ConversationSerializer(serializers.ModelSerializer):
         else:
             unread = obj.messages.exclude(sender=user).count()
         return unread
+
+    def get_service_order_id(self, obj):
+        if obj.content_type.model == 'serviceorder':
+            return obj.object_id
+        return None
+
+    def get_proposal_order_id(self, obj):
+        if obj.content_type.model == 'proposalorder':
+            return obj.object_id
+        return None
+
+class ContractSerializer(serializers.ModelSerializer):
+    service_order = serializers.PrimaryKeyRelatedField(
+        queryset=ServiceOrder.objects.all(),
+        required=False,
+        allow_null=True
+    )
+    proposal_order = serializers.PrimaryKeyRelatedField(
+        queryset=ProposalOrder.objects.all(),
+        required=False,
+        allow_null=True
+    )
+    class Meta:
+        model = Contract
+        fields = [
+            'id',
+            'amount',
+            'deadline',
+            'terms',
+            'milestones',
+            'status',
+            'workflow_status',
+            'service_order',
+            'proposal_order',
+            'created_at',
+            'updated_at',
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at']
+
+    def validate(self, data):
+        request = self.context.get('request')
+
+        order_type = None
+        order_id = None
+
+        if request:
+            order_type = request.data.get('order_type')
+            order_id = request.data.get('order_id')
+
+        # Fallback on update (PATCH) if values not provided in request
+        if (not order_type or not order_id) and self.instance:
+            if self.instance.service_order_id:
+                order_type = 'service'
+                order_id = self.instance.service_order_id
+            elif self.instance.proposal_order_id:
+                order_type = 'proposal'
+                order_id = self.instance.proposal_order_id
+
+        if order_type == 'service':
+            service_order = get_object_or_404(ServiceOrder, id=order_id)
+            data['service_order'] = service_order
+            data['proposal_order'] = None
+        elif order_type == 'proposal':
+            proposal_order = get_object_or_404(ProposalOrder, id=order_id)
+            data['proposal_order'] = proposal_order
+            data['service_order'] = None
+        else:
+            raise serializers.ValidationError({
+                "order_type": "Must be 'service' or 'proposal'."
+            })
+
+        # Validate only one FK present
+        if bool(data.get('service_order')) == bool(data.get('proposal_order')):
+            raise serializers.ValidationError(
+                "Exactly one of 'service_order' or 'proposal_order' must be specified."
+            )
+
+        return data

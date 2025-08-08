@@ -4,15 +4,18 @@ from django.contrib.contenttypes.models import ContentType
 from django.shortcuts import get_object_or_404
 from django.db.models import Q
 import logging
-from .models import Conversation, Message, ConversationReadStatus
+from .models import Conversation, Message, ConversationReadStatus, Contract
+from gigs.models import ServiceOrder, ProposalOrder
 from .serializers import (
     ConversationSerializer,
     MessageSerializer,
     MessageCreateSerializer,
+    ContractSerializer
 )
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 from django.utils.timezone import now
+from rest_framework.decorators import action
 
 
 # --- Custom Permission: Only participants can access
@@ -171,3 +174,68 @@ class MessageViewSet(viewsets.ModelViewSet):
 
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
+
+class ContractViewSet(viewsets.ModelViewSet):
+    serializer_class = ContractSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+
+        order_type = self.request.query_params.get('order_type')
+        order_id = self.request.query_params.get('order_id')
+
+        # Base queryset is empty unless filtering by order_type and order_id is provided
+        if order_type and order_id:
+            if order_type == 'service':
+                # Filter contracts related to service order for which user is client or freelancer
+                return Contract.objects.filter(
+                    service_order_id=order_id
+                ).filter(
+                    Q(service_order__client__user=user) | Q(service_order__freelancer__user=user)
+                )
+            elif order_type == 'proposal':
+                # Filter contracts related to proposal order for which user is client or freelancer
+                return Contract.objects.filter(
+                    proposal_order_id=order_id
+                ).filter(
+                    Q(proposal_order__client__user=user) | Q(proposal_order__freelancer__user=user)
+                )
+        # If no order_type/order_id, default to contracts involving user in any way
+        return Contract.objects.filter(
+            Q(service_order__client__user=user) | Q(service_order__freelancer__user=user) |
+            Q(proposal_order__client__user=user) | Q(proposal_order__freelancer__user=user)
+        )
+
+    def perform_create(self, serializer):
+        order_type = self.request.data.get('order_type')
+        order_id = self.request.data.get('order_id')
+
+        if order_type == 'service':
+            service_order = get_object_or_404(ServiceOrder, id=order_id)
+            # Optional: permission check to ensure user is freelancer of service_order
+            serializer.save(service_order=service_order)
+        elif order_type == 'proposal':
+            proposal_order = get_object_or_404(ProposalOrder, id=order_id)
+            # Optional: permission check to ensure user is freelancer of proposal_order
+            serializer.save(proposal_order=proposal_order)
+        else:
+            from rest_framework.exceptions import ValidationError
+            raise ValidationError({'order_type': "Must be 'service' or 'proposal'."})
+
+    # Optional: Custom actions (e.g. accept, reject contract)
+    @action(detail=True, methods=['post'])
+    def accept(self, request, pk=None):
+        contract = self.get_object()
+        # Optional: permission checks (who can accept)
+        contract.status = 'accepted'
+        contract.save()
+        return Response({'status': 'contract accepted'}, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=['post'])
+    def reject(self, request, pk=None):
+        contract = self.get_object()
+        # Optional: permission checks
+        contract.status = 'rejected'
+        contract.save()
+        return Response({'status': 'contract rejected'}, status=status.HTTP_200_OK)
