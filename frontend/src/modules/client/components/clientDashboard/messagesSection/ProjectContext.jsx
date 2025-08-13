@@ -22,7 +22,7 @@ const ProjectContext = ({
     const [contract, setContract] = useState(null); // Full contract object or null
     const [currentWorkflowStatus, setCurrentWorkflowStatus] = useState('planning');
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+    // const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const [isMinimized, setIsMinimized] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
@@ -68,6 +68,57 @@ const ProjectContext = ({
             })
             .finally(() => setLoading(false));
     }, [orderType, orderId, token]);
+
+    useEffect(() => {
+        if (!orderType || !orderId || !token) return;
+
+        let isMounted = true;
+        const backendHost = 'localhost:8000'; // Change to your prod host
+        const wsProtocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
+        const wsUrl = `${wsProtocol}://${backendHost}/ws/messaging/contracts/${orderType}/${orderId}/?token=${token}`;
+
+        const ws = new WebSocket(wsUrl);
+
+        ws.onopen = () => {
+            if (!isMounted) {
+                ws.close();
+                return;
+            }
+            console.log('Client-side Contract WS connected');
+        };
+
+        ws.onerror = (err) => {
+            console.error('Client-side Contract WS error', err);
+        };
+
+        ws.onclose = (e) => {
+            if (isMounted) {
+                console.log('Client-side Contract WS disconnected', e);
+            }
+        };
+
+        ws.onmessage = (event) => {
+            if (!isMounted) return;
+            try {
+                const data = JSON.parse(event.data); // This should be the serialized contract
+                console.log('Realtime contract update from WS:', data);
+
+                // Update state with new contract data
+                setContract(data);
+                setCurrentWorkflowStatus(data.workflow_status || 'planning');
+            } catch (err) {
+                console.error('Error parsing contract WS message', err);
+            }
+        };
+
+        return () => {
+            isMounted = false;
+            if (ws.readyState === WebSocket.OPEN) {
+                ws.close();
+            }
+        };
+    }, [orderType, orderId, token]);
+
 
     // Open / close modal handlers
     const openModal = () => setIsModalOpen(true);

@@ -72,6 +72,60 @@ const ProjectContext = ({ project, budget, deadline, status, token, orderType, o
             });
     }, [orderType, orderId, token]);
 
+    useEffect(() => {
+        if (!orderType || !orderId || !token) return;
+
+        let isMounted = true;
+        const backendHost = 'localhost:8000';
+        const wsProtocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
+        const wsUrl = `${wsProtocol}://${backendHost}/ws/messaging/contracts/${orderType}/${orderId}/?token=${token}`;
+        const ws = new WebSocket(wsUrl);
+
+        ws.onopen = () => {
+            if (!isMounted) {
+                ws.close();
+                return;
+            }
+            console.log('Contract WebSocket connected');
+        };
+
+        ws.onerror = (err) => {
+            console.error('Contract WebSocket error', err);
+        };
+
+        ws.onclose = (e) => {
+            if (isMounted) {
+                console.log('Contract WebSocket disconnected', e);
+            }
+        };
+
+        ws.onmessage = (event) => {
+            if (!isMounted) return;
+            try {
+                const data = JSON.parse(event.data);
+                console.log('Contract update received', data);
+                setContract(data);
+                setCurrentWorkflowStatus(data.workflow_status || 'planning');
+                setContractForm({
+                    amount: data.amount || '',
+                    deadline: data.deadline || '',
+                    terms: data.terms || '',
+                    milestones: data.milestones || '',
+                });
+            } catch (err) {
+                console.error('Error parsing contract WS message', err);
+            }
+        };
+
+        return () => {
+            isMounted = false;
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.close();
+            }
+        };
+    }, [orderType, orderId, token]);
+
+
     // Modal controls
     const handleMakeContract = () => setIsModalOpen(true);
 

@@ -175,6 +175,32 @@ class MessageViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
 
+def broadcast_contract_update(contract):
+    """
+    Sends the latest contract data to the WebSocket group
+    for the given order_type and order_id.
+    """
+    if contract.service_order_id:
+        order_type = 'service'
+        order_id = contract.service_order_id
+    elif contract.proposal_order_id:
+        order_type = 'proposal'
+        order_id = contract.proposal_order_id
+    else:
+        return  # Cannot broadcast without order link
+
+    group_name = f"contracts_{order_type}_{order_id}"
+    channel_layer = get_channel_layer()
+    serialized = ContractSerializer(contract).data
+
+    async_to_sync(channel_layer.group_send)(
+        group_name,
+        {
+            "type": "contract_message",  # matches ContractConsumer.contract_message()
+            "contract": serialized,
+        }
+    )
+
 class ContractViewSet(viewsets.ModelViewSet):
     serializer_class = ContractSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -214,14 +240,21 @@ class ContractViewSet(viewsets.ModelViewSet):
         if order_type == 'service':
             service_order = get_object_or_404(ServiceOrder, id=order_id)
             # Optional: permission check to ensure user is freelancer of service_order
-            serializer.save(service_order=service_order)
+            contract = serializer.save(service_order=service_order)
         elif order_type == 'proposal':
             proposal_order = get_object_or_404(ProposalOrder, id=order_id)
             # Optional: permission check to ensure user is freelancer of proposal_order
-            serializer.save(proposal_order=proposal_order)
+            contract = serializer.save(proposal_order=proposal_order)
         else:
             from rest_framework.exceptions import ValidationError
             raise ValidationError({'order_type': "Must be 'service' or 'proposal'."})
+        
+        broadcast_contract_update(contract)
+
+    def perform_update(self, serializer):
+        contract = serializer.save()  # save changes
+        # 🔴 Send to WebSocket group after updating
+        broadcast_contract_update(contract)
 
     # Optional: Custom actions (e.g. accept, reject contract)
     @action(detail=True, methods=['post'])
@@ -230,6 +263,7 @@ class ContractViewSet(viewsets.ModelViewSet):
         # Optional: permission checks (who can accept)
         contract.status = 'accepted'
         contract.save()
+        broadcast_contract_update(contract) 
         return Response({'status': 'contract accepted'}, status=status.HTTP_200_OK)
 
     @action(detail=True, methods=['post'])
@@ -238,4 +272,5 @@ class ContractViewSet(viewsets.ModelViewSet):
         # Optional: permission checks
         contract.status = 'rejected'
         contract.save()
+        broadcast_contract_update(contract)
         return Response({'status': 'contract rejected'}, status=status.HTTP_200_OK)
