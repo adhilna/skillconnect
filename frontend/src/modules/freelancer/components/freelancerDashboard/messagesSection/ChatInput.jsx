@@ -16,7 +16,6 @@ const ChatInput = ({
     isRecording,
     handleVoiceRecord,
     isUploading,
-
     socket,           // <-- Add socket from parent here
     selectedChat,     // <-- Add selectedChat from parent here
 }) => {

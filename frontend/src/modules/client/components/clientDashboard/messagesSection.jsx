@@ -371,7 +371,7 @@ const AttachmentMenu = ({ isVisible, onClose, onFileSelect, onVoiceRecord }) => 
 
     return (
         <div
-            className="absolute bottom-full mb-2 right-0 w-40 bg-gray-800 border border-white/20 rounded-lg p-2 shadow-lg z-50 grid grid-cols-2 gap-2"
+            className="absolute bottom-full mb-2 left-1 w-40 bg-gray-800 border border-white/20 rounded-lg p-2 shadow-lg z-50 grid grid-cols-2 gap-2"
             style={{ minWidth: '10rem' }}
         >
             <input

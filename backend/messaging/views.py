@@ -144,7 +144,7 @@ class MessageViewSet(viewsets.ModelViewSet):
 
         channel_layer = get_channel_layer()
         group_name = f"chat_{conversation.id}"
-        serialized = MessageSerializer(msg).data
+        serialized = MessageSerializer(msg, context={'request': self.request}).data
 
         async_to_sync(channel_layer.group_send)(
             group_name,
@@ -174,6 +174,39 @@ class MessageViewSet(viewsets.ModelViewSet):
 
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
+
+    @action(detail=True, methods=['post'], url_path='react')
+    def react(self, request, conversation_id=None, pk=None):
+        """
+        Add/update an emoji reaction to a message.
+        """
+        message = self.get_object()
+        emoji = request.data.get('emoji')
+
+        if not emoji:
+            return Response({'error': 'emoji field is required'}, status=400)
+
+        # Update reactions dict
+        reactions = message.reactions or {}
+        reactions[emoji] = reactions.get(emoji, 0) + 1
+        message.reactions = reactions
+        message.save(update_fields=['reactions'])
+
+        # Serialize updated message with request context to get absolute URLs
+        from .serializers import MessageSerializer
+        serialized = MessageSerializer(message, context={'request': request}).data
+
+        # Broadcast updated message to WebSocket group
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            f"chat_{message.conversation.id}",
+            {
+                'type': 'chat_message',
+                'message': serialized,
+            }
+        )
+
+        return Response(serialized)
 
 def broadcast_contract_update(contract):
     """

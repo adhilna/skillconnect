@@ -4,6 +4,7 @@ from channels.db import database_sync_to_async
 from .models import Conversation, Message
 from .serializers import MessageSerializer
 
+
 class ChatConsumer(AsyncWebsocketConsumer):
     async def connect(self):
         self.conversation_id = self.scope['url_route']['kwargs']['conversation_id']
@@ -12,17 +13,14 @@ class ChatConsumer(AsyncWebsocketConsumer):
         user = self.scope['user']
 
         if user.is_anonymous:
-            # Reject anonymous connections
             await self.close()
             return
 
-        # Check if user is participant in the conversation
         is_participant = await self.is_conversation_participant(user, self.conversation_id)
         if not is_participant:
             await self.close()
             return
 
-        # Accept connection and add to group for broadcasting
         await self.channel_layer.group_add(
             self.room_group_name,
             self.channel_name
@@ -30,31 +28,38 @@ class ChatConsumer(AsyncWebsocketConsumer):
         await self.accept()
 
     async def disconnect(self, close_code):
-        # Leave the chat group on disconnect
         await self.channel_layer.group_discard(
             self.room_group_name,
             self.channel_name
         )
 
     async def receive(self, text_data):
-        # Parse incoming data
+        """
+        This receive handler will only deal with simple text messages sent via WS.
+        File/voice uploads are still handled by the REST API POST /messages/ endpoint.
+        """
         data = json.loads(text_data)
-        message = data.get('message')
-        attachments = data.get('attachments', [])  # Optional: handle if you implement attachments later
+        message_content = data.get('message')
+        message_type = data.get('message_type', 'text')
 
         sender = self.scope['user']
 
-        if not message:
-            # Invalid message content, ignore or send error if preferred
+        # Ignore empty messages (unless we add more handling later)
+        if not message_content and message_type == 'text':
             return
 
-        # Create and save the message instance in DB asynchronously
-        msg = await self.create_message(sender, self.conversation_id, message)
+        # Create and save the message in DB
+        msg = await self.create_message(
+            sender=sender,
+            conversation_id=self.conversation_id,
+            content=message_content,
+            message_type=message_type
+        )
 
-        # Serialize message to send to the clients
+        # Serialize the message exactly how REST API does (includes attachment if any)
         serialized = await self.serialize_message(msg)
 
-        # Broadcast serialized message to group participants
+        # Broadcast serialized message to group
         await self.channel_layer.group_send(
             self.room_group_name,
             {
@@ -64,7 +69,9 @@ class ChatConsumer(AsyncWebsocketConsumer):
         )
 
     async def chat_message(self, event):
-        # Send message event from the group to WebSocket client
+        """
+        Called when a message is sent to the group.
+        """
         await self.send(text_data=json.dumps(event['message']))
 
     @database_sync_to_async
@@ -82,14 +89,24 @@ class ChatConsumer(AsyncWebsocketConsumer):
             return False
 
     @database_sync_to_async
-    def create_message(self, sender, conversation_id, content):
+    def create_message(self, sender, conversation_id, content, message_type='text'):
+        """
+        Basic message creation — handles only text when sent via WS.
+        Voice/file messages will be created via REST API and broadcast separately.
+        """
         conversation = Conversation.objects.get(id=conversation_id)
         return Message.objects.create(
             sender=sender,
             conversation=conversation,
-            content=content
+            content=content,
+            message_type=message_type
         )
 
     @database_sync_to_async
     def serialize_message(self, message):
+        """
+        Serialize a Message instance the same way the REST API does,
+        so WebSocket broadcast matches fetch/GET structure exactly.
+        """
+        # Pass no request object here, so AttachmentSerializer will use SITE_URL fallback
         return MessageSerializer(message).data

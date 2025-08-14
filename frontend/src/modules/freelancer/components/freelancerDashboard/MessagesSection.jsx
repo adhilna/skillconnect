@@ -28,6 +28,10 @@ const FreelancerChatDashboard = ({ conversationId }) => {
 
   const isMobile = window.innerWidth < 768;
 
+  const mediaRecorderRef = useRef(null);
+  const mediaStreamRef = useRef(null);
+  const chunksRef = useRef([]);
+
   const sortMessages = (msgs) => {
     return msgs.slice().sort((a, b) => {
       const timeA = new Date(a.created_at || a.time).getTime();
@@ -289,10 +293,21 @@ const FreelancerChatDashboard = ({ conversationId }) => {
     try {
       const formData = new FormData();
       formData.append('content', newMessage.trim());
-      formData.append('message_type', attachedFiles.length > 0 ? 'file' : 'text');
-      if (attachedFiles.length > 0) {
+      if (attachedFiles.length > 0 && attachedFiles[0].type.startsWith('audio/')) {
+        formData.append('message_type', 'voice');
+        formData.append('content', ''); // voice notes usually have no text
         formData.append('attachment_file', attachedFiles[0]);
+      } else if (attachedFiles.length > 0) {
+        formData.append('message_type', 'file');
+        formData.append('content', newMessage.trim());
+        formData.append('attachment_file', attachedFiles[0]);
+      } else {
+        formData.append('message_type', 'text');
+        formData.append('content', newMessage.trim());
       }
+      console.log("Attached before send:", attachedFiles);
+      console.log("FormData entries:", [...formData.entries()]);
+
 
       setIsUploading(true);
       setUploadProgress(0);
@@ -329,38 +344,57 @@ const FreelancerChatDashboard = ({ conversationId }) => {
 
   // File select handler
   const handleFileSelect = (files) => {
+    console.log("Selected files:", files);
     setAttachedFiles(files);
     setShowAttachmentMenu(false);
   };
 
   // Voice record simulation
-  const handleVoiceRecord = () => {
-    setIsRecording(!isRecording);
+  const handleVoiceRecord = async () => {
     setShowAttachmentMenu(false);
 
     if (!isRecording) {
-      setTimeout(() => {
-        const voiceMsg = {
-          id: messages.length + 1,
-          sender: 'Me',
-          isMe: true,
-          text: '',
-          time: new Date().toLocaleTimeString([], {
-            hour: '2-digit',
-            minute: '2-digit',
-          }),
-          status: 'sent',
-          type: 'voice',
-          voiceData: {
-            duration: '0:15',
-          },
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        mediaStreamRef.current = stream;
+        mediaRecorderRef.current = new MediaRecorder(stream);
+        chunksRef.current = [];
+
+        mediaRecorderRef.current.ondataavailable = (e) => {
+          if (e.data.size > 0) chunksRef.current.push(e.data);
         };
-        setMessages((prev) => [...prev, voiceMsg]);
+
+        mediaRecorderRef.current.start();
+        setIsRecording(true);
+      } catch (err) {
+        console.error('Error accessing microphone:', err);
+      }
+    } else {
+      if (!mediaRecorderRef.current) {
+        console.error('MediaRecorder is not initialized');
         setIsRecording(false);
-      }, 3000);
+        return;
+      }
+
+      mediaRecorderRef.current.onstop = () => {
+        const blob = new Blob(chunksRef.current, { type: 'audio/webm' });
+        const file = new File([blob], `voice-${Date.now()}.webm`, {
+          type: 'audio/webm',
+          lastModified: Date.now(),
+        });
+
+        handleFileSelect([file]);
+
+        if (mediaStreamRef.current) {
+          mediaStreamRef.current.getTracks().forEach((track) => track.stop());
+        }
+
+        setIsRecording(false);
+      };
+
+      mediaRecorderRef.current.stop();
     }
   };
-
   // Reaction handler
   const handleReaction = (messageId, emoji) => {
     setMessages((prev) =>

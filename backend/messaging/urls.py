@@ -13,7 +13,12 @@ message_list = MessageViewSet.as_view({
     'post': 'create'
 })
 
+message_react = MessageViewSet.as_view({
+    'post': 'react'
+})
+
 urlpatterns = [
     path('', include(router.urls)),
     path('conversations/<int:conversation_id>/messages/', message_list, name='conversation-messages'),
+    path('conversations/<int:conversation_id>/messages/<int:pk>/react/', message_react, name='conversation-message-react'),
 ]

@@ -60,8 +60,8 @@ const Message = ({
                     aria-label={isMe ? 'Sent message' : 'Received message'}
                     tabIndex={0}
                     className={`px-4 py-2 rounded-2xl ${isMe
-                            ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white'
-                            : 'bg-white/10 text-white border border-white/20'
+                        ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white'
+                        : 'bg-white/10 text-white border border-white/20'
                         }`}
                     onMouseDown={handleMouseDown}
                     onMouseUp={handleMouseUp}
@@ -105,6 +105,7 @@ const Message = ({
                     {type === 'voice' && voiceData && (
                         <VoiceMessage
                             {...voiceData}
+                            audioUrl={fileData.url}
                             isPlaying={isPlaying}
                             onPlayPause={() => setIsPlaying(!isPlaying)}
                         />

@@ -4,6 +4,7 @@ from gigs.models import ServiceOrder, ProposalOrder
 from django.shortcuts import get_object_or_404
 
 class AttachmentSerializer(serializers.ModelSerializer):
+    file = serializers.SerializerMethodField()
     class Meta:
         model = Attachment
         fields = [
@@ -17,9 +18,19 @@ class AttachmentSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ['file_name', 'file_type', 'file_size', 'thumbnail_url', 'uploaded_at']
 
+    def get_file(self, obj):
+        request = self.context.get('request')
+        if request:
+            return request.build_absolute_uri(obj.file.url)
+        # Fallback for WebSocket / no request in context
+        from django.conf import settings
+        base_url = getattr(settings, 'SITE_URL', None) or 'http://localhost:8000'
+        return f"{base_url}{obj.file.url}"
+
 class MessageSerializer(serializers.ModelSerializer):
     sender_id = serializers.IntegerField(source='sender.id', read_only=True)
     attachment = AttachmentSerializer(read_only=True)
+    voice_duration = serializers.CharField(read_only=True)
 
     class Meta:
         model = Message
@@ -30,6 +41,7 @@ class MessageSerializer(serializers.ModelSerializer):
             'message_type',
             'content',
             'attachment',
+            'voice_duration',
             'payment_amount',
             'payment_status',
             'created_at',
@@ -42,10 +54,22 @@ class MessageSerializer(serializers.ModelSerializer):
             'reactions',
         ]
         read_only_fields = [
-            'created_at', 'updated_at', 'delivered_at', 
+            'created_at', 'updated_at', 'delivered_at',
             'read_at', 'status', 'reactions', 'is_edited',
-            'is_active'
+            'is_active', 'voice_duration',
         ]
+    
+    def get_voice_duration(self, obj):
+        # Return voice duration as formatted string like '0:15'
+        # If you store duration as integer seconds, format it here
+        # If not voice message or no duration, return None or '0:00'
+        if obj.message_type == 'voice' and hasattr(obj, 'voice_duration'):
+            # suppose you store seconds as integer in obj.voice_duration
+            seconds = obj.voice_duration or 0
+            minutes = seconds // 60
+            seconds = seconds % 60
+            return f"{minutes}:{seconds:02d}"
+        return None
 
 class MessageCreateSerializer(serializers.ModelSerializer):
     attachment_file = serializers.FileField(write_only=True, required=False, allow_null=True)
@@ -75,13 +99,14 @@ class MessageCreateSerializer(serializers.ModelSerializer):
 
         attachment_file = validated_data.pop('attachment_file', None)
         attachment = None
+        voice_duration_seconds = None
 
-        # Remove keys if present to avoid duplicates
         validated_data.pop('sender', None)
         validated_data.pop('conversation', None)
 
         if attachment_file:
             attachment = Attachment.objects.create(file=attachment_file)
+
 
         message = Message.objects.create(
             sender=sender,

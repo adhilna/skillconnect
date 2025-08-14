@@ -140,6 +140,8 @@ class Message(models.Model):
     is_active = models.BooleanField(default=True)  # Soft delete support
 
     reactions = models.JSONField(default=dict, blank=True)  # emoji reactions: {"👍": 2, "❤️": 1}
+
+    voice_duration = models.IntegerField(null=True, blank=True, help_text="Duration of voice message in seconds")
     class Meta:
         ordering = ['created_at']
         indexes = [

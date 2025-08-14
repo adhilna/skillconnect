@@ -252,8 +252,8 @@ const ProjectContext = ({
 
         if (!contract) {
             return (
-                <div className="text-center mt-2 italic text-gray-300">
-                    No contract available.
+                <div className="flex justify-center mt-2">
+                    <span className="text-gray-400">No contract available.</span>
                 </div>
             );
         }
@@ -274,7 +274,7 @@ const ProjectContext = ({
                     <div className="flex justify-center mt-4">
                         <button
                             onClick={openModal}
-                            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+                            className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
                         >
                             <FileText size={16} />
                             View Contract
@@ -286,7 +286,7 @@ const ProjectContext = ({
 
         if (contractStatus === 'accepted') {
             return (
-                <div className="flex flex-col items-center mt-2 gap-2 w-full">
+                <div className="flex flex-col items-center mt-2 gap-2">
                     <div className="bg-green-500/20 text-green-300 px-4 py-2 rounded-lg flex items-center gap-2 w-full justify-between">
                         <div className="flex items-center gap-2">
                             <CheckCircle size={16} />
@@ -349,7 +349,7 @@ const ProjectContext = ({
                     <div className="flex justify-center mt-4">
                         <button
                             onClick={openModal}
-                            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+                            className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
                         >
                             <FileText size={16} />
                             View Contract
@@ -360,21 +360,21 @@ const ProjectContext = ({
         }
 
         return (
-            <div className="text-center text-gray-400 mt-4">
-                Unknown contract status: {contractStatus}
+            <div className="flex justify-center mt-2">
+                <span className="text-gray-400">Unknown contract status: {contractStatus}</span>
             </div>
         );
     };
 
     return (
         <>
-            <div className="bg-gradient-to-r from-blue-500/20 to-cyan-500/20 border border-blue-500/30 rounded-lg p-3 m-4 mb-2 max-w-3xl mx-auto">
+            <div className="bg-gradient-to-r from-blue-500/20 to-blue-500/20 border border-blue-500/30 rounded-lg p-3 m-4 mb-2">
                 <div className="flex items-center justify-between mb-2">
-                    <h4 className="text-white font-medium text-sm">{project || 'Project'}</h4>
+                    <h4 className="text-white font-medium text-sm">{project || 'Sample Project'}</h4>
                     <span
-                        className={`px-2 py-1 rounded-full text-xs font-medium ${status === 'In Progress'
+                        className={`px-2 py-1 rounded-full text-xs font-medium ${(status || 'In Progress') === 'In Progress'
                             ? 'bg-blue-500/20 text-blue-300'
-                            : status === 'Review'
+                            : (status || 'In Progress') === 'Review'
                                 ? 'bg-yellow-500/20 text-yellow-300'
                                 : 'bg-green-500/20 text-green-300'
                             }`}
@@ -383,10 +383,10 @@ const ProjectContext = ({
                     </span>
                 </div>
                 <div className="flex items-center justify-between text-xs">
-                    <span className="text-green-400 font-medium">{budget || '$-'}</span>
+                    <span className="text-green-400 font-medium">{budget || '$5,000'}</span>
                     <div className="flex items-center text-gray-400">
-                        <Calendar size={12} className="mr-1" />
-                        {deadline ? new Date(deadline).toLocaleDateString() : '—'}
+                        <Calendar size={15} className="mr-1" />
+                        {deadline ? new Date(deadline).toLocaleDateString() : '12/31/2024'}
                     </div>
                 </div>
 
@@ -396,7 +396,7 @@ const ProjectContext = ({
 
             {/* Contract Details Modal */}
             {isModalOpen && contract && (
-                <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
                     <div className="bg-gray-800 rounded-lg max-w-md w-full max-h-[90vh] overflow-y-auto">
                         <div className="flex items-center justify-between p-4 border-b border-gray-700">
                             <h3 className="text-white font-medium text-lg">Contract Details</h3>
