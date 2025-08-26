@@ -29,6 +29,8 @@ const FreelancerDashboard = () => {
   const [loadingClients, setLoadingClients] = useState(false);
   const [clientsError, setClientsError] = useState(null);
 
+  const [freelancers, setFreelancers] = useState([]);
+
   const { token } = useContext(AuthContext);
 
   const navigationItems = [
@@ -79,6 +81,25 @@ const FreelancerDashboard = () => {
       if (token) fetchClients();
     }
   }, [activeSection, token]);
+
+  useEffect(() => {
+    const fetchFreelancers = async () => {
+      try {
+        const res = await api.get('/api/v1/profiles/freelancer/profile-setup/', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setFreelancers(res.data || []);
+      } catch (err) {
+        setFreelancers([]);
+        console.error(err);
+      }
+    };
+
+    if (token) {
+      fetchFreelancers();
+    }
+  }, [token]);
+
 
   const startChatForConversation = (conversationId) => {
     setActiveConversationId(conversationId);
@@ -202,7 +223,9 @@ const FreelancerDashboard = () => {
                 <h2 className="text-xl font-semibold text-white capitalize">
                   {activeSection === 'dashboard' ? 'Dashboard Overview' : activeSection.replace(/([A-Z])/g, ' $1')}
                 </h2>
-                <p className="text-white/60 text-sm">Welcome back, John!</p>
+                <p className="text-white/60 text-sm">
+                  Welcome back, {freelancers.length > 0 ? `${freelancers[0].first_name} ` : 'John Doe'}!
+                </p>
               </div>
             </div>
 
@@ -219,11 +242,20 @@ const FreelancerDashboard = () => {
               />
 
               <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full flex items-center justify-center shadow-lg">
-                  <User size={20} className="text-white" />
+                <div className="w-10 h-10 rounded-full shadow-lg overflow-hidden border-2 border-gradient-to-r from-purple-400 to-pink-500">
+                  {freelancers.length > 0 && freelancers[0].profile_picture ? (
+                    <img
+                      src={freelancers[0].profile_picture}
+                      alt={`${freelancers[0].first_name} profile`}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <User size={20} className="text-white" />
+                  )}
                 </div>
+
                 <div className="hidden sm:block">
-                  <p className="text-white font-medium">John Doe</p>
+                  <p className="text-white font-medium">{freelancers.length > 0 ? `${freelancers[0].first_name} ${freelancers[0].last_name}` : 'user'}</p>
                   <p className="text-white/60 text-xs">Pro Freelancer</p>
                 </div>
               </div>

@@ -4,10 +4,10 @@ import { AuthContext } from '../../../../context/AuthContext';
 import { MessageCircle } from 'lucide-react';
 
 import ChatList from './messagesSection/ChatList';
-import ChatHeader from './messagesSection/ChatHeader';
 import ChatMessages from './messagesSection/ChatMessages';
 import ChatInput from './messagesSection/ChatInput';
 import ProjectContext from './messagesSection/ProjectContext';
+import ChatHeader from './messagesSection/ChatHeader';
 
 const FreelancerChatDashboard = ({ conversationId }) => {
   const { user, token } = useContext(AuthContext);
@@ -458,7 +458,12 @@ const FreelancerChatDashboard = ({ conversationId }) => {
       >
         {selectedChat ? (
           <>
-            <ChatHeader chat={selectedChat} onBack={handleBackToList} isMobile={isMobile} />
+            <ChatHeader
+              chat={selectedChat}
+              onBack={handleBackToList}
+              isMobile={isMobile}
+              token={token}
+            />
 
             <ProjectContext
               project={selectedChat.project}

@@ -27,6 +27,7 @@ import {
     Pause,
 } from 'lucide-react';
 import ProjectContext from './messagesSection/ProjectContext';
+import ChatHeader from './messagesSection/ChatHeader';
 
 // Reaction picker component
 const ReactionPicker = ({ isVisible, onReact, onClose }) => {
@@ -1035,70 +1036,13 @@ const ClientChatDashboard = ({ conversationId }) => {
                 {selectedChat ? (
                     <>
                         {/* Chat Header */}
-                        <div className="p-4 border-b border-white/10 bg-black/20 backdrop-blur-lg flex items-center justify-between">
-                            <div className="flex items-center space-x-3">
-                                {isMobile && (
-                                    <button
-                                        onClick={handleBackToList}
-                                        className="text-white p-2 rounded-lg hover:bg-white/10 transition-colors touch-manipulation focus:outline-none"
-                                        aria-label="Back to conversation list"
-                                        type="button"
-                                    >
-                                        <ArrowLeft size={20} />
-                                    </button>
-                                )}
-                                <div className="relative w-10 h-10 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-full flex items-center justify-center text-white font-medium select-none overflow-hidden">
-                                    {selectedChat.avatar && (selectedChat.avatar.startsWith('http') || selectedChat.avatar.startsWith('/')) ? (
-                                        <img
-                                            src={selectedChat.avatar}
-                                            alt={selectedChat.name}
-                                            className="w-full h-full object-cover"
-                                        />
-                                    ) : (
-                                        <span>{selectedChat.avatar}</span>
-                                    )}
-                                    {selectedChat.online && (
-                                        <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 border-2 border-gray-900 rounded-full" />
-                                    )}
-                                </div>
-                                <div>
-                                    <h3 className="text-white font-medium">{selectedChat.name}</h3>
-                                    <p className="text-sm text-gray-400 select-none">
-                                        {selectedChat.typing
-                                            ? 'typing...'
-                                            : selectedChat.online
-                                                ? 'online'
-                                                : 'offline'}
-                                    </p>
-                                </div>
-                            </div>
-
-                            {/* Action Buttons */}
-                            <div className="flex items-center space-x-2">
-                                <button
-                                    type="button"
-                                    className="bg-white/10 text-white p-2 rounded-lg hover:bg-white/20 transition-colors touch-manipulation"
-                                    aria-label="Start voice call"
-                                >
-                                    <Phone size={16} />
-                                </button>
-                                <button
-                                    type="button"
-                                    className="bg-white/10 text-white p-2 rounded-lg hover:bg-white/20 transition-colors touch-manipulation"
-                                    aria-label="Start video call"
-                                >
-                                    <Video size={16} />
-                                </button>
-                                <button
-                                    type="button"
-                                    className="bg-white/10 text-white p-2 rounded-lg hover:bg-white/20 transition-colors touch-manipulation"
-                                    aria-label="More options"
-                                >
-                                    <MoreVertical size={16} />
-                                </button>
-                            </div>
-                        </div>
-
+                        <ChatHeader
+                            chat={selectedChat}
+                            onBack={handleBackToList}
+                            isMobile={isMobile}
+                            token={token}
+                            userId={user?.id}
+                        />
                         {/* Project Context */}
                         <ProjectContext
                             project={selectedChat.project}

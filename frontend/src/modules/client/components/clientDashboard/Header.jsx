@@ -26,10 +26,18 @@ const Header = ({ activeSection, setSidebarOpen, profileData, firstLetter, onNot
                 </div>
                 <NotificationDropdown onNotificationClick={onNotificationClick} />
                 <div className="flex items-center space-x-3">
-                    <div className="w-10 h-10 bg-gradient-to-r from-blue-400 to-cyan-400 rounded-full flex items-center justify-center shadow-lg">
-                        <span className="text-white font-bold text-lg">
-                            {firstLetter}
-                        </span>
+                    <div className="w-10 h-10 rounded-full shadow-lg overflow-hidden from-blue-400 to-cyan-400 flex items-center justify-center">
+                        {profileData?.profile_picture ? (
+                            <img
+                                src={profileData.profile_picture}
+                                alt={`${profileData.first_name} profile`}
+                                className="w-full h-full object-cover"
+                            />
+                        ) : (
+                            <span className="text-white font-bold text-lg select-none">
+                                {firstLetter}
+                            </span>
+                        )}
                     </div>
                     <div className="hidden sm:block">
                         <p className="text-white font-medium">

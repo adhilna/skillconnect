@@ -11,7 +11,7 @@ import BrowseTalentSection from '../components/clientDashboard/BrowseTalentSecti
 import ProposalsSection from '../components/clientDashboard/ProposalsSection';
 import MessagesSection from '../components/clientDashboard/messagesSection';
 import FreelancersSection from '../components/clientDashboard/FreelancersSection';
-import InvoicesSection from '../components/clientDashboard/InvoicesSection';
+import PaymentSection from '../components/clientDashboard/PaymentSection';
 import AnalyticsSection from '../components/clientDashboard/AnalyticsSection';
 import ProfileSection from '../components/clientDashboard/ProfileSection';
 import SettingsSection from '../components/clientDashboard/SettingsSection';
@@ -200,7 +200,7 @@ const ClientDashboard = () => {
         { id: 'orders', label: 'Orders', icon: ShoppingCart },
         { id: 'messages', label: 'Messages', icon: MessageCircle },
         { id: 'freelancers', label: 'My Freelancers', icon: Users },
-        { id: 'invoices', label: 'Invoices & Payments', icon: CreditCard },
+        { id: 'payments', label: 'Payments', icon: CreditCard },
         { id: 'analytics', label: 'Project Analytics', icon: BarChart3 },
         { id: 'profile', label: 'Company Profile', icon: User },
         { id: 'settings', label: 'Settings', icon: Settings },
@@ -235,12 +235,12 @@ const ClientDashboard = () => {
                 />;
             case 'messages':
                 return <MessagesSection
-                conversationId={activeConversationId}
+                    conversationId={activeConversationId}
                 />;
             case 'freelancers':
                 return <FreelancersSection />;
-            case 'invoices':
-                return <InvoicesSection />;
+            case 'payments':
+                return <PaymentSection />;
             case 'analytics':
                 return <AnalyticsSection />;
             case 'profile':
