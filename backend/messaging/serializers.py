@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Attachment, Message, Conversation, ConversationReadStatus, Contract
+from .models import Attachment, Message, Conversation, ConversationReadStatus, Contract, PaymentRequest
 from gigs.models import ServiceOrder, ProposalOrder
 from django.shortcuts import get_object_or_404
 
@@ -372,3 +372,43 @@ class ContractSerializer(serializers.ModelSerializer):
             )
 
         return data
+
+class PaymentRequestSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PaymentRequest
+        fields = [
+            'id',
+            'contract',
+            'requested_by',
+            'payee',
+            'amount',
+            'description',
+            'status',
+            'payment_method',
+            'transaction_id',
+            'created_at',
+            'updated_at',
+        ]
+        read_only_fields = ['id', 'status', 'transaction_id', 'created_at', 'updated_at', 'requested_by', 'payee', 'contract']
+
+    def validate_amount(self, value):
+        if value <= 0:
+            raise serializers.ValidationError("Amount must be greater than zero.")
+        return value
+
+    def validate(self, data):
+        request = self.context.get('request')
+        if not request or not request.user.is_authenticated:
+            raise serializers.ValidationError("Authentication required.")
+
+        # You can add any additional validation here if needed
+
+        return data
+
+    def create(self, validated_data):
+        request = self.context.get('request')
+        validated_data['requested_by'] = request.user  # Assuming freelancer user
+        # Assign the payee from contract's client user
+        contract = validated_data['contract']
+        validated_data['payee'] = contract.client.user
+        return super().create(validated_data)

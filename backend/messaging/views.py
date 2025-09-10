@@ -4,18 +4,20 @@ from django.contrib.contenttypes.models import ContentType
 from django.shortcuts import get_object_or_404
 from django.db.models import Q
 import logging
-from .models import Conversation, Message, ConversationReadStatus, Contract
+from .models import Conversation, Message, ConversationReadStatus, Contract, PaymentRequest
 from gigs.models import ServiceOrder, ProposalOrder
 from .serializers import (
     ConversationSerializer,
     MessageSerializer,
     MessageCreateSerializer,
-    ContractSerializer
+    ContractSerializer,
+    PaymentRequestSerializer,
 )
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 from django.utils.timezone import now
 from rest_framework.decorators import action
+from .permissions import IsPaymentParticipantPermission
 
 
 # --- Custom Permission: Only participants can access
@@ -307,3 +309,25 @@ class ContractViewSet(viewsets.ModelViewSet):
         contract.save()
         broadcast_contract_update(contract)
         return Response({'status': 'contract rejected'}, status=status.HTTP_200_OK)
+
+class PaymentRequestViewSet(viewsets.ModelViewSet):
+    serializer_class = PaymentRequestSerializer
+    permission_classes = [permissions.IsAuthenticated, IsPaymentParticipantPermission]
+
+    def get_queryset(self):
+        user = self.request.user
+        if hasattr(user, 'freelancer_profile'):
+            # Freelancer sees payment requests they created
+            return PaymentRequest.objects.filter(requested_by=user)
+        elif hasattr(user, 'client_profile'):
+            # Client sees payment requests for which they are payee
+            return PaymentRequest.objects.filter(payee=user)
+        return PaymentRequest.objects.none()
+
+    def perform_create(self, serializer):
+        # Set requesting user as the freelancer creating the PaymentRequest
+        serializer.save(requested_by=self.request.user)
+
+    def perform_update(self, serializer):
+        # Allow clients to update payment request status or other fields as needed
+        serializer.save()
