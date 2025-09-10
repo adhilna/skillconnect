@@ -1,7 +1,13 @@
 import React, { useRef } from 'react';
 import { FileText, Image, Mic, DollarSign } from 'lucide-react';
 
-const AttachmentMenu = ({ isVisible, onClose, onFileSelect, onVoiceRecord }) => {
+const AttachmentMenu = ({
+    isVisible,
+    onClose,
+    onFileSelect,
+    onVoiceRecord,
+    onPaymentClick
+}) => {
     const fileInputRef = useRef(null);
 
     if (!isVisible) return null;
@@ -65,7 +71,7 @@ const AttachmentMenu = ({ isVisible, onClose, onFileSelect, onVoiceRecord }) => 
             <button
                 onClick={() => {
                     onClose();
-                    // Payment modal logic can be added here
+                    if (onPaymentClick) onPaymentClick();
                 }}
                 className="flex flex-col items-center justify-center p-1.5 bg-purple-600 rounded-lg text-white hover:bg-purple-700 transition-colors"
                 aria-label="Send Payment"

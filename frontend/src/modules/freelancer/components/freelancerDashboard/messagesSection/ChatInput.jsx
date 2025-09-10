@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Plus, Smile, Send, MicOff } from 'lucide-react';
 import AttachmentMenu from './AttachmentMenu';
 import FilePreview from './FilePreview';
+import PaymentRequestModal from './PaymentRequestModal';
 
 const ChatInput = ({
     newMessage,
@@ -16,12 +17,12 @@ const ChatInput = ({
     isRecording,
     handleVoiceRecord,
     isUploading,
-    socket,           // <-- Add socket from parent here
-    selectedChat,     // <-- Add selectedChat from parent here
+    socket,
+    selectedChat,
 }) => {
     const typingTimeoutRef = React.useRef(null);
+    const [showPaymentRequestModal, setShowPaymentRequestModal] = useState(false);
 
-    // Function to send typing event to backend
     const sendTyping = (typing) => {
         if (socket && socket.readyState === WebSocket.OPEN && selectedChat) {
             socket.send(JSON.stringify({
@@ -34,17 +35,17 @@ const ChatInput = ({
 
     const handleInputChange = (e) => {
         setNewMessage(e.target.value);
-
-        // Send typing=true immediately
         sendTyping(true);
-
-        // Clear previous timeout
         if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
-
-        // Send typing=false if no input for 2 seconds
         typingTimeoutRef.current = setTimeout(() => {
             sendTyping(false);
         }, 2000);
+    };
+
+    // Handler to open payment modal from attachment menu
+    const handlePaymentClick = () => {
+        setShowAttachmentMenu(false);
+        setShowPaymentRequestModal(true);
     };
 
     return (
@@ -82,13 +83,14 @@ const ChatInput = ({
                         onClose={() => setShowAttachmentMenu(false)}
                         onFileSelect={onFileSelect}
                         onVoiceRecord={onVoiceRecord}
+                        onPaymentClick={handlePaymentClick}  // Pass the payment click handler
                     />
                 </div>
 
                 <input
                     type="text"
                     value={newMessage}
-                    onChange={handleInputChange}   // <-- changed here
+                    onChange={handleInputChange}
                     placeholder={isRecording ? 'Recording voice...' : 'Type a message...'}
                     disabled={isRecording}
                     className="flex-grow min-w-0 bg-white/10 text-white px-4 py-3 rounded-lg border border-white/20
@@ -134,6 +136,12 @@ const ChatInput = ({
                     </>
                 )}
             </form>
+
+            {/* Payment Request Modal */}
+            <PaymentRequestModal
+                isVisible={showPaymentRequestModal}
+                onClose={() => setShowPaymentRequestModal(false)}
+            />
         </>
     );
 };
