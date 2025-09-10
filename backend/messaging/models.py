@@ -206,3 +206,20 @@ class Contract(models.Model):
             )
         ]
 
+class PaymentRequest(models.Model):
+    STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('completed', 'Completed'),
+        ('failed', 'Failed'),
+        ('rejected', 'Rejected'),
+    ]
+    contract = models.ForeignKey(Contract, on_delete=models.CASCADE, related_name='payment_requests')
+    requested_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='payments_made')
+    payee = models.ForeignKey(User, on_delete=models.CASCADE, related_name='payments_received')
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    description = models.TextField(blank=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    transaction_id = models.CharField(max_length=128, blank=True, null=True)
+    payment_method = models.CharField(max_length=50, blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
