@@ -24,6 +24,21 @@ const FreelancerChatDashboard = ({ conversationId }) => {
   const [showAttachmentMenu, setShowAttachmentMenu] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+
+  const [contract, setContract] = useState(null);
+  const [currentWorkflowStatus, setCurrentWorkflowStatus] = useState('planning');
+  const [loadingContract, setLoadingContract] = useState(false);
+  const [contractError, setContractError] = useState(null);
+  const [contractForm, setContractForm] = useState({
+    amount: '',
+    deadline: '',
+    terms: '',
+    milestones: '',
+  });
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isMinimized, setIsMinimized] = useState(false);
+
   const socketRef = useRef(null);
 
   const isMobile = window.innerWidth < 768;
@@ -284,6 +299,189 @@ const FreelancerChatDashboard = ({ conversationId }) => {
     };
   }, [selectedChat, token, user]);
 
+  // CONTRACT fetching lifted here
+  useEffect(() => {
+    if (!selectedChat?.orderType || !selectedChat?.orderId || !token) {
+      setContract(null);
+      setCurrentWorkflowStatus('planning');
+      setContractForm({
+        amount: '',
+        deadline: '',
+        terms: '',
+        milestones: '',
+      });
+      return;
+    }
+
+    setLoadingContract(true);
+    setContractError(null);
+
+    api.get(
+      `/api/v1/messaging/contracts/?order_type=${selectedChat.orderType}&order_id=${selectedChat.orderId}`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    )
+      .then((response) => {
+        if (response.data.length > 0) {
+          const c = response.data[0];
+          setContract(c);
+          setCurrentWorkflowStatus(c.workflow_status || 'planning');
+          setContractForm({
+            amount: c.amount || '',
+            deadline: c.deadline || '',
+            terms: c.terms || '',
+            milestones: c.milestones || '',
+          });
+        } else {
+          setContract(null);
+          setCurrentWorkflowStatus('planning');
+          setContractForm({
+            amount: '',
+            deadline: '',
+            terms: '',
+            milestones: '',
+          });
+        }
+      })
+      .catch((err) => {
+        setContractError('Failed to load contract data.');
+        setContract(null);
+        console.error(err);
+      })
+      .finally(() => {
+        setLoadingContract(false);
+      });
+  }, [selectedChat, token]);
+
+  // WebSocket for contract updates lifted here
+  useEffect(() => {
+    if (!selectedChat?.orderType || !selectedChat?.orderId || !token) return;
+
+    let isMounted = true;
+    const backendHost = 'localhost:8000';
+    const wsProtocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
+    const wsUrl = `${wsProtocol}://${backendHost}/ws/messaging/contracts/${selectedChat.orderType}/${selectedChat.orderId}/?token=${token}`;
+    const ws = new WebSocket(wsUrl);
+
+    ws.onopen = () => {
+      if (!isMounted) {
+        ws.close();
+        return;
+      }
+      console.log('Contract WebSocket connected');
+    };
+
+    ws.onerror = (err) => {
+      console.error('Contract WebSocket error', err);
+    };
+
+    ws.onclose = (e) => {
+      if (isMounted) {
+        console.log('Contract WebSocket disconnected', e);
+      }
+    };
+
+    ws.onmessage = (event) => {
+      if (!isMounted) return;
+      try {
+        const data = JSON.parse(event.data);
+        console.log('Contract update received', data);
+        setContract(data);
+        setCurrentWorkflowStatus(data.workflow_status || 'planning');
+        setContractForm({
+          amount: data.amount || '',
+          deadline: data.deadline || '',
+          terms: data.terms || '',
+          milestones: data.milestones || '',
+        });
+      } catch (err) {
+        console.error('Error parsing contract WS message', err);
+      }
+    };
+
+    socketRef.current = ws;
+
+    return () => {
+      isMounted = false;
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.close();
+      }
+    };
+  }, [selectedChat, token]);
+
+  // contract sending handler
+  const handleSendContract = () => {
+    if (!selectedChat?.orderType || !selectedChat?.orderId) {
+      console.error('Order type or order ID not available');
+      return;
+    }
+
+    if (!contractForm.amount || !contractForm.deadline) {
+      alert('Please fill in at least amount and deadline');
+      return;
+    }
+
+    const normalizedOrderType = selectedChat.orderType.toLowerCase().startsWith('service')
+      ? 'service'
+      : selectedChat.orderType.toLowerCase().startsWith('proposal')
+        ? 'proposal'
+        : null;
+
+    if (!normalizedOrderType) {
+      alert('Invalid order type');
+      return;
+    }
+
+    const payload = {
+      amount: contractForm.amount,
+      deadline: contractForm.deadline,
+      terms: contractForm.terms,
+      milestones: contractForm.milestones,
+      status: 'pending',
+      workflow_status: 'planning',
+      order_type: normalizedOrderType,
+      order_id: selectedChat.orderId,
+    };
+
+    api.post('/api/v1/messaging/contracts/', payload, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((response) => {
+        setContract(response.data);
+        setCurrentWorkflowStatus(response.data.workflow_status || 'planning');
+        setIsModalOpen(false);
+        setContractForm({
+          amount: '',
+          deadline: '',
+          terms: '',
+          milestones: '',
+        });
+      })
+      .catch((err) => {
+        alert('Failed to send contract. Please try again.');
+        console.error(err);
+      });
+  };
+
+  // Handle workflow status update of contract
+  const handleStatusUpdate = (newStatus) => {
+    if (!contract?.id) return;
+
+    api.patch(
+      `/api/v1/messaging/contracts/${contract.id}/`,
+      { workflow_status: newStatus },
+      { headers: { Authorization: `Bearer ${token}` } }
+    )
+      .then((response) => {
+        setContract(response.data);
+        setCurrentWorkflowStatus(response.data.workflow_status);
+        setIsDropdownOpen(false);
+      })
+      .catch((err) => {
+        alert('Failed to update workflow status.');
+        console.error(err);
+      });
+  };
+
   // Handle send message
   const handleSendMessage = async (e) => {
     if (e && e.preventDefault) e.preventDefault();
@@ -340,7 +538,6 @@ const FreelancerChatDashboard = ({ conversationId }) => {
       setUploadProgress(0);
     }
   };
-
 
   // File select handler
   const handleFileSelect = (files) => {
@@ -466,6 +663,22 @@ const FreelancerChatDashboard = ({ conversationId }) => {
             />
 
             <ProjectContext
+              handleSendContract={handleSendContract}
+              handleStatusUpdate={handleStatusUpdate}
+              contract={contract}
+              setContract={setContract}
+              currentWorkflowStatus={currentWorkflowStatus}
+              setCurrentWorkflowStatus={setCurrentWorkflowStatus}
+              contractForm={contractForm}
+              setContractForm={setContractForm}
+              isModalOpen={isModalOpen}
+              setIsModalOpen={setIsModalOpen}
+              isDropdownOpen={isDropdownOpen}
+              setIsDropdownOpen={setIsDropdownOpen}
+              isMinimized={isMinimized}
+              setIsMinimized={setIsMinimized}
+              loadingContract={loadingContract}
+              error={contractError}
               project={selectedChat.project}
               budget={selectedChat.budget}
               deadline={selectedChat.deadline}
@@ -473,6 +686,7 @@ const FreelancerChatDashboard = ({ conversationId }) => {
               orderType={selectedChat.orderType}
               orderId={selectedChat.orderId}
               token={token}
+              user={selectedChat.name}
             />
 
             <ChatMessages
@@ -500,6 +714,10 @@ const FreelancerChatDashboard = ({ conversationId }) => {
               isRecording={isRecording}
               handleVoiceRecord={handleVoiceRecord}
               isUploading={isUploading}
+              contract={contract}
+              token={token}
+              messages={messages}
+              setMessages={setMessages}
             />
           </>
         ) : (

@@ -101,7 +101,6 @@ class Message(models.Model):
     )
     message_type = models.CharField(max_length=20, choices=MESSAGE_TYPES, default='text')
     content = models.TextField(blank=True, help_text='Text content or description')
-
     attachment = models.ForeignKey(
         Attachment,
         null=True,
@@ -109,7 +108,6 @@ class Message(models.Model):
         on_delete=models.SET_NULL,
         related_name='messages'
     )
-
     payment_amount = models.DecimalField(
         max_digits=10,
         decimal_places=2,
@@ -127,6 +125,13 @@ class Message(models.Model):
         null=True,
         blank=True
     )
+    payment_request = models.ForeignKey(
+    'PaymentRequest',
+    null=True,
+    blank=True,
+    on_delete=models.SET_NULL,
+    related_name='messages'
+)
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

@@ -504,7 +504,7 @@ const AttachmentMenu = ({ isVisible, onClose, onFileSelect, onVoiceRecord }) => 
                 <Mic size={18} />
                 <span className="text-[10px] mt-1">Voice</span>
             </button>
-            <button
+            {/* <button
                 onClick={() => {
                     onClose();
                     // Freelancer can send payment requests here if needed - else remove or disable
@@ -514,7 +514,7 @@ const AttachmentMenu = ({ isVisible, onClose, onFileSelect, onVoiceRecord }) => 
             >
                 <DollarSign size={18} />
                 <span className="text-[10px] mt-1">Payment</span>
-            </button>
+            </button> */}
         </div>
     );
 };

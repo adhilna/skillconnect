@@ -3,6 +3,8 @@ import { Plus, Smile, Send, MicOff } from 'lucide-react';
 import AttachmentMenu from './AttachmentMenu';
 import FilePreview from './FilePreview';
 import PaymentRequestModal from './PaymentRequestModal';
+import api from '../../../../../api/api';
+
 
 const ChatInput = ({
     newMessage,
@@ -19,6 +21,10 @@ const ChatInput = ({
     isUploading,
     socket,
     selectedChat,
+    contract,
+    token,
+    setMessages,
+    user,
 }) => {
     const typingTimeoutRef = React.useRef(null);
     const [showPaymentRequestModal, setShowPaymentRequestModal] = useState(false);
@@ -47,6 +53,60 @@ const ChatInput = ({
         setShowAttachmentMenu(false);
         setShowPaymentRequestModal(true);
     };
+
+    const handlePaymentRequestSubmit = async (paymentRequestData) => {
+        if (!contract?.id) {
+            alert('No active contract to link payment request.');
+            return;
+        }
+
+        const payload = {
+            contract: contract.id,            // Include contract id linked to backend
+            amount: paymentRequestData.amount,
+            description: paymentRequestData.description,
+            payment_method: paymentRequestData.payment_method,
+            conversation_id: selectedChat.id,
+        };
+        console.log('Payload being sent to API:', payload);
+        try {
+            // Call backend payment request API
+            const response = await api.post('/api/v1/messaging/payment-requests/', payload, {
+                headers: { Authorization: `Bearer ${token}` },  // make sure token is available or pass it as prop if needed
+            });
+
+            alert('Payment request sent successfully!');
+
+            const paymentMessage = {
+                id: response.data.id,
+                sender: user || 'me', // or user name or email from context/state
+                isMe: true,
+                time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                type: 'payment',
+                content: response.data.description,
+                paymentData: {
+                    amount: response.data.amount,
+                    description: response.data.description,
+                    status: response.data.status,
+                    isRequest: true,
+                    onPayment: () => alert('Implement actual payment flow here'),
+                },
+                conversation_id: selectedChat.id,
+            };
+
+            // Update messages state here to show payment in chat immediately
+            setMessages((prevMessages) => [...prevMessages, paymentMessage]);
+
+            if (socket && socket.readyState === WebSocket.OPEN) {
+                socket.send(JSON.stringify(paymentMessage));
+            }
+
+            setShowPaymentRequestModal(false);
+        } catch (error) {
+            console.error('Error creating payment request:', error);
+            throw error; // So modal can display error
+        }
+    };
+
 
     return (
         <>
@@ -141,6 +201,7 @@ const ChatInput = ({
             <PaymentRequestModal
                 isVisible={showPaymentRequestModal}
                 onClose={() => setShowPaymentRequestModal(false)}
+                onSubmit={handlePaymentRequestSubmit}
             />
         </>
     );

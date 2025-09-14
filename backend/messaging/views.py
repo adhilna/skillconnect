@@ -325,8 +325,8 @@ class PaymentRequestViewSet(viewsets.ModelViewSet):
         return PaymentRequest.objects.none()
 
     def perform_create(self, serializer):
-        # Set requesting user as the freelancer creating the PaymentRequest
         serializer.save(requested_by=self.request.user)
+
 
     def perform_update(self, serializer):
         # Allow clients to update payment request status or other fields as needed

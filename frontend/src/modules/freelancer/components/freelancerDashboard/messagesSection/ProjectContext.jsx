@@ -1,22 +1,28 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Calendar, FileText, Clock, CheckCircle, X, ChevronDown, ChevronUp, Minimize2 } from 'lucide-react';
-import api from '../../../../../api/api';
+// import api from '../../../../../api/api';
 
-const ProjectContext = ({ project, budget, deadline, status, token, orderType, orderId }) => {
-    // Mock contract state
-    const [contract, setContract] = useState(null); // null = no contract, 'pending', 'accepted', 'rejected'
-    const [currentWorkflowStatus, setCurrentWorkflowStatus] = useState('planning');
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-    const [contractForm, setContractForm] = useState({
-        amount: '',
-        deadline: '',
-        terms: '',
-        milestones: ''
-    });
-    const [isMinimized, setIsMinimized] = useState(false);
-    const [loadingContract, setLoadingContract] = useState(false);
-    const [error, setError] = useState(null);
+const ProjectContext = ({
+    project,
+    budget,
+    deadline,
+    status,
+
+    contract,
+    currentWorkflowStatus,
+    loadingContract,
+    error,
+    contractForm,
+    setContractForm,
+    isModalOpen,
+    setIsModalOpen,
+    isDropdownOpen,
+    setIsDropdownOpen,
+    isMinimized,
+    setIsMinimized,
+    handleSendContract,
+    handleStatusUpdate,
+}) => {
 
     // Workflow steps
     const workflowSteps = [
@@ -32,101 +38,6 @@ const ProjectContext = ({ project, budget, deadline, status, token, orderType, o
         { value: 'paid', label: 'Paid' }
     ];
 
-    useEffect(() => {
-        if (!orderType || !orderId) return;  // wait until you have these props
-
-        setLoadingContract(true);
-        setError(null);
-
-        api.get(`/api/v1/messaging/contracts/?order_type=${orderType}&order_id=${orderId}`, {
-            headers: { Authorization: `Bearer ${token}` },
-        })
-            .then((response) => {
-                if (response.data.length > 0) {
-                    const c = response.data[0];
-                    setContract(c);
-                    setCurrentWorkflowStatus(c.workflow_status || 'planning');
-                    setContractForm({
-                        amount: c.amount || '',
-                        deadline: c.deadline || '',
-                        terms: c.terms || '',
-                        milestones: c.milestones || '',
-                    });
-                } else {
-                    setContract(null);
-                    setCurrentWorkflowStatus('planning');
-                    setContractForm({
-                        amount: '',
-                        deadline: '',
-                        terms: '',
-                        milestones: '',
-                    });
-                }
-            })
-            .catch((err) => {
-                setError('Failed to load contract data.');
-                console.error(err);
-            })
-            .finally(() => {
-                setLoadingContract(false);
-            });
-    }, [orderType, orderId, token]);
-
-    useEffect(() => {
-        if (!orderType || !orderId || !token) return;
-
-        let isMounted = true;
-        const backendHost = 'localhost:8000';
-        const wsProtocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
-        const wsUrl = `${wsProtocol}://${backendHost}/ws/messaging/contracts/${orderType}/${orderId}/?token=${token}`;
-        const ws = new WebSocket(wsUrl);
-
-        ws.onopen = () => {
-            if (!isMounted) {
-                ws.close();
-                return;
-            }
-            console.log('Contract WebSocket connected');
-        };
-
-        ws.onerror = (err) => {
-            console.error('Contract WebSocket error', err);
-        };
-
-        ws.onclose = (e) => {
-            if (isMounted) {
-                console.log('Contract WebSocket disconnected', e);
-            }
-        };
-
-        ws.onmessage = (event) => {
-            if (!isMounted) return;
-            try {
-                const data = JSON.parse(event.data);
-                console.log('Contract update received', data);
-                setContract(data);
-                setCurrentWorkflowStatus(data.workflow_status || 'planning');
-                setContractForm({
-                    amount: data.amount || '',
-                    deadline: data.deadline || '',
-                    terms: data.terms || '',
-                    milestones: data.milestones || '',
-                });
-            } catch (err) {
-                console.error('Error parsing contract WS message', err);
-            }
-        };
-
-        return () => {
-            isMounted = false;
-            if (ws && ws.readyState === WebSocket.OPEN) {
-                ws.close();
-            }
-        };
-    }, [orderType, orderId, token]);
-
-
-    // Modal controls
     const handleMakeContract = () => setIsModalOpen(true);
 
     const handleCloseModal = () => {
@@ -137,86 +48,6 @@ const ProjectContext = ({ project, budget, deadline, status, token, orderType, o
             terms: '',
             milestones: ''
         });
-    };
-
-    const handleSendContract = () => {
-        // Make sure you have orderType and orderId available, not conversationId
-        if (!orderType || !orderId) {
-            console.error('Order type or order ID not available');
-            return;
-        }
-
-        // Basic validation (optional, add more before sending)
-        if (!contractForm.amount || !contractForm.deadline) {
-            alert('Please fill in at least amount and deadline');
-            return;
-        }
-
-        // Create contract payload dynamically based on orderType
-        const payload = {
-            amount: contractForm.amount,
-            deadline: contractForm.deadline,
-            terms: contractForm.terms,
-            milestones: contractForm.milestones,
-            status: 'pending',
-            workflow_status: 'planning',
-        };
-
-        // Add order_type and order_id instead of FK field names
-        let normalizedOrderType;
-        if (orderType.toLowerCase().startsWith('service')) {
-            normalizedOrderType = 'service';
-        } else if (orderType.toLowerCase().startsWith('proposal')) {
-            normalizedOrderType = 'proposal';
-        } else {
-            console.error('Invalid orderType:', orderType);
-            alert('Failed to send contract due to invalid order type');
-            return;
-        }
-
-        payload.order_type = normalizedOrderType;
-        payload.order_id = orderId;
-
-
-        api.post('/api/v1/messaging/contracts/', payload, {
-            headers: { Authorization: `Bearer ${token}` },
-        })
-            .then((response) => {
-                setContract(response.data);
-                setCurrentWorkflowStatus(response.data.workflow_status || 'planning');
-                setIsModalOpen(false);
-                setContractForm({
-                    amount: '',
-                    deadline: '',
-                    terms: '',
-                    milestones: '',
-                });
-            })
-            .catch((error) => {
-                alert('Failed to send contract. Please try again.');
-                console.error(error);
-            });
-    };
-
-    const handleStatusUpdate = (newStatus) => {
-        if (!contract || !contract.id) return;
-
-        api.patch(
-            `/api/v1/messaging/contracts/${contract.id}/`,
-            { workflow_status: newStatus },
-            {
-                headers: { Authorization: `Bearer ${token}` },
-            }
-        )
-            .then((response) => {
-                setContract(response.data);
-                setCurrentWorkflowStatus(response.data.workflow_status);
-                setIsDropdownOpen(false);
-            })
-            .catch((error) => {
-                alert('Failed to update workflow status.');
-                console.error(error);
-            });
     };
 
     const handleInputChange = (field, value) => {

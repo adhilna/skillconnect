@@ -16,7 +16,7 @@ const PaymentRequestModal = ({
   const [formData, setFormData] = useState({
     amount: '',
     description: '',
-    paymentMethod: ''
+    paymentMethod: null,
   });
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
@@ -81,6 +81,7 @@ const PaymentRequestModal = ({
         description: formData.description.trim(),
         payment_method: formData.paymentMethod
       };
+      console.log("Submitting payment method:", paymentRequestData.payment_method);
 
       // If onSubmit is provided, call it (for real API integration)
       if (onSubmit) {
@@ -187,8 +188,8 @@ const PaymentRequestModal = ({
                 onChange={(e) => handleInputChange('amount', formatAmount(e.target.value))}
                 disabled={isLoading}
                 className={`w-full bg-white/5 border rounded-xl px-3 py-2 sm:px-4 sm:py-3 text-sm sm:text-base text-white placeholder-white/50 focus:outline-none transition-colors pr-8 sm:pr-10 ${errors.amount
-                    ? 'border-red-500 focus:border-red-400'
-                    : 'border-white/10 focus:border-purple-500'
+                  ? 'border-red-500 focus:border-red-400'
+                  : 'border-white/10 focus:border-purple-500'
                   }`}
                 placeholder="Enter amount (e.g., 250.00)"
               />
@@ -215,8 +216,8 @@ const PaymentRequestModal = ({
               rows={3}
               maxLength={500}
               className={`w-full bg-white/5 border rounded-xl px-3 py-2 sm:px-4 sm:py-3 text-sm sm:text-base text-white placeholder-white/50 focus:outline-none transition-colors resize-none ${errors.description
-                  ? 'border-red-500 focus:border-red-400'
-                  : 'border-white/10 focus:border-purple-500'
+                ? 'border-red-500 focus:border-red-400'
+                : 'border-white/10 focus:border-purple-500'
                 }`}
               placeholder="Describe what this payment is for... (minimum 10 characters)"
             />
@@ -238,8 +239,8 @@ const PaymentRequestModal = ({
               onChange={(e) => handleInputChange('paymentMethod', e.target.value)}
               disabled={isLoading}
               className={`w-full bg-white/5 border rounded-xl px-3 py-2 sm:px-4 sm:py-3 text-sm sm:text-base text-white focus:outline-none transition-colors ${errors.paymentMethod
-                  ? 'border-red-500 focus:border-red-400'
-                  : 'border-white/10 focus:border-purple-500'
+                ? 'border-red-500 focus:border-red-400'
+                : 'border-white/10 focus:border-purple-500'
                 }`}
             >
               <option value="" className="bg-gray-800">Select payment method</option>

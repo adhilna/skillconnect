@@ -31,6 +31,7 @@ class MessageSerializer(serializers.ModelSerializer):
     sender_id = serializers.IntegerField(source='sender.id', read_only=True)
     attachment = AttachmentSerializer(read_only=True)
     voice_duration = serializers.CharField(read_only=True)
+    payment_request = serializers.PrimaryKeyRelatedField(read_only=True)
 
     class Meta:
         model = Message
@@ -44,6 +45,7 @@ class MessageSerializer(serializers.ModelSerializer):
             'voice_duration',
             'payment_amount',
             'payment_status',
+            'payment_request',
             'created_at',
             'updated_at',
             'delivered_at',
@@ -374,6 +376,7 @@ class ContractSerializer(serializers.ModelSerializer):
         return data
 
 class PaymentRequestSerializer(serializers.ModelSerializer):
+    conversation_id = serializers.IntegerField(write_only=True)
     class Meta:
         model = PaymentRequest
         fields = [
@@ -388,8 +391,9 @@ class PaymentRequestSerializer(serializers.ModelSerializer):
             'transaction_id',
             'created_at',
             'updated_at',
+            'conversation_id',
         ]
-        read_only_fields = ['id', 'status', 'transaction_id', 'created_at', 'updated_at', 'requested_by', 'payee', 'contract']
+        read_only_fields = ['id', 'status', 'transaction_id', 'created_at', 'updated_at', 'requested_by', 'payee']
 
     def validate_amount(self, value):
         if value <= 0:
@@ -406,9 +410,31 @@ class PaymentRequestSerializer(serializers.ModelSerializer):
         return data
 
     def create(self, validated_data):
+        conversation_id = validated_data.pop('conversation_id')
         request = self.context.get('request')
-        validated_data['requested_by'] = request.user  # Assuming freelancer user
-        # Assign the payee from contract's client user
         contract = validated_data['contract']
-        validated_data['payee'] = contract.client.user
-        return super().create(validated_data)
+
+        # Determine client user from service or proposal order
+        if contract.service_order:
+            client_user = contract.service_order.client.user
+        elif contract.proposal_order:
+            client_user = contract.proposal_order.client.user
+        else:
+            raise serializers.ValidationError("Contract is missing associated client")
+
+        validated_data['requested_by'] = request.user
+        validated_data['payee'] = client_user
+
+        payment_request = super().create(validated_data)
+        conversation = Conversation.objects.get(id=conversation_id)
+        Message.objects.create(
+            sender=request.user,
+            conversation=conversation,
+            message_type='payment',
+            content=payment_request.description,
+            payment_amount=payment_request.amount,
+            payment_status=payment_request.status,
+            payment_request=payment_request,
+        )
+
+        return payment_request
