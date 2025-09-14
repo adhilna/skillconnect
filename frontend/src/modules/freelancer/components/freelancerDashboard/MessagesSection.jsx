@@ -228,6 +228,7 @@ const FreelancerChatDashboard = ({ conversationId }) => {
         if (!isMounted) return;
 
         const data = JSON.parse(event.data);
+        console.log("WS message received:", data);
 
         // Handle different incoming event types:
         if (data.type === 'chat_message' || (!data.type && data.id)) {
@@ -259,7 +260,25 @@ const FreelancerChatDashboard = ({ conversationId }) => {
             voiceData: data.message_type === 'voice' ? { duration: data.voice_duration || '0:00' } : null,
           };
 
-          setMessages(prev => sortMessages([...prev, newMsg]));
+          setMessages(prev => {
+            const index = prev.findIndex(
+              m =>
+                m.id === newMsg.id ||  // Confirmed message matched by id
+                (typeof m.id === 'string' && m.id.startsWith('temp-') &&
+                  m.content === newMsg.content && m.paymentData?.amount === newMsg.paymentData?.amount)
+            );
+
+            if (index !== -1) {
+              const copy = [...prev];
+              copy[index] = newMsg;  // Replace optimistic message with confirmed message
+              return copy;
+            } else {
+              return sortMessages([...prev, newMsg]);
+            }
+          });
+
+
+
           return;
         }
 

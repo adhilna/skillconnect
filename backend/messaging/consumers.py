@@ -49,15 +49,19 @@ class ChatConsumer(AsyncWebsocketConsumer):
             return
 
         # Create and save the message in DB
-        msg = await self.create_message(
-            sender=sender,
-            conversation_id=self.conversation_id,
-            content=message_content,
-            message_type=message_type
-        )
+        if message_type == "text":
+            msg = await self.create_message(
+                sender=sender,
+                conversation_id=self.conversation_id,
+                content=message_content,
+                message_type=message_type
+            )
 
-        # Serialize the message exactly how REST API does (includes attachment if any)
-        serialized = await self.serialize_message(msg)
+            # Serialize message as REST API would
+            serialized = await self.serialize_message(msg)
+        else:
+            # For payment or other types, do nothing here; created elsewhere
+            return
 
         # Broadcast serialized message to group
         await self.channel_layer.group_send(

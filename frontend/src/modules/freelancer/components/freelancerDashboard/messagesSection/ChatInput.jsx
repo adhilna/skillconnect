@@ -23,7 +23,6 @@ const ChatInput = ({
     selectedChat,
     contract,
     token,
-    setMessages,
     user,
 }) => {
     const typingTimeoutRef = React.useRef(null);
@@ -61,51 +60,52 @@ const ChatInput = ({
         }
 
         const payload = {
-            contract: contract.id,            // Include contract id linked to backend
+            contract: contract.id,
             amount: paymentRequestData.amount,
             description: paymentRequestData.description,
             payment_method: paymentRequestData.payment_method,
             conversation_id: selectedChat.id,
         };
-        console.log('Payload being sent to API:', payload);
+
         try {
-            // Call backend payment request API
             const response = await api.post('/api/v1/messaging/payment-requests/', payload, {
-                headers: { Authorization: `Bearer ${token}` },  // make sure token is available or pass it as prop if needed
+                headers: { Authorization: `Bearer ${token}` },
             });
 
             alert('Payment request sent successfully!');
 
-            const paymentMessage = {
-                id: response.data.id,
-                sender: user || 'me', // or user name or email from context/state
-                isMe: true,
-                time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                type: 'payment',
-                content: response.data.description,
-                paymentData: {
-                    amount: response.data.amount,
-                    description: response.data.description,
-                    status: response.data.status,
-                    isRequest: true,
-                    onPayment: () => alert('Implement actual payment flow here'),
-                },
-                conversation_id: selectedChat.id,
-            };
+            // Optional: Add optimistic message to UI with temp id
+            // const tempId = `temp-${Date.now()}`;
+            // const paymentMessage = {
+            //     id: tempId,
+            //     sender: user || 'me',
+            //     isMe: true,
+            //     time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            //     type: 'payment',
+            //     content: response.data.description,
+            //     paymentData: {
+            //         amount: response.data.amount,
+            //         description: response.data.description,
+            //         status: response.data.status,
+            //         isRequest: true,
+            //         onPayment: () => alert('Implement actual payment flow here'),
+            //     },
+            //     conversation_id: selectedChat.id,
+            // };
 
-            // Update messages state here to show payment in chat immediately
-            setMessages((prevMessages) => [...prevMessages, paymentMessage]);
+            // Add optimistic message if you want immediate feedback
+            // setMessages(prev => [...prev, paymentMessage]);
 
-            if (socket && socket.readyState === WebSocket.OPEN) {
-                socket.send(JSON.stringify(paymentMessage));
-            }
+            // Do NOT send this payment message over WebSocket manually;
+            // backend will broadcast the confirmed payment message.
 
             setShowPaymentRequestModal(false);
         } catch (error) {
             console.error('Error creating payment request:', error);
-            throw error; // So modal can display error
+            // Handle error more gracefully in UI
         }
     };
+
 
 
     return (

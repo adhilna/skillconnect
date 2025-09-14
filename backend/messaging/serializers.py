@@ -2,6 +2,8 @@ from rest_framework import serializers
 from .models import Attachment, Message, Conversation, ConversationReadStatus, Contract, PaymentRequest
 from gigs.models import ServiceOrder, ProposalOrder
 from django.shortcuts import get_object_or_404
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
 
 class AttachmentSerializer(serializers.ModelSerializer):
     file = serializers.SerializerMethodField()
@@ -412,22 +414,10 @@ class PaymentRequestSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         conversation_id = validated_data.pop('conversation_id')
         request = self.context.get('request')
-        contract = validated_data['contract']
-
-        # Determine client user from service or proposal order
-        if contract.service_order:
-            client_user = contract.service_order.client.user
-        elif contract.proposal_order:
-            client_user = contract.proposal_order.client.user
-        else:
-            raise serializers.ValidationError("Contract is missing associated client")
-
-        validated_data['requested_by'] = request.user
-        validated_data['payee'] = client_user
-
         payment_request = super().create(validated_data)
         conversation = Conversation.objects.get(id=conversation_id)
-        Message.objects.create(
+
+        message = Message.objects.create(
             sender=request.user,
             conversation=conversation,
             message_type='payment',
@@ -435,6 +425,18 @@ class PaymentRequestSerializer(serializers.ModelSerializer):
             payment_amount=payment_request.amount,
             payment_status=payment_request.status,
             payment_request=payment_request,
+        )
+
+        channel_layer = get_channel_layer()
+        group_name = f'chat_{conversation.id}'
+        serialized_message = MessageSerializer(message, context={'request': request}).data
+
+        async_to_sync(channel_layer.group_send)(
+            group_name,
+            {
+                'type': 'chat_message',  # matches consumer method
+                'message': serialized_message,
+            }
         )
 
         return payment_request
