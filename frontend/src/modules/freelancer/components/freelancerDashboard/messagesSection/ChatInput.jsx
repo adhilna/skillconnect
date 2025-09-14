@@ -23,7 +23,6 @@ const ChatInput = ({
     selectedChat,
     contract,
     token,
-    user,
 }) => {
     const typingTimeoutRef = React.useRef(null);
     const [showPaymentRequestModal, setShowPaymentRequestModal] = useState(false);
@@ -68,7 +67,7 @@ const ChatInput = ({
         };
 
         try {
-            const response = await api.post('/api/v1/messaging/payment-requests/', payload, {
+            await api.post('/api/v1/messaging/payment-requests/', payload, {
                 headers: { Authorization: `Bearer ${token}` },
             });
 

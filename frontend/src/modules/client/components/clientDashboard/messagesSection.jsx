@@ -234,7 +234,7 @@ function parseDuration(str) {
 
 
 // Payment message component for client (pay only)
-const PaymentMessage = ({ amount, description, status, isRequest, onPayment }) => (
+const PaymentMessage = ({ amount, description, status, onPayment }) => (
     <div className="bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-500/30 rounded-lg p-4 max-w-xs">
         <div className="flex items-center justify-between mb-2">
             <div className="flex items-center space-x-2">
@@ -253,7 +253,7 @@ const PaymentMessage = ({ amount, description, status, isRequest, onPayment }) =
             </span>
         </div>
         <p className="text-white/80 text-sm mb-3 whitespace-pre-wrap">{description}</p>
-        {isRequest && status === 'pending' && (
+        {status === 'pending' && (
             <button
                 onClick={onPayment}
                 className="w-full bg-gradient-to-r from-green-500 to-emerald-500 text-white py-2 rounded-lg text-sm font-medium hover:from-green-600 hover:to-emerald-600 transition-all"
@@ -780,7 +780,6 @@ const ClientChatDashboard = ({ conversationId }) => {
         };
     }, [selectedChat, token, user]);
 
-
     // Sending message handler
     const handleSendMessage = async (e) => {
         if (e && e.preventDefault) e.preventDefault();
@@ -1171,15 +1170,15 @@ const ClientChatDashboard = ({ conversationId }) => {
                                         <div className="flex items-center justify-between mb-3">
                                             <div className="flex items-center space-x-2">
                                                 <DollarSign size={20} className="text-green-400" />
-                                                <span className="text-white font-bold text-lg">${selectedPayment?.amount}</span>
+                                                <span className="text-white font-bold text-lg">${selectedPayment?.paymentData?.amount}</span>
                                             </div>
                                             <span className="px-3 py-1 bg-yellow-500/20 text-yellow-300 rounded-full text-sm">{selectedPayment?.status}</span>
                                         </div>
-                                        <p className="text-white/80 text-sm mb-4">{selectedPayment?.description}</p>
+                                        <p className="text-white/80 text-sm mb-4">{selectedPayment?.paymentData?.description}</p>
                                         <div className="space-y-2 text-sm text-white/70">
                                             <div className="flex justify-between">
-                                                <span>Amount:</span>
-                                                <span className="text-white">${selectedPayment?.amount}</span>
+                                                <span>Amount: </span>
+                                                <span className="text-white">${selectedPayment?.paymentData?.amount}</span>
                                             </div>
                                             <div className="flex justify-between">
                                                 <span>Processing Fee:</span>
@@ -1188,7 +1187,10 @@ const ClientChatDashboard = ({ conversationId }) => {
                                             <hr className="border-white/20" />
                                             <div className="flex justify-between font-medium">
                                                 <span>Total:</span>
-                                                <span className="text-white">${(selectedPayment?.amount + 2.5).toFixed(2)}</span>
+                                                <span className="text-white">
+                                                    ${(Number(selectedPayment?.paymentData?.amount) + 2.5).toFixed(2)}
+                                                </span>
+
                                             </div>
                                         </div>
                                     </div>
