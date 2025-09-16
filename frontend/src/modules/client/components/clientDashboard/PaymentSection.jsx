@@ -1,16 +1,18 @@
-import React, { useState } from 'react';
-import { 
-  CreditCard, 
-  Smartphone, 
-  Building2, 
-  Shield, 
-  Check, 
+import React, { useState, useEffect, useContext } from 'react';
+import {
+  CreditCard,
+  Smartphone,
+  Building2,
+  Shield,
+  Check,
   ArrowLeft,
   Lock,
   Star,
   Clock,
   X,
   DollarSign,
+  ChevronRight,
+  ChevronLeft,
   Calendar,
   Download,
   Filter,
@@ -20,6 +22,8 @@ import {
   AlertCircle,
   XCircle
 } from 'lucide-react';
+import api from '../../../../api/api';
+import { AuthContext } from '../../../../context/AuthContext';
 
 const PaymentDashboard = () => {
   const [currentView, setCurrentView] = useState('dashboard'); // 'dashboard' or 'payment'
@@ -31,59 +35,66 @@ const PaymentDashboard = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
 
+  const [paymentHistory, setPaymentHistory] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [loading, setLoading] = useState(false);
+  const { token } = useContext(AuthContext);
+
+
   // Mock payment history data
-  const [paymentHistory, setPaymentHistory] = useState([
-    {
-      id: 1,
-      orderId: "#ORD-2025-001",
-      description: "Premium subscription - Monthly plan",
-      amount: 299.99,
-      status: "paid",
-      date: "2025-08-20",
-      method: "Razorpay (UPI)",
-      transactionId: "TXN123456789"
-    },
-    {
-      id: 2,
-      orderId: "#ORD-2025-002",
-      description: "Additional storage - 100GB",
-      amount: 49.99,
-      status: "pending",
-      date: "2025-08-25",
-      method: null,
-      transactionId: null
-    },
-    {
-      id: 3,
-      orderId: "#ORD-2025-003",
-      description: "Pro features upgrade",
-      amount: 199.99,
-      status: "failed",
-      date: "2025-08-24",
-      method: "Credit Card",
-      transactionId: null
-    },
-    {
-      id: 4,
-      orderId: "#ORD-2025-004",
-      description: "Annual subscription renewal",
-      amount: 2999.99,
-      status: "pending",
-      date: "2025-08-26",
-      method: null,
-      transactionId: null
-    },
-    {
-      id: 5,
-      orderId: "#ORD-2025-005",
-      description: "Custom domain setup",
-      amount: 99.99,
-      status: "paid",
-      date: "2025-08-18",
-      method: "Net Banking",
-      transactionId: "TXN987654321"
-    }
-  ]);
+  // const [paymentHistory, setPaymentHistory] = useState([
+  //   {
+  //     id: 1,
+  //     orderId: "#ORD-2025-001",
+  //     description: "Premium subscription - Monthly plan",
+  //     amount: 299.99,
+  //     status: "paid",
+  //     date: "2025-08-20",
+  //     method: "Razorpay (UPI)",
+  //     transactionId: "TXN123456789"
+  //   },
+  //   {
+  //     id: 2,
+  //     orderId: "#ORD-2025-002",
+  //     description: "Additional storage - 100GB",
+  //     amount: 49.99,
+  //     status: "pending",
+  //     date: "2025-08-25",
+  //     method: null,
+  //     transactionId: null
+  //   },
+  //   {
+  //     id: 3,
+  //     orderId: "#ORD-2025-003",
+  //     description: "Pro features upgrade",
+  //     amount: 199.99,
+  //     status: "failed",
+  //     date: "2025-08-24",
+  //     method: "Credit Card",
+  //     transactionId: null
+  //   },
+  //   {
+  //     id: 4,
+  //     orderId: "#ORD-2025-004",
+  //     description: "Annual subscription renewal",
+  //     amount: 2999.99,
+  //     status: "pending",
+  //     date: "2025-08-26",
+  //     method: null,
+  //     transactionId: null
+  //   },
+  //   {
+  //     id: 5,
+  //     orderId: "#ORD-2025-005",
+  //     description: "Custom domain setup",
+  //     amount: 99.99,
+  //     status: "paid",
+  //     date: "2025-08-18",
+  //     method: "Net Banking",
+  //     transactionId: "TXN987654321"
+  //   }
+  // ]);
 
   const paymentMethods = [
     {
@@ -119,6 +130,32 @@ const PaymentDashboard = () => {
       processingTime: '2-5 minutes'
     }
   ];
+
+  useEffect(() => {
+    const fetchPayments = async () => {
+      setLoading(true);
+      try {
+        const response = await api.get(`/api/v1/messaging/payment-requests/?page=${currentPage}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+        // Axios or similar clients resolve data directly (no .json() needed)
+        // So just access response.data directly.
+        const data = response.data;
+        setPaymentHistory(data.results);
+        setTotalPages(Math.ceil(data.count / 5));
+      } catch (error) {
+        console.error('Failed to fetch payment requests:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchPayments();
+  }, [currentPage]);
+
+
 
   const getStatusIcon = (status) => {
     switch (status) {
@@ -158,7 +195,7 @@ const PaymentDashboard = () => {
 
   const filteredHistory = paymentHistory.filter(payment => {
     const matchesSearch = payment.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         payment.orderId.toLowerCase().includes(searchTerm.toLowerCase());
+      payment.orderId.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesFilter = filterStatus === 'all' || payment.status === filterStatus;
     return matchesSearch && matchesFilter;
   });
@@ -166,18 +203,18 @@ const PaymentDashboard = () => {
   const processPayment = () => {
     setIsProcessing(true);
     setShowConfirmModal(false);
-    
+
     setTimeout(() => {
       setIsProcessing(false);
       // Update the payment status to paid
-      const updatedHistory = paymentHistory.map(payment => 
-        payment.id === selectedPayment.id 
-          ? { 
-              ...payment, 
-              status: 'paid',
-              method: paymentMethods.find(m => m.id === selectedMethod)?.name || selectedMethod,
-              transactionId: `TXN${Date.now()}`
-            }
+      const updatedHistory = paymentHistory.map(payment =>
+        payment.id === selectedPayment.id
+          ? {
+            ...payment,
+            status: 'paid',
+            method: paymentMethods.find(m => m.id === selectedMethod)?.name || selectedMethod,
+            transactionId: `TXN${Date.now()}`
+          }
           : payment
       );
       setPaymentHistory(updatedHistory);
@@ -188,8 +225,15 @@ const PaymentDashboard = () => {
 
   // Calculate stats
   const totalPaid = paymentHistory.filter(p => p.status === 'paid').reduce((sum, p) => sum + p.amount, 0);
-  const totalPending = paymentHistory.filter(p => p.status === 'pending').reduce((sum, p) => sum + p.amount, 0);
-  const thisMonth = paymentHistory.reduce((sum, p) => sum + p.amount, 0);
+  const totalPending = paymentHistory
+    .filter(p => p.status === 'pending')
+    .reduce((sum, p) => sum + Number(p.amount), 0);
+
+  const thisMonth = paymentHistory.reduce(
+    (sum, p) => sum + (isNaN(Number(p.amount)) ? 0 : Number(p.amount)),
+    0
+  );
+
 
   // Payment Success Modal for completed payments
   const PaidDetailsModal = () => (
@@ -197,14 +241,14 @@ const PaymentDashboard = () => {
       <div className="bg-black/40 backdrop-blur-xl border border-white/20 rounded-3xl p-6 max-w-md w-full">
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-xl font-bold text-white">Payment Details</h3>
-          <button 
+          <button
             onClick={() => setShowPaidModal(false)}
             className="text-white/60 hover:text-white transition-colors"
           >
             <X size={24} />
           </button>
         </div>
-        
+
         <div className="text-center mb-6">
           <div className="w-16 h-16 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full flex items-center justify-center mx-auto mb-4">
             <Check size={24} className="text-white" />
@@ -237,14 +281,14 @@ const PaymentDashboard = () => {
         </div>
 
         <div className="flex space-x-3">
-          <button 
+          <button
             onClick={() => setShowPaidModal(false)}
             className="flex-1 bg-white/10 text-white py-3 rounded-xl font-medium hover:bg-white/20 transition-all flex items-center justify-center space-x-2"
           >
             <Download size={16} />
             <span>Download Receipt</span>
           </button>
-          <button 
+          <button
             onClick={() => setShowPaidModal(false)}
             className="flex-1 bg-gradient-to-r from-green-500 to-emerald-500 text-white py-3 rounded-xl font-medium hover:from-green-600 hover:to-emerald-600 transition-all"
           >
@@ -285,7 +329,7 @@ const PaymentDashboard = () => {
               </div>
             </div>
           </div>
-          
+
           <div className="bg-black/20 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
             <div className="flex items-center justify-between">
               <div>
@@ -297,7 +341,7 @@ const PaymentDashboard = () => {
               </div>
             </div>
           </div>
-          
+
           <div className="bg-black/20 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
             <div className="flex items-center justify-between">
               <div>
@@ -325,7 +369,7 @@ const PaymentDashboard = () => {
                 className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-4 py-3 text-white placeholder-white/40 focus:outline-none focus:border-green-500/50"
               />
             </div>
-            
+
             {/* Filter */}
             <select
               value={filterStatus}
@@ -369,18 +413,18 @@ const PaymentDashboard = () => {
                     <div>
                       <h4 className="text-white font-medium">{payment.description}</h4>
                       <div className="flex items-center space-x-3 mt-1">
-                        <p className="text-white/60 text-sm">{payment.orderId}</p>
+                        <p className="text-white/60 text-sm">{payment.freelancer_name}</p>
                         <span className="text-white/40">•</span>
-                        <p className="text-white/60 text-sm">{payment.date}</p>
+                        <p className="text-white/60 text-sm">{payment.created_at.split('T')[0]}</p>
                       </div>
                     </div>
                   </div>
-                  
+
                   <div className="flex items-center space-x-4">
                     <div className="text-right">
                       <p className="text-xl font-bold text-white">${payment.amount}</p>
                       {payment.method && (
-                        <p className="text-white/60 text-xs">{payment.method}</p>
+                        <p className="text-white/60 text-xs">{payment.payment_method}</p>
                       )}
                     </div>
                     <span className={`px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(payment.status)}`}>
@@ -399,6 +443,38 @@ const PaymentDashboard = () => {
               <p className="text-white/60">Try adjusting your search or filter criteria</p>
             </div>
           )}
+          <div className="flex justify-center gap-2 pt-6">
+            <button
+              onClick={() => setCurrentPage(currentPage - 1)}
+              disabled={currentPage === 1}
+              className="px-3 py-2 bg-white/10 text-white rounded-lg disabled:opacity-50"
+            >
+              <ChevronLeft size={18} />
+            </button>
+
+            {Array.from({ length: totalPages }, (_, i) => (
+              <button
+                key={i + 1}
+                onClick={() => setCurrentPage(i + 1)}
+                className={`px-4 py-2 rounded-lg ${i + 1 === currentPage
+                    ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white'
+                    : 'text-white bg-white/10 hover:bg-white/20'
+                  }`}
+              >
+                {i + 1}
+              </button>
+            ))}
+
+            <button
+              onClick={() => setCurrentPage(currentPage + 1)}
+              disabled={currentPage === totalPages}
+              className="px-3 py-2 bg-white/10 text-white rounded-lg disabled:opacity-50"
+            >
+              <ChevronRight size={18} />
+            </button>
+          </div>
+
+
         </div>
       </div>
 
@@ -413,7 +489,7 @@ const PaymentDashboard = () => {
       <div className="max-w-2xl mx-auto">
         {/* Header */}
         <div className="flex items-center mb-8">
-          <button 
+          <button
             onClick={() => setCurrentView('dashboard')}
             className="text-white/60 hover:text-white transition-colors mr-4"
           >
@@ -431,7 +507,7 @@ const PaymentDashboard = () => {
               <span className="text-xs">Secure</span>
             </div>
           </div>
-          
+
           <div className="bg-white/5 border border-white/10 rounded-xl p-4 mb-4">
             <div className="flex justify-between items-start mb-3">
               <div>
@@ -443,7 +519,7 @@ const PaymentDashboard = () => {
                 <p className="text-white/60 text-xs">Order {selectedPayment?.orderId}</p>
               </div>
             </div>
-            
+
             <div className="border-t border-white/10 pt-3 flex justify-between items-center">
               <span className="text-white/70">Total Amount</span>
               <span className="text-xl font-bold text-green-400">${selectedPayment?.amount}</span>
@@ -454,7 +530,7 @@ const PaymentDashboard = () => {
         {/* Payment Methods */}
         <div className="bg-black/20 backdrop-blur-xl border border-white/10 rounded-3xl p-6 mb-8">
           <h2 className="text-xl font-semibold text-white mb-6">Choose Payment Method</h2>
-          
+
           <div className="space-y-3">
             {paymentMethods.map((method) => {
               const IconComponent = method.icon;
@@ -462,11 +538,10 @@ const PaymentDashboard = () => {
                 <div
                   key={method.id}
                   onClick={() => setSelectedMethod(method.id)}
-                  className={`relative cursor-pointer transition-all duration-300 ${
-                    selectedMethod === method.id
-                      ? 'bg-gradient-to-r from-green-500/20 to-emerald-500/20 border-green-500/40'
-                      : 'bg-white/5 border-white/10 hover:bg-white/10'
-                  } border rounded-xl p-4`}
+                  className={`relative cursor-pointer transition-all duration-300 ${selectedMethod === method.id
+                    ? 'bg-gradient-to-r from-green-500/20 to-emerald-500/20 border-green-500/40'
+                    : 'bg-white/5 border-white/10 hover:bg-white/10'
+                    } border rounded-xl p-4`}
                 >
                   {method.popular && (
                     <div className="absolute -top-2 -right-2 bg-gradient-to-r from-orange-500 to-red-500 text-white text-xs px-2 py-1 rounded-full flex items-center">
@@ -474,14 +549,13 @@ const PaymentDashboard = () => {
                       Popular
                     </div>
                   )}
-                  
+
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-4">
-                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
-                        selectedMethod === method.id
-                          ? 'bg-green-500/20'
-                          : 'bg-white/10'
-                      }`}>
+                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${selectedMethod === method.id
+                        ? 'bg-green-500/20'
+                        : 'bg-white/10'
+                        }`}>
                         <IconComponent size={20} className={
                           selectedMethod === method.id ? 'text-green-400' : 'text-white/70'
                         } />
@@ -491,7 +565,7 @@ const PaymentDashboard = () => {
                         <p className="text-white/60 text-sm">{method.description}</p>
                       </div>
                     </div>
-                    
+
                     <div className="flex items-center space-x-3">
                       <div className="text-right">
                         <div className="flex items-center text-white/60 text-xs">
@@ -499,11 +573,10 @@ const PaymentDashboard = () => {
                           {method.processingTime}
                         </div>
                       </div>
-                      <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
-                        selectedMethod === method.id
-                          ? 'border-green-500 bg-green-500'
-                          : 'border-white/30'
-                      }`}>
+                      <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${selectedMethod === method.id
+                        ? 'border-green-500 bg-green-500'
+                        : 'border-white/30'
+                        }`}>
                         {selectedMethod === method.id && (
                           <Check size={14} className="text-white" />
                         )}
@@ -527,7 +600,7 @@ const PaymentDashboard = () => {
               <span>Pay ${selectedPayment?.amount} Securely</span>
             </div>
           </button>
-          
+
           <p className="text-center text-white/50 text-xs mt-3">
             By proceeding, you agree to our Terms of Service and Privacy Policy
           </p>
@@ -540,7 +613,7 @@ const PaymentDashboard = () => {
           <div className="bg-black/40 backdrop-blur-xl border border-white/20 rounded-3xl p-6 max-w-lg w-full">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-xl font-bold text-white">Confirm Payment</h3>
-              <button 
+              <button
                 onClick={() => setShowConfirmModal(false)}
                 className="text-white/60 hover:text-white transition-colors"
               >
@@ -568,13 +641,13 @@ const PaymentDashboard = () => {
             </div>
 
             <div className="flex space-x-3">
-              <button 
+              <button
                 onClick={() => setShowConfirmModal(false)}
                 className="flex-1 bg-white/10 text-white py-3 rounded-xl font-medium hover:bg-white/20 transition-all"
               >
                 Cancel
               </button>
-              <button 
+              <button
                 onClick={processPayment}
                 className="flex-1 bg-gradient-to-r from-green-500 to-emerald-500 text-white py-3 rounded-xl font-medium hover:from-green-600 hover:to-emerald-600 transition-all flex items-center justify-center space-x-2"
               >

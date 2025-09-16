@@ -379,13 +379,18 @@ class ContractSerializer(serializers.ModelSerializer):
 
 class PaymentRequestSerializer(serializers.ModelSerializer):
     conversation_id = serializers.IntegerField(write_only=True)
+    freelancer_name = serializers.CharField(source='requested_by.freelancer_profile.full_name', read_only=True)
+    payee_name = serializers.CharField(source='payee.client_profile.full_name', read_only=True)
+
     class Meta:
         model = PaymentRequest
         fields = [
             'id',
             'contract',
             'requested_by',
+            'freelancer_name',
             'payee',
+            'payee_name',
             'amount',
             'description',
             'status',

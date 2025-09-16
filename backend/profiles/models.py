@@ -117,6 +117,10 @@ class FreelancerProfile(models.Model):
         if hasattr(self.user, 'verification'):
             return self.user.verification
         return None
+    
+    @property
+    def full_name(self):
+        return f"{self.first_name} {self.last_name}"
 
 
     def __str__(self):
@@ -289,6 +293,10 @@ class ClientProfile(models.Model):
 
     def __str__(self):
         return f"{self.first_name} {self.last_name} ({self.company_name})"
+    
+    @property
+    def full_name(self):
+        return f"{self.first_name} {self.last_name}"
 
     class Meta:
         indexes = [

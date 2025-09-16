@@ -18,6 +18,7 @@ from asgiref.sync import async_to_sync
 from django.utils.timezone import now
 from rest_framework.decorators import action
 from .permissions import IsPaymentParticipantPermission
+from .pagination import PaymentHistoryPagination
 
 
 # --- Custom Permission: Only participants can access
@@ -313,21 +314,30 @@ class ContractViewSet(viewsets.ModelViewSet):
 class PaymentRequestViewSet(viewsets.ModelViewSet):
     serializer_class = PaymentRequestSerializer
     permission_classes = [permissions.IsAuthenticated, IsPaymentParticipantPermission]
+    pagination_class = PaymentHistoryPagination
 
     def get_queryset(self):
         user = self.request.user
-        if hasattr(user, 'freelancer_profile'):
-            # Freelancer sees payment requests they created
-            return PaymentRequest.objects.filter(requested_by=user)
-        elif hasattr(user, 'client_profile'):
-            # Client sees payment requests for which they are payee
+        if hasattr(user, 'client_profile'):
             return PaymentRequest.objects.filter(payee=user)
+        elif hasattr(user, 'freelancer_profile'):
+            return PaymentRequest.objects.filter(requested_by=user)
         return PaymentRequest.objects.none()
 
     def perform_create(self, serializer):
-        serializer.save(requested_by=self.request.user)
+        contract = serializer.validated_data.get('contract')
+        payee_user = None
 
+        if contract is not None:
+            # Determine payee from contract's service_order or proposal_order
+            if contract.service_order is not None:
+                payee_user = contract.service_order.client.user
+            elif contract.proposal_order is not None:
+                payee_user = contract.proposal_order.client.user
+
+        serializer.save(requested_by=self.request.user, payee=payee_user)
 
     def perform_update(self, serializer):
         # Allow clients to update payment request status or other fields as needed
         serializer.save()
+
