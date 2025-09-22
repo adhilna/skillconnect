@@ -130,52 +130,66 @@ const FreelancerChatDashboard = ({ conversationId }) => {
       try {
         const res = await api.get(
           `/api/v1/messaging/conversations/${selectedChat.id}/messages/`,
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          }
+          { headers: { Authorization: `Bearer ${token}` } }
         );
 
-        const msgs = res.data.map((msg) => {
-          const isSenderMe = Number(msg.sender_id) === Number(user.id);
+        // Map messages and fetch latest payment status if needed
+        const msgs = await Promise.all(
+          res.data.map(async (msg) => {
+            const isSenderMe = Number(msg.sender_id) === Number(user.id);
 
-          return {
-            id: msg.id,
-            sender: isSenderMe ? 'Me' : selectedChat.name,
-            isMe: isSenderMe,
-            text: msg.content,
-            time: new Date(msg.created_at).toLocaleTimeString([], {
-              hour: '2-digit',
-              minute: '2-digit',
-            }),
-            status: msg.status,
-            type: msg.message_type,
-            fileData: msg.attachment
-              ? {
-                name: msg.attachment.file_name,
-                type: msg.attachment.file_type || '',
-                size: `${(msg.attachment.file_size / 1024).toFixed(1)} KB`,
-                url: msg.attachment.file,
+            let paymentStatus = msg.payment_status;
+
+            // Fetch latest status only for payment messages
+            if (msg.message_type === 'payment' && msg.payment_request) {
+              try {
+                const paymentRes = await api.get(
+                  `/api/v1/messaging/payment-requests/${msg.payment_request}/`,
+                  { headers: { Authorization: `Bearer ${token}` } }
+                );
+                paymentStatus = paymentRes.data.status; // completed, failed, rejected, pending
+              } catch (err) {
+                console.error('Error fetching payment request for message', msg.id, err);
               }
-              : null,
-            paymentData:
-              msg.message_type === 'payment'
+            }
+
+            return {
+              id: msg.id,
+              sender: isSenderMe ? 'Me' : selectedChat.name,
+              isMe: isSenderMe,
+              text: msg.content,
+              time: new Date(msg.created_at).toLocaleTimeString([], {
+                hour: '2-digit',
+                minute: '2-digit',
+              }),
+              status: msg.status,
+              type: msg.message_type,
+              fileData: msg.attachment
                 ? {
-                  amount: msg.payment_amount,
-                  description: msg.content,
-                  status: msg.payment_status,
-                  isRequest: true,
-                  onPayment: () => alert('Implement payment logic'),
+                  name: msg.attachment.file_name,
+                  type: msg.attachment.file_type || '',
+                  size: `${(msg.attachment.file_size / 1024).toFixed(1)} KB`,
+                  url: msg.attachment.file,
                 }
                 : null,
-            reactions: msg.reactions || {},
-            voiceData:
-              msg.message_type === 'voice'
-                ? {
-                  duration: msg.voice_duration || '0:00',
-                }
-                : null,
-          };
-        });
+              paymentData:
+                msg.message_type === 'payment'
+                  ? {
+                    amount: msg.payment_amount,
+                    description: msg.content,
+                    status: paymentStatus, // <-- updated status
+                    isRequest: true,
+                    onPayment: () => { }, // freelancers don’t pay
+                  }
+                  : null,
+              reactions: msg.reactions || {},
+              voiceData:
+                msg.message_type === 'voice'
+                  ? { duration: msg.voice_duration || '0:00' }
+                  : null,
+            };
+          })
+        );
 
         setMessages(sortMessages(msgs));
       } catch (err) {
@@ -185,6 +199,7 @@ const FreelancerChatDashboard = ({ conversationId }) => {
         setLoadingMessages(false);
       }
     };
+
 
     fetchMessages();
   }, [selectedChat, user, token]);

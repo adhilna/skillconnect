@@ -9,7 +9,7 @@ import Header from '../components/clientDashboard/Header';
 import DashboardOverview from '../components/clientDashboard/DashboardOverview';
 import BrowseTalentSection from '../components/clientDashboard/BrowseTalentSection';
 import ProposalsSection from '../components/clientDashboard/ProposalsSection';
-import MessagesSection from '../components/clientDashboard/messagesSection';
+import MessagesSection from '../components/clientDashboard/MessagesSection';
 import FreelancersSection from '../components/clientDashboard/FreelancersSection';
 import PaymentSection from '../components/clientDashboard/PaymentSection';
 import AnalyticsSection from '../components/clientDashboard/AnalyticsSection';
@@ -35,6 +35,32 @@ const ClientDashboard = () => {
     const [selectedOrderId, setSelectedOrderId] = useState(null);
 
     const [activeConversationId, setActiveConversationId] = useState(null);
+
+    const [paymentSectionView, setPaymentSectionView] = useState('dashboard'); // 'dashboard' or 'payment'
+    const [paymentSelectedPayment, setPaymentSelectedPayment] = useState(null);
+
+    const openPaymentFlow = async (messagePaymentData) => {
+        try {
+            console.log("🟢 Parent openPaymentFlow received message payment:", messagePaymentData);
+
+            // 1️⃣ Fetch real payment object from backend using message data
+            // Assuming you have an endpoint like `/payments/?message_id=224` or something similar
+            const res = await api.get(`/api/v1/messaging/payment-requests/${messagePaymentData.id}/`);
+            // Or use messagePaymentData.payment_id if available
+
+            console.log("✅ Real payment data fetched:", res.data);
+
+            // 2️⃣ Set it to parent state
+            setPaymentSelectedPayment(res.data);
+
+            // 3️⃣ Switch section
+            setPaymentSectionView('payment');
+            setActiveSection('payments');
+        } catch (err) {
+            console.error("❌ Failed to fetch payment details:", err);
+            // Optional: show toast
+        }
+    };
 
 
     useEffect(() => {
@@ -236,11 +262,19 @@ const ClientDashboard = () => {
             case 'messages':
                 return <MessagesSection
                     conversationId={activeConversationId}
+                    onOpenPaymentFlow={openPaymentFlow}
+                    selectedPayment={paymentSelectedPayment}
+                    setSelectedPayment={setPaymentSelectedPayment}
                 />;
             case 'freelancers':
                 return <FreelancersSection />;
             case 'payments':
-                return <PaymentSection />;
+                return <PaymentSection
+                    currentView={paymentSectionView}
+                    setCurrentView={setPaymentSectionView}
+                    selectedPayment={paymentSelectedPayment}
+                    setSelectedPayment={setPaymentSelectedPayment}
+                />;
             case 'analytics':
                 return <AnalyticsSection />;
             case 'profile':
@@ -252,7 +286,8 @@ const ClientDashboard = () => {
                     onArrayRemove={handleArrayRemove}
                     onEdit={() => setIsEditing(true)}
                     onCancel={handleCancel}
-                    onSave={handleSave} />;
+                    onSave={handleSave}
+                />;
             case 'settings':
                 return <SettingsSection />;
             default:

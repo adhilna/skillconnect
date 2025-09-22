@@ -19,6 +19,8 @@ from django.utils.timezone import now
 from rest_framework.decorators import action
 from .permissions import IsPaymentParticipantPermission
 from .pagination import PaymentHistoryPagination
+from .razorpay_client import client
+from django.conf import settings
 
 
 # --- Custom Permission: Only participants can access
@@ -78,12 +80,21 @@ class ConversationViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        q = Q()
-        if hasattr(user, "clientprofile"):
-            q |= Q(client=user.clientprofile)
-        if hasattr(user, "freelancerprofile"):
-            q |= Q(freelancer=user.freelancerprofile)
-        return Conversation.objects.filter(is_active=True).filter(q).distinct()
+
+        if hasattr(user, "client_profile"):
+            return Conversation.objects.filter(
+                is_active=True,
+                client=user.client_profile
+            ).distinct()
+        elif hasattr(user, "freelancer_profile"):
+            return Conversation.objects.filter(
+                is_active=True,
+                freelancer=user.freelancer_profile
+            ).distinct()
+
+
+        return Conversation.objects.none()
+
 
     def perform_create(self, serializer):
         order_type = self.request.data.get("order_type")
@@ -338,6 +349,80 @@ class PaymentRequestViewSet(viewsets.ModelViewSet):
         serializer.save(requested_by=self.request.user, payee=payee_user)
 
     def perform_update(self, serializer):
-        # Allow clients to update payment request status or other fields as needed
-        serializer.save()
+        # Only allow status update if user is the payee
+        payment_request = self.get_object()
+        user = self.request.user
+
+        new_status = serializer.validated_data.get('status')
+
+        if new_status and user == payment_request.payee:
+            payment_request.status = new_status
+            payment_request.save()
+        else:
+            # For other updates, allow normally
+            serializer.save()
+
+
+class PaymentViewSet(viewsets.ModelViewSet):
+    queryset = PaymentRequest.objects.all()
+    serializer_class = PaymentRequestSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        # Only allow requests relevant to the user
+        return PaymentRequest.objects.filter(
+            requested_by=user
+        ) | PaymentRequest.objects.filter(
+            payee=user
+        )
+
+    @action(detail=True, methods=['post'], url_path='create-razorpay-order')
+    def create_razorpay_order(self, request, pk=None):
+        payment_req = self.get_object()
+        if payment_req.status != 'pending':
+            return Response({"error": "Order already processed"}, status=status.HTTP_400_BAD_REQUEST)
+        amount = int(payment_req.amount * 100)  # paise
+        order = client.order.create({
+            "amount": amount,
+            "currency": "INR",
+            "payment_capture": "1",
+            "notes": {
+                "payment_request_id": payment_req.id
+            }
+        })
+        payment_req.transaction_id = order['id']
+        payment_req.save()
+        return Response({
+            "order_id": order['id'],
+            "razorpay_key": settings.RAZORPAY_KEY_ID,
+            "amount": amount,
+            "currency": "INR",
+            "description": payment_req.description
+        })
+
+    @action(detail=True, methods=['post'], url_path='verify-razorpay-payment')
+    def verify_razorpay_payment(self, request, pk=None):
+        payment_req = self.get_object()
+        data = request.data
+        params_dict = {
+            "razorpay_order_id": data.get("razorpay_order_id"),
+            "razorpay_payment_id": data.get("razorpay_payment_id"),
+            "razorpay_signature": data.get("razorpay_signature"),
+        }
+        try:
+            client.utility.verify_payment_signature(params_dict)
+            payment_req.status = 'completed'
+            payment_req.payment_method = 'Razorpay'
+            payment_req.transaction_id = data.get("razorpay_payment_id")
+            payment_req.save()
+            return Response({"success": True})
+        except SignatureVerificationError:
+            payment_req.status = 'failed'
+            payment_req.save()
+            return Response({"success": False, "error": "Invalid signature!"}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            payment_req.status = 'rejected'
+            payment_req.save()
+            return Response({"success": False, "error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 

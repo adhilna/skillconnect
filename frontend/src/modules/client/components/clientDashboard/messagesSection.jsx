@@ -234,37 +234,71 @@ function parseDuration(str) {
 
 
 // Payment message component for client (pay only)
-const PaymentMessage = ({ amount, description, status, onPayment }) => (
-    <div className="bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-500/30 rounded-lg p-4 max-w-xs">
-        <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center space-x-2">
-                <DollarSign size={16} className="text-green-400" />
-                <span className="text-white font-medium">${amount}</span>
+const PaymentMessage = ({ amount, description, status, onPayment }) => {
+    let statusUI;
+
+    switch (status) {
+        case 'pending':
+            statusUI = (
+                <button
+                    onClick={onPayment}
+                    className="w-full bg-gradient-to-r from-green-500 to-emerald-500 text-white py-2 rounded-lg text-sm font-medium hover:from-green-600 hover:to-emerald-600 transition-all"
+                    type="button"
+                    aria-label="Pay now"
+                >
+                    Pay Now
+                </button>
+            );
+            break;
+
+        case 'completed':
+            statusUI = (
+                <div className="w-full py-2 rounded-lg text-sm font-medium text-white text-center bg-green-500/30">
+                    Payment Completed ✅
+                </div>
+            );
+            break;
+
+        case 'failed':
+            statusUI = (
+                <div className="w-full py-2 rounded-lg text-sm font-medium text-white text-center bg-red-500/30">
+                    Payment Failed ❌
+                </div>
+            );
+            break;
+
+        default:
+            statusUI = null;
+    }
+
+    return (
+        <div className="bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-500/30 rounded-lg p-4 max-w-xs">
+            <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center space-x-2">
+                    <DollarSign size={16} className="text-green-400" />
+                    <span className="text-white font-medium">${amount}</span>
+                </div>
+                <span
+                    className={`px-2 py-1 rounded-full text-xs ${status === 'completed'
+                        ? 'bg-green-500/20 text-green-300'
+                        : status === 'pending'
+                            ? 'bg-yellow-500/20 text-yellow-300'
+                            : 'bg-red-500/20 text-red-300'
+                        }`}
+                >
+                    {status === 'completed'
+                        ? 'Payment Completed'
+                        : status === 'failed'
+                            ? 'Payment Failed'
+                            : status}
+                </span>
             </div>
-            <span
-                className={`px-2 py-1 rounded-full text-xs ${status === 'completed'
-                    ? 'bg-green-500/20 text-green-300'
-                    : status === 'pending'
-                        ? 'bg-yellow-500/20 text-yellow-300'
-                        : 'bg-red-500/20 text-red-300'
-                    }`}
-            >
-                {status}
-            </span>
+            <p className="text-white/80 text-sm mb-3 whitespace-pre-wrap">{description}</p>
+            {statusUI}
         </div>
-        <p className="text-white/80 text-sm mb-3 whitespace-pre-wrap">{description}</p>
-        {status === 'pending' && (
-            <button
-                onClick={onPayment}
-                className="w-full bg-gradient-to-r from-green-500 to-emerald-500 text-white py-2 rounded-lg text-sm font-medium hover:from-green-600 hover:to-emerald-600 transition-all"
-                type="button"
-                aria-label="Pay now"
-            >
-                Pay Now
-            </button>
-        )}
-    </div>
-);
+    );
+};
+
 
 // Single message component
 const Message = ({
@@ -519,7 +553,7 @@ const AttachmentMenu = ({ isVisible, onClose, onFileSelect, onVoiceRecord }) => 
     );
 };
 
-const ClientChatDashboard = ({ conversationId }) => {
+const ClientChatDashboard = ({ conversationId, onOpenPaymentFlow, selectedPayment, setSelectedPayment }) => {
     const [chatListData, setChatListData] = useState([]);
     const [messages, setMessages] = useState([]);
     const [selectedChat, setSelectedChat] = useState(null);
@@ -536,7 +570,7 @@ const ClientChatDashboard = ({ conversationId }) => {
 
     const [searchQuery, setSearchQuery] = useState('');
     const [showPaymentModal, setShowPaymentModal] = useState(false);
-    const [selectedPayment, setSelectedPayment] = useState(null);
+    // const [selectedPayment, setSelectedPayment] = useState(null);
 
     const messagesEndRef = useRef(null);
 
@@ -644,52 +678,64 @@ const ClientChatDashboard = ({ conversationId }) => {
             try {
                 const res = await api.get(
                     `/api/v1/messaging/conversations/${selectedChat.id}/messages/`,
-                    {
-                        headers: { Authorization: `Bearer ${token}` },
-                    }
+                    { headers: { Authorization: `Bearer ${token}` } }
                 );
 
-                const msgs = res.data.map((msg) => {
-                    const isSenderMe = Number(msg.sender_id) === Number(user.id);
-                    return {
-                        id: msg.id,
-                        sender: isSenderMe ? 'Me' : selectedChat.name,
-                        isMe: isSenderMe,
-                        text: msg.content,
-                        time: new Date(msg.created_at).toLocaleTimeString([], {
-                            hour: '2-digit',
-                            minute: '2-digit',
-                        }),
-                        created_at: msg.created_at,
-                        status: msg.status,
-                        type: msg.message_type,
-                        fileData: msg.attachment
-                            ? {
-                                name: msg.attachment.file_name,
-                                type: msg.attachment.file_type || '',
-                                size: `${(msg.attachment.file_size / 1024).toFixed(1)} KB`,
-                                url: msg.attachment.file,
+                const msgs = await Promise.all(
+                    res.data.map(async (msg) => {
+                        const isSenderMe = Number(msg.sender_id) === Number(user.id);
+
+                        let paymentStatus = msg.payment_status;
+                        if (msg.message_type === 'payment' && msg.payment_request) {
+                            try {
+                                const paymentRes = await api.get(
+                                    `/api/v1/messaging/payment-requests/${msg.payment_request}/`,
+                                    { headers: { Authorization: `Bearer ${token}` } }
+                                );
+                                paymentStatus = paymentRes.data.status;
+                            } catch (err) {
+                                console.error('Error fetching payment status for msg', msg.id, err);
                             }
-                            : null,
-                        paymentData:
-                            msg.message_type === 'payment'
+                        }
+
+                        return {
+                            id: msg.id,
+                            sender: isSenderMe ? 'Me' : selectedChat.name,
+                            isMe: isSenderMe,
+                            text: msg.content,
+                            time: new Date(msg.created_at).toLocaleTimeString([], {
+                                hour: '2-digit',
+                                minute: '2-digit',
+                            }),
+                            created_at: msg.created_at,
+                            status: msg.status,
+                            type: msg.message_type,
+                            fileData: msg.attachment
                                 ? {
-                                    amount: msg.payment_amount,
-                                    description: msg.content,
-                                    status: msg.payment_status,
-                                    isRequest: false, // Client can only pay, no request creation
-                                    onPayment: () => handlePaymentClick(msg),
+                                    name: msg.attachment.file_name,
+                                    type: msg.attachment.file_type || '',
+                                    size: `${(msg.attachment.file_size / 1024).toFixed(1)} KB`,
+                                    url: msg.attachment.file,
                                 }
                                 : null,
-                        reactions: msg.reactions || {},
-                        voiceData:
-                            msg.message_type === 'voice'
-                                ? {
-                                    duration: msg.voice_duration || '0:00',
-                                }
-                                : null,
-                    };
-                });
+                            paymentData:
+                                msg.message_type === 'payment'
+                                    ? {
+                                        amount: msg.payment_amount,
+                                        description: msg.content,
+                                        status: paymentStatus,
+                                        isRequest: false,
+                                        onPayment: () => handlePaymentClick(msg),
+                                    }
+                                    : null,
+                            reactions: msg.reactions || {},
+                            voiceData:
+                                msg.message_type === 'voice'
+                                    ? { duration: msg.voice_duration || '0:00' }
+                                    : null,
+                        };
+                    })
+                );
 
                 setMessages(sortMessages(msgs));
             } catch (err) {
@@ -699,6 +745,7 @@ const ClientChatDashboard = ({ conversationId }) => {
                 setLoadingMessages(false);
             }
         };
+
 
         fetchMessages();
     }, [selectedChat, token, user]);
@@ -903,36 +950,35 @@ const ClientChatDashboard = ({ conversationId }) => {
     };
 
     // Payment modal handlers
-    const handlePaymentClick = (paymentData) => {
-        setSelectedPayment(paymentData);
-        setShowPaymentModal(true);
-    };
+    const handlePaymentClick = async (msg) => {
+        const paymentRequestId = msg.payment_request; // this is already the ID
+        if (!paymentRequestId) {
+            console.error("Payment request ID is missing!", msg);
+            return;
+        }
 
-    const handlePaymentConfirm = async () => {
         try {
-            // Call backend to update payment status here if needed
-
-            setMessages((prev) =>
-                prev.map((msg) => {
-                    if (msg.type === 'payment' && msg.paymentData?.amount === selectedPayment?.amount) {
-                        return {
-                            ...msg,
+            const res = await api.get(`api/v1/messaging/payment-requests/${paymentRequestId}/`);
+            console.log("Payment API data:", res.data);
+            const updatedPayment = res.data;
+            setMessages(prevMessages =>
+                prevMessages.map(m =>
+                    m.id === msg.id
+                        ? {
+                            ...m,
                             paymentData: {
-                                ...msg.paymentData,
-                                status: 'completed',
+                                ...m.paymentData,
+                                status: updatedPayment.status, // completed/failed
                             },
-                        };
-                    }
-                    return msg;
-                })
+                            payment_status: updatedPayment.status,
+                        }
+                        : m
+                )
             );
-
-            setShowPaymentModal(false);
-            setSelectedPayment(null);
-            alert('Payment processed successfully!');
-        } catch (err) {
-            console.error('Payment processing failed:', err);
-            alert('Payment processing failed. Please try again.');
+            setSelectedPayment(updatedPayment);
+            onOpenPaymentFlow(updatedPayment);
+        } catch (error) {
+            console.error("Error fetching payment details:", error);
         }
     };
 
@@ -945,17 +991,20 @@ const ClientChatDashboard = ({ conversationId }) => {
 
     // Enhanced messages to pass onPayment handler dynamically
     const enhancedMessages = messages.map((msg) => {
-        if (msg.type === 'payment' && msg.paymentData) {
+        if (msg.type === 'payment' && msg.payment_request) {
             return {
                 ...msg,
                 paymentData: {
                     ...msg.paymentData,
+                    status: msg.payment_status,
                     onPayment: () => handlePaymentClick(msg),
                 },
             };
         }
         return msg;
     });
+
+
 
     // Handle chat selection
     const handleChatSelect = (chat) => {
@@ -1206,7 +1255,13 @@ const ClientChatDashboard = ({ conversationId }) => {
                                             Cancel
                                         </button>
                                         <button
-                                            onClick={handlePaymentConfirm}
+                                            onClick={() => {
+                                                // Close payment modal in chat first if you want
+                                                setShowPaymentModal(false);
+
+                                                // Call the parent handler to switch to payment section with this payment
+                                                onOpenPaymentFlow(selectedPayment);
+                                            }}
                                             className="flex-1 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white px-4 py-3 rounded-lg font-medium transition-all"
                                             type="button"
                                         >

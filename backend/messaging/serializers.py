@@ -34,6 +34,8 @@ class MessageSerializer(serializers.ModelSerializer):
     attachment = AttachmentSerializer(read_only=True)
     voice_duration = serializers.CharField(read_only=True)
     payment_request = serializers.PrimaryKeyRelatedField(read_only=True)
+    payment_request_id = serializers.IntegerField(source='payment_request.id', read_only=True)
+
 
     class Meta:
         model = Message
@@ -48,6 +50,7 @@ class MessageSerializer(serializers.ModelSerializer):
             'payment_amount',
             'payment_status',
             'payment_request',
+            'payment_request_id',
             'created_at',
             'updated_at',
             'delivered_at',

@@ -205,3 +205,6 @@ CHANNEL_LAYERS = {
         },
     },
 }
+
+RAZORPAY_KEY_ID = 'rzp_test_RIDW2ZLaH7LWzr'
+RAZORPAY_KEY_SECRET = 'As8ZZdZOPeTcCjyqX58IM3ov'
