@@ -5,8 +5,8 @@ export default function CompletionStep({ freelancerData, onDashboard }) {
     return (
         <div className="text-center space-y-6">
             <div className="flex justify-center">
-                <div className="w-20 h-20 bg-blue-500/20 rounded-full flex items-center justify-center border-2 border-blue-500">
-                    <CheckCircle size={40} className="text-blue-500" />
+                <div className="w-20 h-20 bg-green-500/20 rounded-full flex items-center justify-center border-2 border-green-500">
+                    <CheckCircle size={40} className="text-green-500" />
                 </div>
             </div> 
 
@@ -35,7 +35,7 @@ export default function CompletionStep({ freelancerData, onDashboard }) {
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <button
                     onClick={onDashboard}
-                    className="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-medium"
+                    className="px-6 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors font-medium"
                 >
                     Go to Dashboard
                 </button>

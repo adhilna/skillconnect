@@ -128,16 +128,6 @@ export default function Register() {
         }
     };
 
-
-    // const handleNextAfterVerification = () => {
-    //     if (user) {
-    //         navigate('/welcome');
-    //     } else {
-    //         console.error('User not authenticated, redirecting to login');
-    //         navigate('/login');  
-    //     }
-    // };
-
     const handleResendOtp = async () => {
         setLoading(true);
         try {
@@ -154,14 +144,6 @@ export default function Register() {
     const handleRoleSelect = (role) => {
         setFormValues((prev) => ({ ...prev, role }));
     };
-
-    // useEffect(() => {
-    //     if (verified && user) {
-    //         navigate('/welcome');
-    //     }
-    // }, [verified, user, navigate]);
-
-
 
     return (
         <div className="min-h-screen flex items-center justify-center bg-gradient-to-r from-blue-900 via-purple-900 to-indigo-900 px-4 py-12">

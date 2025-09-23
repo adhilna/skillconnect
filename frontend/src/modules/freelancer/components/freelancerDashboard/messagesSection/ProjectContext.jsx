@@ -5,7 +5,6 @@ import { Calendar, FileText, Clock, CheckCircle, X, ChevronDown, ChevronUp, Mini
 const ProjectContext = ({
     project,
     budget,
-    deadline,
     status,
 
     contract,
@@ -27,16 +26,17 @@ const ProjectContext = ({
     // Workflow steps
     const workflowSteps = [
         { value: 'planning', label: 'Planning' },
+        { value: 'advance', label: 'Advance Payment' },
         { value: 'draft', label: 'Draft' },
         { value: 'submitted', label: 'Submitted' },
-        { value: 'negotiation', label: 'Negotiation' },
-        { value: 'accepted', label: 'Accepted' },
-        { value: 'started', label: 'Started' },
+        { value: 'in-progress', label: 'In Progress' },
         { value: 'milestone-1', label: 'Milestone 1' },
-        { value: 'review', label: 'Review' },
+        { value: 'revision', label: 'Revision' },
+        { value: 'final-review', label: 'Final Review' },
         { value: 'completed', label: 'Completed' },
         { value: 'paid', label: 'Paid' }
     ];
+
 
     const handleMakeContract = () => setIsModalOpen(true);
 
@@ -264,7 +264,7 @@ const ProjectContext = ({
                     <span className="text-green-400 font-medium">{budget || '$5,000'}</span>
                     <div className="flex items-center text-gray-400">
                         <Calendar size={15} className="mr-1" />
-                        {deadline ? new Date(deadline).toLocaleDateString() : '12/31/2024'}
+                        {contractForm.deadline}
                     </div>
                 </div>
                 {renderCenterContent()}

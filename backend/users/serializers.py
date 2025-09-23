@@ -7,6 +7,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from .models import User
 from .tasks import send_otp_email_task
 from .utils import generate_otp
+from django.core.cache import cache
 
 class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(
@@ -15,6 +16,9 @@ class RegisterSerializer(serializers.ModelSerializer):
         style={'input_type': 'password'},
         label=_('password'),
     )
+    email = serializers.EmailField()
+    role = serializers.ChoiceField(choices=[('CLIENT', 'Client'), ('FREELANCER', 'Freelancer')])
+
 
     class Meta:
         model = User
@@ -35,20 +39,22 @@ class RegisterSerializer(serializers.ModelSerializer):
         return value
 
 
-    def create(self, validated_data):
-        user = User.objects.create_user(
-            email=validated_data['email'],
-            password=validated_data['password'],
-            role=validated_data.get('role', 'CLIENT'),
-            is_active=False,        # <-- User cannot log in yet
-            is_verified=False       # <-- User not verified yet
-        )
+    def save(self):
+        """
+        Save registration data temporarily in cache with OTP.
+        """
+        data = self.validated_data
         otp = generate_otp()
-        user.otp = otp
-        user.otp_created_at = timezone.now()
-        user.save()
-        send_otp_email_task.delay(user.email, otp)
-        return user
+        # Save in cache: key = email, value = dict(password, role, otp)
+        cache.set(f"register:{data['email']}", {
+            "password": data['password'],
+            "role": data['role'],
+            "otp": otp
+        }, timeout=5*60)  # OTP valid 5 mins
+
+        # Send OTP asynchronously
+        send_otp_email_task.delay(data['email'], otp)
+        return {"email": data['email'], "otp_sent": True}
 
 class LoginSerializer(serializers.Serializer):
     email = serializers.EmailField(required=True)
@@ -64,7 +70,7 @@ class LoginSerializer(serializers.Serializer):
             raise AuthenticationFailed("Invalid email or password")
         if not user.is_active:
             raise AuthenticationFailed( "Account disabled")
-        
+
         refresh = RefreshToken.for_user(user)
 
         return {
@@ -84,9 +90,41 @@ class UserSerializer(serializers.ModelSerializer):
         fields = ['id', 'email', 'role', 'first_login']
         read_only_fields = ['id', 'email', 'role']
 
-class OTPSerializer(serializers.Serializer):
+class VerifyOTPSerializer(serializers.Serializer):
     email = serializers.EmailField()
     otp = serializers.CharField(max_length=6, min_length=6)
+
+    def validate(self, attrs):
+        email = attrs.get("email")
+        otp = attrs.get("otp")
+
+        cached = cache.get(f"register:{email}")
+        if not cached:
+            raise serializers.ValidationError("Registration session expired or invalid.")
+
+        if cached["otp"] != otp:
+            raise serializers.ValidationError("Invalid OTP.")
+
+        attrs["cached_data"] = cached
+        return attrs
+
+    def save(self):
+        """
+        Create actual User in DB after OTP verification.
+        """
+        cached_data = self.validated_data["cached_data"]
+        from .models import User
+        user = User.objects.create_user(
+            email=self.validated_data["email"],
+            password=cached_data["password"],
+            role=cached_data["role"],
+            is_active=True,
+            is_verified=True,
+            first_login=True
+        )
+        # Clear cache
+        cache.delete(f"register:{self.validated_data['email']}")
+        return user
 
 class ResendOTPSerializer(serializers.Serializer):
     email = serializers.EmailField()

@@ -19,23 +19,13 @@ const ChatInput = ({
     isRecording,
     handleVoiceRecord,
     isUploading,
-    socket,
     selectedChat,
     contract,
     token,
+    sendTyping
 }) => {
     const typingTimeoutRef = React.useRef(null);
     const [showPaymentRequestModal, setShowPaymentRequestModal] = useState(false);
-
-    const sendTyping = (typing) => {
-        if (socket && socket.readyState === WebSocket.OPEN && selectedChat) {
-            socket.send(JSON.stringify({
-                type: 'typing',
-                conversation_id: selectedChat.id,
-                typing,
-            }));
-        }
-    };
 
     const handleInputChange = (e) => {
         setNewMessage(e.target.value);

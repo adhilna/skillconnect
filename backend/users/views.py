@@ -3,7 +3,7 @@ from .serializers import (
     RegisterSerializer,
     LoginSerializer,
     UserSerializer,
-    OTPSerializer,
+    VerifyOTPSerializer,
     ResendOTPSerializer,
     ForgotPasswordRequestSerializer,
     ForgotPasswordVerifySerializer,
@@ -35,8 +35,7 @@ class RegisterView(generics.CreateAPIView):
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid():
-            user = serializer.save()  # Save the user and get the instance
-            send_otp_email_task.delay(user.email, user.otp)  # Use the correct Celery task
+            serializer.save()
             return Response(
                 {'message': 'OTP sent to your email. Please verify to complete registration.'},
                 status=status.HTTP_201_CREATED
@@ -71,38 +70,26 @@ class VerifyOTPView(APIView):
 
     @method_decorator(ratelimit(key='ip', rate='10/m', method='POST', block=True))
     def post(self, request, *args, **kwargs):
-        serializer = OTPSerializer(data=request.data)
+        serializer = VerifyOTPSerializer(data=request.data)
         if serializer.is_valid():
-            email = serializer.validated_data['email']
-            otp = serializer.validated_data['otp']
-            try:
-                user = User.objects.get(email=email)
-                if user.is_verified:
-                    return Response({'error': 'Email already verified.'}, status=status.HTTP_400_BAD_REQUEST)
-                if user.otp_is_valid() and user.otp == otp:
-                    user.is_verified = True
-                    user.is_active = True
-                    user.first_login = True
-                    user.otp = None
-                    user.otp_created_at = None
-                    user.save()
-                    refresh = RefreshToken.for_user(user)
-                    return Response({
-                        'message': 'Email verified successfully.',
-                        'refresh': str(refresh),
-                        'access': str(refresh.access_token),
-                        'user': {
-                            'id': user.id,
-                            'email': user.email,
-                            'role': user.role,
-                            'first_login': user.first_login
-                        }
-                    }, status=status.HTTP_200_OK)
-                else:
-                    return Response({'error': 'Invalid or expired OTP.'}, status=status.HTTP_400_BAD_REQUEST)
-            except User.DoesNotExist:
-                return Response({'error': 'User not found.'}, status=status.HTTP_404_NOT_FOUND)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            # email = serializer.validated_data['email']
+            # otp = serializer.validated_data['otp']
+            user = serializer.save()
+            refresh = RefreshToken.for_user(user)
+            # try:
+            #     user = User.objects.get(email=email)
+            return Response({
+            'message': 'Email verified successfully.',
+            'refresh': str(refresh),
+            'access': str(refresh.access_token),
+            'user': {
+                'id': user.id,
+                'email': user.email,
+                'role': user.role,
+                'first_login': user.first_login
+            }
+        }, status=200)
+        return Response(serializer.errors, status=400)
 
 class ResendOTPView(APIView):
     permission_classes = [AllowAny]
@@ -195,4 +182,3 @@ class GoogleAuthView(APIView):
             return Response({'detail': 'Invalid Google token'}, status=400)
         except Exception as e:
             return Response({'detail': str(e)}, status=400)
-

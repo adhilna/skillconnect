@@ -16,7 +16,6 @@ const ProjectContext = ({
     token,
     project,
     budget,
-    deadline,
     status,
 }) => {
     const [contract, setContract] = useState(null); // Full contract object or null
@@ -30,16 +29,17 @@ const ProjectContext = ({
     // Workflow steps (same as your existing list)
     const workflowSteps = [
         { value: 'planning', label: 'Planning' },
+        { value: 'advance', label: 'Advance Payment' },
         { value: 'draft', label: 'Draft' },
         { value: 'submitted', label: 'Submitted' },
-        { value: 'negotiation', label: 'Negotiation' },
-        { value: 'accepted', label: 'Accepted' },
-        { value: 'started', label: 'Started' },
+        { value: 'in-progress', label: 'In Progress' },
         { value: 'milestone-1', label: 'Milestone 1' },
-        { value: 'review', label: 'Review' },
+        { value: 'revision', label: 'Revision' },
+        { value: 'final-review', label: 'Final Review' },
         { value: 'completed', label: 'Completed' },
-        { value: 'paid', label: 'Paid' },
+        { value: 'paid', label: 'Paid' }
     ];
+
 
     // Fetch contract data on mount or when conversationId changes
     useEffect(() => {
@@ -53,6 +53,7 @@ const ProjectContext = ({
                 headers: { Authorization: `Bearer ${token}` },
             })
             .then((res) => {
+                console.log("Contract API response:", res.data);
                 if (res.data.length > 0) {
                     const c = res.data[0];
                     setContract(c);
@@ -386,7 +387,7 @@ const ProjectContext = ({
                     <span className="text-green-400 font-medium">{budget || '$5,000'}</span>
                     <div className="flex items-center text-gray-400">
                         <Calendar size={15} className="mr-1" />
-                        {deadline ? new Date(deadline).toLocaleDateString() : '12/31/2024'}
+                        {contract?.deadline ? new Date(contract.deadline).toLocaleDateString() : '-'}
                     </div>
                 </div>
 

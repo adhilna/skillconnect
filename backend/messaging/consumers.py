@@ -9,23 +9,29 @@ class ChatConsumer(AsyncWebsocketConsumer):
     async def connect(self):
         self.conversation_id = self.scope['url_route']['kwargs']['conversation_id']
         self.room_group_name = f'chat_{self.conversation_id}'
+        self.user = self.scope['user']
 
-        user = self.scope['user']
-
-        if user.is_anonymous:
+        if self.user.is_anonymous:
             await self.close()
             return
 
-        is_participant = await self.is_conversation_participant(user, self.conversation_id)
+        is_participant = await self.is_conversation_participant(self.user, self.conversation_id)
         if not is_participant:
             await self.close()
             return
 
-        await self.channel_layer.group_add(
-            self.room_group_name,
-            self.channel_name
-        )
+        await self.channel_layer.group_add(self.room_group_name, self.channel_name)
         await self.accept()
+
+        await self.channel_layer.group_send(
+        self.room_group_name,
+        {
+            "type": "presence_event",
+            "conversation_id": self.conversation_id,
+            "user_id": self.user.id,
+            "status": "online",
+        }
+    )
 
     async def disconnect(self, close_code):
         await self.channel_layer.group_discard(
@@ -33,12 +39,50 @@ class ChatConsumer(AsyncWebsocketConsumer):
             self.channel_name
         )
 
+        await self.channel_layer.group_send(
+        self.room_group_name,
+        {
+            "type": "presence_event",
+            "conversation_id": self.conversation_id,
+            "user_id": self.user.id,
+            "status": "offline",
+        }
+    )
+
+    async def presence_event(self, event):
+        """
+        Called when a user joins/leaves the conversation
+        """
+        await self.send(text_data=json.dumps({
+            "type": "presence",
+            "conversation_id": event["conversation_id"],
+            "user_id": event["user_id"],
+            "status": event["status"],
+        }))
+
     async def receive(self, text_data):
         """
-        This receive handler will only deal with simple text messages sent via WS.
-        File/voice uploads are still handled by the REST API POST /messages/ endpoint.
+            Handle incoming WS events:
+            - typing events (just broadcast, no DB write)
+            - text messages (save to DB + broadcast)
         """
         data = json.loads(text_data)
+        action_type = data.get('type')
+
+        # 1️⃣ Typing event (no DB write, just notify others)
+        if action_type == "typing":
+            await self.channel_layer.group_send(
+                self.room_group_name,
+                {
+                    "type": "typing_event",
+                    "conversation_id": self.conversation_id,
+                    "user_id": self.scope['user'].id,
+                    "typing": data.get("typing", False),
+                }
+            )
+            return
+
+        # 2️⃣ Normal message handling (your existing logic)
         message_content = data.get('message')
         message_type = data.get('message_type', 'text')
 
@@ -71,6 +115,19 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 'message': serialized,
             }
         )
+
+    async def typing_event(self, event):
+        """
+        Called when someone is typing in the conversation.
+        Broadcasts typing state to all group members.
+        """
+        await self.send(text_data=json.dumps({
+            "type": "typing",
+            "conversation_id": event["conversation_id"],
+            "user_id": event["user_id"],
+            "typing": event["typing"],
+        }))
+
 
     async def chat_message(self, event):
         """

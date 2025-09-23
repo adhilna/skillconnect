@@ -779,45 +779,102 @@ const ClientChatDashboard = ({ conversationId, onOpenPaymentFlow, selectedPaymen
         socket.onmessage = (event) => {
             if (!isMounted) return;
             const data = JSON.parse(event.data);
-            const isSenderMe = Number(data.sender_id) === Number(user.id);
 
-            const newMsg = {
-                ...data,
-                sender: isSenderMe ? 'Me' : selectedChat.name,
-                isMe: isSenderMe,
-                text: data.content,
-                time: new Date(data.created_at).toLocaleTimeString([], {
-                    hour: '2-digit',
-                    minute: '2-digit',
-                }),
-                created_at: data.created_at,
-                status: data.status,
-                type: data.message_type,
-                reactions: data.reactions || {},
-                fileData: data.attachment ? {
-                    name: data.attachment.file_name,
-                    type: data.attachment.file_type || '',
-                    size: `${(data.attachment.file_size / 1024).toFixed(1)} KB`,
-                    url: data.attachment.file,
-                } : null,
-                paymentData: data.message_type === 'payment' ? {
-                    amount: data.payment_amount,
-                    description: data.content,
-                    status: data.payment_status,
-                    isRequest: false,
-                    onPayment: () => handlePaymentClick(data),
-                } : null,
-                voiceData: data.message_type === 'voice' ? {
-                    duration: data.voice_duration || '0:00',
-                } : null,
-            };
+            // ------------------ Handle chat messages ------------------
+            if (data.type === 'chat_message' || (!data.type && data.id)) {
+                const isSenderMe = Number(data.sender_id) === Number(user.id);
 
-            setMessages(prev => {
-                const combined = [...prev, newMsg];
-                const uniqueMessages = Array.from(new Map(combined.map(m => [m.id, m])).values());
-                return sortMessages(uniqueMessages);
-            });
+                const newMsg = {
+                    ...data,
+                    sender: isSenderMe ? 'Me' : selectedChat.name,
+                    isMe: isSenderMe,
+                    text: data.content,
+                    time: new Date(data.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                    created_at: data.created_at,
+                    status: data.status,
+                    type: data.message_type,
+                    reactions: data.reactions || {},
+                    fileData: data.attachment ? {
+                        name: data.attachment.file_name,
+                        type: data.attachment.file_type || '',
+                        size: `${(data.attachment.file_size / 1024).toFixed(1)} KB`,
+                        url: data.attachment.file,
+                    } : null,
+                    paymentData: data.message_type === 'payment' ? {
+                        id: data.payment_request || data.id,
+                        amount: data.payment_amount,
+                        description: data.content,
+                        status: data.payment_status,
+                        isRequest: false,
+                        onPayment: () => handlePaymentClick(data),
+                    } : null,
+                    voiceData: data.message_type === 'voice' ? { duration: data.voice_duration || '0:00' } : null,
+                };
+
+                setMessages(prev => {
+                    const index = prev.findIndex(
+                        m =>
+                            m.id === newMsg.id ||
+                            (typeof m.id === 'string' && m.id.startsWith('temp-') &&
+                                m.text === newMsg.text && m.paymentData?.amount === newMsg.paymentData?.amount)
+                    );
+
+                    if (index !== -1) {
+                        const copy = [...prev];
+                        copy[index] = newMsg;
+                        return copy;
+                    } else {
+                        return sortMessages([...prev, newMsg]);
+                    }
+                });
+
+                return;
+            }
+
+            // ------------------ Handle payment status updates ------------------
+            if (data.type === 'payment_status_update') {
+                const { payment_id, status } = data;
+
+                setMessages(prev =>
+                    prev.map(msg =>
+                        msg.paymentData && msg.paymentData.id === payment_id
+                            ? {
+                                ...msg,
+                                paymentData: {
+                                    ...msg.paymentData,
+                                    status,
+                                },
+                                payment_status: status,
+                            }
+                            : msg
+                    )
+                );
+
+                return;
+            }
+
+            // ------------------ Optional: handle read & typing ------------------
+            if (data.type === 'read') {
+                setChatListData(prevChats =>
+                    prevChats.map(chat =>
+                        chat.id === data.conversation_id ? { ...chat, unread: 0 } : chat
+                    )
+                );
+                return;
+            }
+
+            if (data.type === 'typing') {
+                setChatListData(prevChats =>
+                    prevChats.map(chat =>
+                        chat.id === data.conversation_id ? { ...chat, typing: data.typing } : chat
+                    )
+                );
+                return;
+            }
+
+            console.warn('Unknown WebSocket message type:', data);
         };
+
 
         return () => {
             isMounted = false;
@@ -1095,7 +1152,6 @@ const ClientChatDashboard = ({ conversationId, onOpenPaymentFlow, selectedPaymen
                         <ProjectContext
                             project={selectedChat.project}
                             budget={selectedChat.budget}
-                            deadline={selectedChat.deadline}
                             status={selectedChat.status}
                             token={token}
                             orderType={selectedChat.orderType}

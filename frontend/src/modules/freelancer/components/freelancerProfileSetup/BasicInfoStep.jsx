@@ -114,7 +114,7 @@ export default function BasicInfoStep({
                 value={freelancerData.about || ''}
                 onChange={handleInputChange}
                 rows={4}
-                className="w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder:text-white/50 focus:outline-none focus:border-blue-400 resize-none transition-colors text-sm sm:text-base"
+                className="w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder:text-white/50 focus:outline-none focus:border-green-400 resize-none transition-colors text-sm sm:text-base"
                 placeholder="Tell us about yourself, your experience, and what makes you unique..."
             />
             {fieldErrors.about && <p className="text-red-400 text-xs sm:text-sm mt-1">{fieldErrors.about}</p>}

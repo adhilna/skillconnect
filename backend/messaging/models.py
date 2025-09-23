@@ -173,10 +173,18 @@ class Contract(models.Model):
         ('rejected', 'Rejected'),
     ]
     WORKFLOW_STEPS = [
-        'planning', 'draft', 'submitted', 'negotiation',
-        'accepted', 'started', 'milestone-1',
-        'review', 'completed', 'paid',
-    ]
+    'planning',        # Freelancer plans work
+    'advance',         # Advance payment received (if applicable)
+    'draft',           # Initial draft/preparation
+    'submitted',       # Work submitted for client review
+    'in-progress',     # Actively working on the task
+    'milestone-1',     # First milestone delivered
+    'revision',        # Revisions requested by client
+    'final-review',    # Final review by client
+    'completed',       # Freelancer marks as done
+    'paid',            # Final payment released (project closed)
+]
+
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     deadline = models.DateField()
     terms = models.TextField(blank=True)

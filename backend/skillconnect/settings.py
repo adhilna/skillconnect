@@ -173,7 +173,7 @@ EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = 'skillconnect717@gmail.com'
-EMAIL_HOST_PASSWORD = 'yedovivwlazhpvaf'
+EMAIL_HOST_PASSWORD = 'xebjizinbtklflho'
 SUPPORT_EMAIL = 'adhilchy11@gmail.com'
 
 CELERY_BROKER_URL = 'redis://localhost:6379/0'

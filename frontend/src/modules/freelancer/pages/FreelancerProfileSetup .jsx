@@ -496,7 +496,7 @@ const FreelancerProfileSetup = () => {
                     {isCompleted ? (
                         <CompletionStep
                             freelancerData={freelancerData}
-                            onDashboard={() => navigate('freelancer/dashboard')} // or any route you want
+                            onDashboard={() => navigate('/freelancer/dashboard')} // or any route you want
                         />
                     ) : (
                         <>
