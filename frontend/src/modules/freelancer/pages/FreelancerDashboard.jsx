@@ -15,6 +15,7 @@ import ServicesSection from '../components/freelancerDashboard/ServicesSection';
 import BrowseClientSection from '../components/freelancerDashboard/BrowseClientSection';
 import OrderSection from '../components/freelancerDashboard/OrderSection';
 import ExploreProposalsSection from '../components/freelancerDashboard/ExploreProposalsSection';
+import AnalyticsSection from '../components/freelancerDashboard/AnalyticsSection';
 
 
 const FreelancerDashboard = () => {
@@ -349,18 +350,6 @@ const RequestsSection = () => (
       <h4 className="text-xl font-semibold text-white mb-2">Find New Opportunities</h4>
       <p className="text-white/70 mb-6">Browse and respond to buyer requests</p>
       <div className="text-white/50 text-sm">Request browsing system coming soon...</div>
-    </div>
-  </div>
-);
-
-const AnalyticsSection = () => (
-  <div className="space-y-6">
-    <h3 className="text-2xl font-bold text-white">Analytics & Insights</h3>
-    <div className="bg-black/20 backdrop-blur-lg rounded-2xl border border-white/10 p-8 text-center">
-      <BarChart3 size={48} className="text-white/30 mx-auto mb-4" />
-      <h4 className="text-xl font-semibold text-white mb-2">Performance Analytics</h4>
-      <p className="text-white/70 mb-6">Track your earnings, views, and performance metrics</p>
-      <div className="text-white/50 text-sm">Detailed analytics dashboard in development...</div>
     </div>
   </div>
 );
