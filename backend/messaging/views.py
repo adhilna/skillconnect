@@ -361,8 +361,6 @@ class PaymentRequestViewSet(viewsets.ModelViewSet):
         else:
             # For other updates, allow normally
             serializer.save()
-
-
 class PaymentViewSet(viewsets.ModelViewSet):
     queryset = PaymentRequest.objects.all()
     serializer_class = PaymentRequestSerializer
@@ -426,3 +424,14 @@ class PaymentViewSet(viewsets.ModelViewSet):
             payment_req.save()
             return Response({"success": False, "error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+class PaymentRequestFullViewSet(viewsets.ReadOnlyModelViewSet):
+    serializer_class = PaymentRequestSerializer
+    permission_classes = [permissions.IsAuthenticated, IsPaymentParticipantPermission]
+
+    def get_queryset(self):
+        user = self.request.user
+        if hasattr(user, 'client_profile'):
+            return PaymentRequest.objects.filter(payee=user)
+        elif hasattr(user, 'freelancer_profile'):
+            return PaymentRequest.objects.filter(requested_by=user)
+        return PaymentRequest.objects.none()

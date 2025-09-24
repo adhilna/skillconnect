@@ -1033,7 +1033,8 @@ const ClientChatDashboard = ({ conversationId, onOpenPaymentFlow, selectedPaymen
                 )
             );
             setSelectedPayment(updatedPayment);
-            onOpenPaymentFlow(updatedPayment);
+            setShowPaymentModal(true);
+            // onOpenPaymentFlow(updatedPayment);
         } catch (error) {
             console.error("Error fetching payment details:", error);
         }
@@ -1275,25 +1276,25 @@ const ClientChatDashboard = ({ conversationId, onOpenPaymentFlow, selectedPaymen
                                         <div className="flex items-center justify-between mb-3">
                                             <div className="flex items-center space-x-2">
                                                 <DollarSign size={20} className="text-green-400" />
-                                                <span className="text-white font-bold text-lg">${selectedPayment?.paymentData?.amount}</span>
+                                                <span className="text-white font-bold text-lg">${selectedPayment?.amount}</span>
                                             </div>
                                             <span className="px-3 py-1 bg-yellow-500/20 text-yellow-300 rounded-full text-sm">{selectedPayment?.status}</span>
                                         </div>
-                                        <p className="text-white/80 text-sm mb-4">{selectedPayment?.paymentData?.description}</p>
+                                        <p className="text-white/80 text-sm mb-4">{selectedPayment?.description}</p>
                                         <div className="space-y-2 text-sm text-white/70">
                                             <div className="flex justify-between">
                                                 <span>Amount: </span>
-                                                <span className="text-white">${selectedPayment?.paymentData?.amount}</span>
+                                                <span className="text-white">${selectedPayment?.amount}</span>
                                             </div>
                                             <div className="flex justify-between">
                                                 <span>Processing Fee:</span>
-                                                <span className="text-white">$2.50</span>
+                                                <span className="text-white">$150</span>
                                             </div>
                                             <hr className="border-white/20" />
                                             <div className="flex justify-between font-medium">
                                                 <span>Total:</span>
                                                 <span className="text-white">
-                                                    ${(Number(selectedPayment?.paymentData?.amount) + 2.5).toFixed(2)}
+                                                    ${(Number(selectedPayment?.amount) + 150).toFixed(2)}
                                                 </span>
 
                                             </div>

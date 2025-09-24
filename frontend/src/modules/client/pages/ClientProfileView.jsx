@@ -97,9 +97,9 @@ const ClientProfileView = () => {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 flex items-center justify-center">
+            <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
                 <div className="text-center space-y-4">
-                    <div className="w-8 h-8 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto"></div>
+                    <div className="w-8 h-8 border-4 border-purple-200 border-t-purple-600 rounded-full animate-spin mx-auto"></div>
                     <div className="space-y-2">
                         <p className="text-white text-lg font-medium">Loading client profile...</p>
                         <p className="text-white/60">Please wait while we fetch the details</p>
@@ -111,7 +111,7 @@ const ClientProfileView = () => {
 
     if (error) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 flex items-center justify-center">
+            <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
                 <div className="text-center space-y-6 p-8">
                     <div className="text-red-500 text-6xl">⚠️</div>
                     <div className="space-y-2">
@@ -120,7 +120,7 @@ const ClientProfileView = () => {
                     </div>
                     <button
                         onClick={() => window.location.reload()}
-                        className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                        className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
                     >
                         Try Again
                     </button>
@@ -131,7 +131,7 @@ const ClientProfileView = () => {
 
     if (!client) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 flex items-center justify-center">
+            <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
                 <div className="text-center space-y-4">
                     <div className="text-white/40 text-5xl">🏢</div>
                     <p className="text-white/60 text-lg">No client profile data available</p>
@@ -163,7 +163,7 @@ const ClientProfileView = () => {
     } = client;
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900">
+        <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
             <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
                 {/* Header */}
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -208,7 +208,7 @@ const ClientProfileView = () => {
                                     <h1 className="text-2xl lg:text-3xl font-bold text-white">
                                         {company_name}
                                     </h1>
-                                    <div className="flex items-center gap-1 px-3 py-1 rounded-full bg-blue-500/20 border border-blue-400/40">
+                                    <div className="flex items-center gap-1 px-3 py-1 rounded-full bg-purple-500/20 border border-purple-400/40">
                                         <Building2 className="text-blue-400 w-4 h-4" />
                                         <span className="text-blue-200 text-sm font-medium">
                                             {account_type === 'business' ? 'Business Client' : 'Personal Client'}

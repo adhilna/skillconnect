@@ -38,19 +38,37 @@ const PaymentFlow = ({
                 <div className="bg-white/5 border border-white/10 rounded-xl p-3 sm:p-4 mb-3 sm:mb-4">
                     <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start mb-2.5 sm:mb-3 gap-1.5 sm:gap-2">
                         <div className="min-w-0 flex-1">
-                            <p className="text-white font-medium text-sm sm:text-base break-words">{selectedPayment?.description}</p>
-                            <p className="text-white/60 text-xs sm:text-sm">To: {selectedPayment?.freelancer_name}</p>
+                            <p className="text-white font-medium text-sm sm:text-base break-words">
+                                {selectedPayment?.description}
+                            </p>
+                            <p className="text-white/60 text-xs sm:text-sm">
+                                To: {selectedPayment?.freelancer_name}
+                            </p>
                         </div>
                         <div className="text-left sm:text-right">
-                            <p className="text-lg sm:text-xl lg:text-2xl font-bold text-white">${selectedPayment?.amount}</p>
+                            <p className="text-lg sm:text-xl lg:text-2xl font-bold text-white">
+                                ₹{selectedPayment?.amount}
+                            </p>
                             <p className="text-white/60 text-xs">Payment Request</p>
                         </div>
                     </div>
 
+                    {/* Processing Fee Row */}
+                    <div className="border-t border-white/10 pt-2.5 sm:pt-3 flex justify-between items-center">
+                        <span className="text-white/70 text-xs sm:text-sm">Processing Fee</span>
+                        <span className="text-base sm:text-lg lg:text-xl font-semibold text-yellow-400">
+                            ₹150
+                        </span>
+                    </div>
+
+                    {/* Total Row */}
                     <div className="border-t border-white/10 pt-2.5 sm:pt-3 flex justify-between items-center">
                         <span className="text-white/70 text-xs sm:text-sm">Total Amount</span>
-                        <span className="text-base sm:text-lg lg:text-xl font-bold text-green-400">${selectedPayment?.amount}</span>
+                        <span className="text-base sm:text-lg lg:text-xl font-bold text-green-400">
+                            ₹{Number(selectedPayment?.amount) + 150}
+                        </span>
                     </div>
+
                 </div>
             </div>
 
@@ -124,7 +142,7 @@ const PaymentFlow = ({
                 >
                     <div className="flex items-center justify-center space-x-2">
                         <Lock size={16} className="sm:w-5 sm:h-5" />
-                        <span>Pay ${selectedPayment?.amount} Securely</span>
+                        <span>Pay ₹{Number(selectedPayment?.amount) + 150} Securely</span>
                     </div>
                 </button>
 
@@ -151,7 +169,7 @@ const PaymentFlow = ({
                     <div className="bg-white/5 border border-white/10 rounded-xl p-3 sm:p-4 mb-4 sm:mb-6 space-y-2.5 sm:space-y-3">
                         <div className="flex justify-between items-center">
                             <span className="text-white/70 text-xs sm:text-sm">Amount</span>
-                            <span className="text-base sm:text-lg lg:text-2xl font-bold text-white">${selectedPayment?.amount}</span>
+                            <span className="text-base sm:text-lg lg:text-2xl font-bold text-white">₹{Number(selectedPayment?.amount) + 150}</span>
                         </div>
                         <div className="flex flex-col sm:flex-row sm:justify-between gap-1 sm:gap-2">
                             <span className="text-white/70 text-xs sm:text-sm">Description</span>

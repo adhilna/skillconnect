@@ -346,14 +346,8 @@ const PaymentDashboard = ({
           {/* Header */}
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 sm:mb-8 gap-3 sm:gap-4">
             <div className="flex items-center">
-              <button className="text-white/60 hover:text-white transition-colors mr-3 sm:mr-4">
-                <ArrowLeft size={20} className="sm:w-6 sm:h-6" />
-              </button>
               <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-white">Payments & Billing</h1>
             </div>
-            <button className="bg-gradient-to-r from-green-500 to-emerald-500 text-white px-3 sm:px-4 lg:px-6 py-2 rounded-xl font-medium hover:from-green-600 hover:to-emerald-600 transition-all text-xs sm:text-sm lg:text-base whitespace-nowrap">
-              Add Payment Method
-            </button>
           </div>
 
           {/* Quick Stats */}
