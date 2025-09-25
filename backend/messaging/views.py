@@ -373,10 +373,14 @@ class ContractViewSet(viewsets.ModelViewSet):
                 if freelancer_profile:
                     freelancer_name = getattr(freelancer_profile, 'full_name', None) or getattr(freelancer_profile, 'name', None) or str(freelancer_profile)
 
-                # Only service_order has service & category
                 if hasattr(order, 'service') and order.service:
+                    # ServiceOrder case
                     title = order.service.title
                     category_name = order.service.category.name if order.service.category else None
+                elif hasattr(order, 'proposal'):
+                    # ProposalOrder case (adjust field names as per your ProposalOrder model)
+                    title = order.proposal.title
+                    category_name = order.proposal.category.name if order.proposal.category else None
 
             workflow_index = contract.WORKFLOW_STEPS.index(contract.workflow_status)
             progress = ((workflow_index + 1) / len(contract.WORKFLOW_STEPS)) * 100
