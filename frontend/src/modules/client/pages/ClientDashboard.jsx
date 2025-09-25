@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect, useContext, useMemo } from 'react';
 import {
     Home, Search, MessageCircle, Users, BarChart3,
     User, Settings, Briefcase, CreditCard, Compass, ShoppingCart
@@ -36,8 +36,120 @@ const ClientDashboard = () => {
 
     const [activeConversationId, setActiveConversationId] = useState(null);
 
-    const [paymentSectionView, setPaymentSectionView] = useState('dashboard'); // 'dashboard' or 'payment'
+    const [paymentSectionView, setPaymentSectionView] = useState('dashboard');
     const [paymentSelectedPayment, setPaymentSelectedPayment] = useState(null);
+
+    // analyticsSection States
+    const [paymentHistory, setPaymentHistory] = useState([]);
+    const [loadingPayments, setLoadingPayments] = useState(true);
+    const [totalPages, setTotalPages] = useState(1);
+
+    // active projects states
+    const [activeProjects, setActiveProjects] = useState(0);
+    const [loadingActive, setLoadingActive] = useState(true);
+
+    // hired freelancers states
+    const [hiredFreelancersCount, setHiredFreelancersCount] = useState(0);
+    // const [hiredFreelancers, setHiredFreelancers] = useState([]);
+
+    // fetch active projects count
+    useEffect(() => {
+        const fetchActiveProjects = async () => {
+            setLoadingActive(true);
+            try {
+                const response = await api.get("/api/v1/messaging/contracts/active/", {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        "Content-Type": "application/json",
+                    },
+                });
+                setActiveProjects(response.data);
+            } catch (error) {
+                console.error("Failed to fetch active projects:", error);
+            } finally {
+                setLoadingActive(false);
+            }
+        };
+
+        if (token) fetchActiveProjects();
+    }, [token]);
+
+    // Fetch payment history for analytics
+    useEffect(() => {
+        const fetchPayments = async () => {
+            setLoadingPayments(true);
+            try {
+                const response = await api.get(
+                    `/api/v1/messaging/payment-requests-full/`,
+                    {
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                            "Content-Type": "application/json",
+                        },
+                    }
+                );
+                const data = response.data;
+                console.log("API data:", data);
+                if (Array.isArray(data)) {
+                    setPaymentHistory(data);
+                    setTotalPages(1);
+                } else {
+                    setPaymentHistory(data.results || []);
+                    setTotalPages(data.total_pages || 1);
+                }
+            } catch (error) {
+                console.error("Failed to fetch payment requests:", error);
+            } finally {
+                setLoadingPayments(false);
+            }
+        };
+        if (token) fetchPayments();
+    }, [token]);
+
+    // Hired Freelancers
+    useEffect(() => {
+        const fetchFreelancers = async () => {
+            try {
+                const { data } = await api.get('/api/v1/messaging/contracts/unique_freelancers/');
+                setHiredFreelancersCount(data.count);
+                // setHiredFreelancers(data.freelancers);
+            } catch (error) {
+                console.error('Error fetching freelancers:', error);
+            }
+        };
+
+        fetchFreelancers();
+    }, []);
+
+
+    const summaryMetrics = useMemo(() => {
+        const successfulPayments = paymentHistory.filter(
+            (t) => t.status?.toLowerCase() === "completed"
+        );
+
+        const commission = successfulPayments.length * 150;
+
+        const totalAmount = successfulPayments.reduce(
+            (sum, t) => sum + Number(t.amount),
+            0
+        );
+        const totalCommission = successfulPayments.reduce(
+            (sum, t) => sum + Number(t.platform_fee || 0),
+            0
+        );
+        const successRate =
+            paymentHistory.length > 0
+                ? (successfulPayments.length / paymentHistory.length) * 100
+                : 0;
+
+        return {
+            totalAmount,
+            totalPayments: paymentHistory.length,
+            totalCommission,
+            successRate,
+            commission,
+        };
+    }, [paymentHistory]);
 
     const openPaymentFlow = async (messagePaymentData) => {
         try {
@@ -207,13 +319,10 @@ const ClientDashboard = () => {
         }
     };
 
-
     const handleCancel = () => {
         setEditData({ ...profileData });
         setIsEditing(false);
     };
-
-
 
     const firstLetter = profileData?.first_name?.charAt(0)?.toUpperCase() || 'C';
 
@@ -239,6 +348,12 @@ const ClientDashboard = () => {
                     featuredFreelancers={freelancers.slice(0, 3)} // Only top 3
                     loading={loadingFreelancers}
                     setActiveSection={setActiveSection}
+                    summaryMetrics={summaryMetrics}
+                    loadingPayments={loadingPayments}
+                    activeProjectsCount={activeProjects?.length || 0}
+                    loadingActive={loadingActive}
+                    hiredFreelancersCount={hiredFreelancersCount}
+                    activeProjects={activeProjects}
                 />;
             case 'browse':
                 return <BrowseTalentSection
@@ -275,7 +390,13 @@ const ClientDashboard = () => {
                     setSelectedPayment={setPaymentSelectedPayment}
                 />;
             case 'analytics':
-                return <AnalyticsSection />;
+                return <AnalyticsSection
+                    paymentHistory={paymentHistory}
+                    setPaymentHistory={setPaymentHistory}
+                    totalPages={totalPages}
+                    setTotalPages={setTotalPages}
+                    loadingPayments={loadingPayments}
+                />;
             case 'profile':
                 return <ProfileSection
                     profileData={isEditing ? editData : profileData}
@@ -290,7 +411,10 @@ const ClientDashboard = () => {
             case 'settings':
                 return <SettingsSection />;
             default:
-                return <DashboardOverview profileData={profileData} />;
+                return <DashboardOverview
+                    profileData={profileData}
+
+                />;
         }
     };
 

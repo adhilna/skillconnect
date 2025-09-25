@@ -310,7 +310,7 @@ class ContractViewSet(viewsets.ModelViewSet):
         # Optional: permission checks (who can accept)
         contract.status = 'accepted'
         contract.save()
-        broadcast_contract_update(contract) 
+        broadcast_contract_update(contract)
         return Response({'status': 'contract accepted'}, status=status.HTTP_200_OK)
 
     @action(detail=True, methods=['post'])
@@ -321,6 +321,123 @@ class ContractViewSet(viewsets.ModelViewSet):
         contract.save()
         broadcast_contract_update(contract)
         return Response({'status': 'contract rejected'}, status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=['get'])
+    def active(self, request):
+        """
+        Returns active contracts for the logged-in user with:
+        - freelancer name
+        - service title
+        - category
+        - progress
+        - amount
+        """
+        user = request.user
+
+        active_steps = [
+            'planning', 'advance', 'draft', 'submitted',
+            'in-progress', 'milestone-1', 'revision', 'final-review',
+            'completed'
+        ]
+
+        contracts = Contract.objects.filter(
+            (
+                Q(service_order__client__user=user) |
+                Q(service_order__freelancer__user=user) |
+                Q(proposal_order__client__user=user) |
+                Q(proposal_order__freelancer__user=user)
+            ),
+            workflow_status__in=active_steps,
+            status='accepted'
+        ).select_related(
+            'service_order',
+            'service_order__service',
+            'service_order__freelancer',
+            'service_order__freelancer__user',
+            'proposal_order',
+            'proposal_order__freelancer',
+            'proposal_order__freelancer__user',
+        )
+
+        data = []
+
+        for contract in contracts:
+            order = contract.service_order or contract.proposal_order
+
+            freelancer_name = "N/A"
+            title = ""
+            category_name = None
+
+            if order:
+                freelancer_profile = getattr(order, 'freelancer', None)
+                if freelancer_profile:
+                    freelancer_name = getattr(freelancer_profile, 'full_name', None) or getattr(freelancer_profile, 'name', None) or str(freelancer_profile)
+
+                # Only service_order has service & category
+                if hasattr(order, 'service') and order.service:
+                    title = order.service.title
+                    category_name = order.service.category.name if order.service.category else None
+
+            workflow_index = contract.WORKFLOW_STEPS.index(contract.workflow_status)
+            progress = ((workflow_index + 1) / len(contract.WORKFLOW_STEPS)) * 100
+
+            data.append({
+                'id': contract.id,
+                'title': title,
+                'freelancer': freelancer_name,
+                'category': category_name,
+                'status': contract.workflow_status,
+                'deadline': contract.deadline,
+                'progress': progress,
+                'amount': contract.amount,
+            })
+
+        return Response(data)
+
+
+    @action(detail=False, methods=['get'])
+    def unique_freelancers(self, request):
+        """
+        Returns a list of unique freelancers (id + name) who accepted contracts for the logged-in client.
+        Works for both service and proposal orders.
+        """
+        user = request.user
+
+        active_statuses = [
+            'planning', 'advance', 'draft', 'submitted',
+            'in-progress', 'milestone-1', 'revision', 'final-review'
+        ]
+
+        # Accepted contracts where user is the client
+        accepted_contracts = Contract.objects.filter(
+            status='accepted',
+            workflow_status__in=active_statuses
+        ).filter(
+            Q(service_order__client__user=user) | Q(proposal_order__client__user=user)
+        )
+
+        freelancers = []
+        seen_ids = set()
+
+        for contract in accepted_contracts:
+            freelancer = None
+            if contract.service_order and contract.service_order.freelancer:
+                freelancer = contract.service_order.freelancer
+            elif contract.proposal_order and contract.proposal_order.freelancer:
+                freelancer = contract.proposal_order.freelancer
+
+            if freelancer and freelancer.id not in seen_ids:
+                freelancers.append({
+                    'id': freelancer.id,
+                    'name': f"{freelancer.first_name} {freelancer.last_name}".strip()
+                })
+                seen_ids.add(freelancer.id)
+
+        return Response({
+            'count': len(freelancers),
+            'freelancers': freelancers
+        })
+
 
 class PaymentRequestViewSet(viewsets.ModelViewSet):
     serializer_class = PaymentRequestSerializer

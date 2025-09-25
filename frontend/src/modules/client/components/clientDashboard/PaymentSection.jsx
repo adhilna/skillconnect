@@ -39,7 +39,6 @@ const PaymentDashboard = ({
   const [showPaidModal, setShowPaidModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
-
   const [paymentHistory, setPaymentHistory] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);

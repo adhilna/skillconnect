@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useContext } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
     Search,
     Filter,
@@ -14,20 +14,6 @@ import {
     ArrowUpDown
 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import api from '../../../../api/api';
-import { AuthContext } from '../../../../context/AuthContext';
-
-// const monthlyData = [
-//     { month: 'Jan', amount: 8500 },
-//     { month: 'Feb', amount: 12300 },
-//     { month: 'Mar', amount: 9800 },
-//     { month: 'Apr', amount: 15600 },
-//     { month: 'May', amount: 11200 },
-//     { month: 'Jun', amount: 18900 },
-//     { month: 'Jul', amount: 14500 },
-//     { month: 'Aug', amount: 16800 },
-//     { month: 'Sep', amount: 13400 }
-// ];
 
 const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
@@ -37,48 +23,48 @@ const paymentMethodData = [
     { name: 'Razorpay', value: 25, color: '#10B981' }
 ];
 
-const AnalyticsSection = () => {
-    const [paymentHistory, setPaymentHistory] = useState([]);
-    const [loading, setLoading] = useState(false);
-    const [totalPages, setTotalPages] = useState(1);
+const AnalyticsSection = ({paymentHistory, totalPages, setTotalPages, loadingPayments }) => {
+    // const [paymentHistory, setPaymentHistory] = useState([]);
+    // const [loading, setLoading] = useState(false);
+    // const [totalPages, setTotalPages] = useState(1);
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
     const [currentPage, setCurrentPage] = useState(1);
     const [sortField, setSortField] = useState('date');
     const [sortDirection, setSortDirection] = useState('desc');
-    const { token } = useContext(AuthContext);
+    // const { token } = useContext(AuthContext);
     const itemsPerPage = 5;
 
-    useEffect(() => {
-        const fetchPayments = async () => {
-            setLoading(true);
-            try {
-                const response = await api.get(
-                    `/api/v1/messaging/payment-requests-full/`,
-                    {
-                        headers: {
-                            Authorization: `Bearer ${token}`,
-                            "Content-Type": "application/json",
-                        },
-                    }
-                );
-                const data = response.data;
-                console.log("API data:", data);
-                if (Array.isArray(data)) {
-                    setPaymentHistory(data);
-                    setTotalPages(1);
-                } else {
-                    setPaymentHistory(data.results || []);
-                    setTotalPages(data.total_pages || 1);
-                }
-            } catch (error) {
-                console.error("Failed to fetch payment requests:", error);
-            } finally {
-                setLoading(false);
-            }
-        };
-        if (token) fetchPayments();
-    }, [token]);
+    // useEffect(() => {
+    //     const fetchPayments = async () => {
+    //         setLoading(true);
+    //         try {
+    //             const response = await api.get(
+    //                 `/api/v1/messaging/payment-requests-full/`,
+    //                 {
+    //                     headers: {
+    //                         Authorization: `Bearer ${token}`,
+    //                         "Content-Type": "application/json",
+    //                     },
+    //                 }
+    //             );
+    //             const data = response.data;
+    //             console.log("API data:", data);
+    //             if (Array.isArray(data)) {
+    //                 setPaymentHistory(data);
+    //                 setTotalPages(1);
+    //             } else {
+    //                 setPaymentHistory(data.results || []);
+    //                 setTotalPages(data.total_pages || 1);
+    //             }
+    //         } catch (error) {
+    //             console.error("Failed to fetch payment requests:", error);
+    //         } finally {
+    //             setLoading(false);
+    //         }
+    //     };
+    //     if (token) fetchPayments();
+    // }, [token]);
 
     useEffect(() => {
         console.log("paymentHistory updated:", paymentHistory);
@@ -304,7 +290,7 @@ const AnalyticsSection = () => {
         );
     };
 
-    if (loading) {
+    if (loadingPayments) {
         return <PaymentDashboardSkeleton />;
     }
 
@@ -335,7 +321,7 @@ const AnalyticsSection = () => {
                     key={i}
                     onClick={() => setCurrentPage(i)}
                     className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${currentPage === i
-                        ? 'bg-purple-600/80 text-white'
+                        ? 'bg-blue-500 to-cyan-500 text-white'
                         : 'bg-white/10 text-white/60 hover:bg-white/20'
                         }`}
                 >

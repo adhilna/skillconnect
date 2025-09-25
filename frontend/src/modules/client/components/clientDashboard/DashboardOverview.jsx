@@ -1,12 +1,12 @@
 import React from 'react';
-import { DollarSign, Users, Briefcase, Star, CheckCircle, FileText, Search, Plus, MessageCircle, BarChart3 } from 'lucide-react';
+import { Users, Briefcase, Star, CheckCircle, FileText, Search, Plus, MessageCircle, BarChart3, IndianRupee } from 'lucide-react';
 import StatCard from './StatCard';
 import ProjectItem from './ProjectItem';
 import ActivityItem from './ActivityItem';
 import FreelancerCard from './FreelancerCard';
 
 const DashboardOverview = (props) => {
-    const { profileData, featuredFreelancers, loading, setActiveSection } = props;
+    const { profileData, featuredFreelancers, loading, setActiveSection, summaryMetrics, loadingPayments, activeProjectsCount, loadingActive, hiredFreelancersCount, activeProjects } = props;
 
     // Helper to get initials from a name string
     const getInitials = (name) => {
@@ -15,6 +15,36 @@ const DashboardOverview = (props) => {
         if (parts.length === 1) return parts[0].charAt(0).toUpperCase();
         return parts[0].charAt(0).toUpperCase() + parts[1].charAt(0).toUpperCase();
     };
+
+    const getDeadlineText = (deadline) => {
+        if (!deadline) return "No deadline";
+
+        const deadlineDate = new Date(deadline);
+        const today = new Date();
+
+        // Calculate days difference
+        const msInDay = 1000 * 60 * 60 * 24;
+        const daysDiff = Math.floor(
+            (deadlineDate - today) / msInDay
+        );
+
+        if (daysDiff >= 0) {
+            return `${daysDiff} day${daysDiff !== 1 ? "s" : ""} left`;
+        } else {
+            return (
+                <span className="text-red-500">
+                    {Math.abs(daysDiff)} day{Math.abs(daysDiff) !== 1 ? "s" : ""} exceeded
+                </span>
+            );
+        }
+    };
+
+    const latestProjects = Array.isArray(activeProjects)
+        ? [...activeProjects]
+            .sort((a, b) => b.id - a.id) // higher ID = newer
+            .slice(0, 3)
+        : [];
+
 
     return (
         <div className="space-y-6">
@@ -38,15 +68,27 @@ const DashboardOverview = (props) => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <StatCard
                     title="Total Spent"
-                    value="$12,450"
-                    icon={DollarSign}
+                    value={
+                        loadingPayments ? (
+                            <span className="inline-block w-5 h-5 border-2 border-t-transparent border-gray-400 rounded-full animate-spin mx-auto"></span>
+                        ) : (
+                            `$${summaryMetrics.totalAmount.toLocaleString()}`
+                        )
+                    }
+                    icon={IndianRupee}
                     change="+8%"
                     trend="up"
                     subtitle="This month"
                 />
                 <StatCard
                     title="Active Projects"
-                    value="6"
+                    value={
+                        loadingActive ? (
+                            <span className="inline-block w-5 h-5 border-2 border-t-transparent border-gray-400 rounded-full animate-spin mx-auto"></span>
+                        ) : (
+                            activeProjectsCount
+                        )
+                    }
                     icon={Briefcase}
                     change="+2"
                     trend="up"
@@ -54,9 +96,9 @@ const DashboardOverview = (props) => {
                 />
                 <StatCard
                     title="Hired Freelancers"
-                    value="23"
+                    value={hiredFreelancersCount ?? 0}
                     icon={Users}
-                    change="+5 new"
+                    change={`+${hiredFreelancersCount}`}
                     trend="up"
                     subtitle="Total team"
                 />
@@ -79,30 +121,17 @@ const DashboardOverview = (props) => {
                         <button className="text-blue-400 hover:text-blue-300 text-sm font-medium">View All</button>
                     </div>
                     <div className="space-y-4">
-                        <ProjectItem
-                            title="E-commerce Website Development"
-                            freelancer="Alex Rodriguez"
-                            status="in-progress"
-                            budget="$2,500"
-                            deadline="8 days left"
-                            progress={65}
-                        />
-                        <ProjectItem
-                            title="Mobile App UI/UX Design"
-                            freelancer="Sarah Kim"
-                            status="review"
-                            budget="$1,200"
-                            deadline="3 days left"
-                            progress={90}
-                        />
-                        <ProjectItem
-                            title="Content Marketing Strategy"
-                            freelancer="Mike Johnson"
-                            status="planning"
-                            budget="$800"
-                            deadline="12 days left"
-                            progress={25}
-                        />
+                        {latestProjects.map((project) => (
+                            <ProjectItem
+                                key={project.id}
+                                title={project.category || "Untitled Category"}
+                                freelancer={project.freelancer || "Unknown Freelancer"}
+                                status={project.status}
+                                budget={`₹${project.amount?.toLocaleString("en-IN") || 0}`}
+                                deadline={getDeadlineText(project.deadline)}
+                                progress={project.progress || 0}
+                            />
+                        ))}
                     </div>
                 </div>
 
@@ -169,7 +198,7 @@ const DashboardOverview = (props) => {
                 </div>
 
                 {loading ? (
-                    <p className="text-white">Loading freelancers...</p>
+                    <div className="w-5 h-5 border-2 border-t-transparent border-gray-400 rounded-full animate-spin mx-auto"></div>
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         {featuredFreelancers.map((freelancer) => (
