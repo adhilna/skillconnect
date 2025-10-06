@@ -1,4 +1,4 @@
-import React, { useState, useContext, useEffect } from 'react';
+import React, { useState, useContext, useEffect, useMemo } from 'react';
 import {
   Home, Briefcase, ShoppingCart, MessageCircle, Search, BarChart3,
   User, Settings, Bell, Menu, X, DollarSign, Star, TrendingUp, Clock,
@@ -33,6 +33,15 @@ const FreelancerDashboard = () => {
   const [freelancers, setFreelancers] = useState([]);
 
   const { token } = useContext(AuthContext);
+
+  // analyticsSection States
+  const [paymentHistory, setPaymentHistory] = useState([]);
+  const [loadingPayments, setLoadingPayments] = useState(true);
+  const [totalPages, setTotalPages] = useState(1);
+
+  // active projects states
+  const [activeProjects, setActiveProjects] = useState(0);
+  const [loadingActive, setLoadingActive] = useState(true);
 
   const navigationItems = [
     { id: 'dashboard', label: 'Dashboard', icon: Home },
@@ -101,6 +110,124 @@ const FreelancerDashboard = () => {
     }
   }, [token]);
 
+  // Fetch payment history for analytics
+  useEffect(() => {
+    const fetchPayments = async () => {
+      setLoadingPayments(true);
+      try {
+        const response = await api.get(
+          `/api/v1/messaging/payment-requests-full/`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+          }
+        );
+        const data = response.data;
+        console.log("API data:", data);
+        if (Array.isArray(data)) {
+          setPaymentHistory(data);
+          setTotalPages(1);
+        } else {
+          setPaymentHistory(data.results || []);
+          setTotalPages(data.total_pages || 1);
+        }
+      } catch (error) {
+        console.error("Failed to fetch payment requests:", error);
+      } finally {
+        setLoadingPayments(false);
+      }
+    };
+    if (token) fetchPayments();
+  }, [token]);
+
+  // fetch active projects count
+  useEffect(() => {
+    const fetchActiveProjects = async () => {
+      setLoadingActive(true);
+      try {
+        const response = await api.get("/api/v1/messaging/contracts/active/", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        });
+        setActiveProjects(response.data);
+      } catch (error) {
+        console.error("Failed to fetch active projects:", error);
+      } finally {
+        setLoadingActive(false);
+      }
+    };
+
+    if (token) fetchActiveProjects();
+  }, [token]);
+
+  const analytics = useMemo(() => {
+    const payments = Array.isArray(paymentHistory) ? paymentHistory : [];
+    const projects = Array.isArray(activeProjects) ? activeProjects : [];
+
+    const successfulPayments = payments.filter(
+      (t) => t.status?.toLowerCase() === "completed"
+    );
+
+    const completedProjects = projects.filter(
+      (p) => ["completed", "paid"].includes(p.status?.toLowerCase())
+    );
+
+    const pendingPayments = payments.filter(
+      (p) => p.status?.toLowerCase() === "pending"
+    );
+
+    const inProgressProjects = projects.filter(
+      (p) => ['planning',
+        'advance',
+        'draft',
+        'submitted',
+        'in-progress',
+        'milestone-1',
+        'revision',
+        'final-review',].includes(p.status?.toLowerCase())
+    );
+
+    const totalAmount = successfulPayments.reduce(
+      (sum, t) => sum + Number(t.amount),
+      0
+    );
+    const commission = successfulPayments.length * 150;
+    const totalCommission = successfulPayments.reduce(
+      (sum, t) => sum + Number(t.platform_fee || 0),
+      0
+    );
+    const pendingAmount = pendingPayments.reduce(
+      (sum, p) => sum + Number(p.amount || 0),
+      0
+    );
+
+    const ratingsAverage = successfulPayments
+      .filter(p => p.rating)
+      .reduce((sum, p, _, arr) => sum + p.rating / arr.length, 0);
+
+    const averageProjectValue = successfulPayments.length > 0
+      ? totalAmount / successfulPayments.length
+      : 0;
+
+    return {
+      totalAmount,
+      completedProjectsCount: completedProjects.length,
+      commission,
+      totalCommission,
+      averageProjectValue,
+      pendingAmount,
+      pendingPaymentsLength: pendingPayments.length,
+      ratingsAverage,
+      inProgressCount: inProgressProjects.length,
+      totalProjects: projects.length, // ✅ now safe
+    };
+  }, [paymentHistory, activeProjects]); // ✅ recompute when data arrives
+
+  console.log("Computed analytics:", analytics);
 
   const startChatForConversation = (conversationId) => {
     setActiveConversationId(conversationId);
@@ -110,7 +237,12 @@ const FreelancerDashboard = () => {
   const getCurrentSectionContent = () => {
     switch (activeSection) {
       case 'dashboard':
-        return <DashboardOverview />;
+        return <DashboardOverview
+          analytics={analytics}
+          loadingPayments={loadingPayments}
+          loadingActive={loadingActive}
+          activeProjects={activeProjects}
+        />;
       case 'browse':
         return <BrowseClientSection
           clients={clients}
@@ -134,7 +266,15 @@ const FreelancerDashboard = () => {
       case 'requests':
         return <RequestsSection />;
       case 'analytics':
-        return <AnalyticsSection />;
+        return <AnalyticsSection
+          paymentHistory={paymentHistory}
+          setPaymentHistory={setPaymentHistory}
+          totalPages={totalPages}
+          setTotalPages={setTotalPages}
+          loadingPayments={loadingPayments}
+          activeProjects={activeProjects}
+          loadingActive={loadingActive}
+        />;
       case 'profile':
         return <ProfileSection />;
       case 'settings':

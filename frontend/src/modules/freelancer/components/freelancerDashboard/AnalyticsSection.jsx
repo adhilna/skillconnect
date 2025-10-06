@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   DollarSign,
   Briefcase,
@@ -10,7 +10,11 @@ import {
   Filter,
   Download,
   Eye,
+  Search,
   ChevronRight,
+  ChevronDown,
+  ChevronLeft,
+  ArrowUpDown,
   Award,
   Target,
   Users,
@@ -32,158 +36,27 @@ import {
   Legend
 } from 'recharts';
 
-// Mock Data - Replace with actual API calls
-const mockPayments = [
-  {
-    id: "pay_001",
-    amount: 45000,
-    client: "TechCorp Solutions",
-    project: "E-commerce Website",
-    status: "completed",
-    date: "2025-09-20T10:30:00Z",
-    paymentMethod: "Stripe",
-    platformFee: 4500,
-    netEarning: 40500,
-    rating: 5
-  },
-  {
-    id: "pay_002",
-    amount: 28000,
-    client: "StartupXYZ",
-    project: "Mobile App UI/UX",
-    status: "completed",
-    date: "2025-09-15T14:20:00Z",
-    paymentMethod: "PayPal",
-    platformFee: 2800,
-    netEarning: 25200,
-    rating: 4.8
-  },
-  {
-    id: "pay_003",
-    amount: 35000,
-    client: "Digital Agency Pro",
-    project: "Brand Identity Design",
-    status: "pending",
-    date: "2025-09-22T09:15:00Z",
-    paymentMethod: "Razorpay",
-    platformFee: 3500,
-    netEarning: 31500,
-    rating: null
-  },
-  {
-    id: "pay_004",
-    amount: 52000,
-    client: "Enterprise Corp",
-    project: "Full Stack Development",
-    status: "completed",
-    date: "2025-08-28T16:45:00Z",
-    paymentMethod: "Stripe",
-    platformFee: 5200,
-    netEarning: 46800,
-    rating: 4.9
-  },
-  {
-    id: "pay_005",
-    amount: 22000,
-    client: "Local Business Inc",
-    project: "WordPress Website",
-    status: "completed",
-    date: "2025-08-20T11:30:00Z",
-    paymentMethod: "PayPal",
-    platformFee: 2200,
-    netEarning: 19800,
-    rating: 4.7
-  },
-  {
-    id: "pay_006",
-    amount: 38000,
-    client: "Creative Studios",
-    project: "Logo & Branding",
-    status: "in-progress",
-    date: "2025-09-25T08:00:00Z",
-    paymentMethod: "Stripe",
-    platformFee: 3800,
-    netEarning: 34200,
-    rating: null
-  }
-];
-
-const mockProjects = [
-  {
-    id: "proj_001",
-    title: "E-commerce Website",
-    client: "TechCorp Solutions",
-    status: "completed",
-    startDate: "2025-08-15",
-    endDate: "2025-09-20",
-    value: 45000,
-    rating: 5,
-    category: "Web Development"
-  },
-  {
-    id: "proj_002",
-    title: "Mobile App UI/UX",
-    client: "StartupXYZ",
-    status: "completed",
-    startDate: "2025-08-01",
-    endDate: "2025-09-15",
-    value: 28000,
-    rating: 4.8,
-    category: "UI/UX Design"
-  },
-  {
-    id: "proj_003",
-    title: "Brand Identity Design",
-    client: "Digital Agency Pro",
-    status: "in-progress",
-    startDate: "2025-09-10",
-    endDate: "2025-10-05",
-    value: 35000,
-    rating: null,
-    category: "Graphic Design"
-  },
-  {
-    id: "proj_004",
-    title: "Full Stack Development",
-    client: "Enterprise Corp",
-    status: "completed",
-    startDate: "2025-07-15",
-    endDate: "2025-08-28",
-    value: 52000,
-    rating: 4.9,
-    category: "Web Development"
-  },
-  {
-    id: "proj_005",
-    title: "Social Media Management",
-    client: "Retail Brand Co",
-    status: "canceled",
-    startDate: "2025-08-05",
-    endDate: null,
-    value: 15000,
-    rating: null,
-    category: "Digital Marketing"
-  }
-];
-
 // Chart Data
-const monthlyEarningsData = [
-  { month: 'Jan', earnings: 85000, projects: 3 },
-  { month: 'Feb', earnings: 125000, projects: 5 },
-  { month: 'Mar', earnings: 98000, projects: 4 },
-  { month: 'Apr', earnings: 156000, projects: 6 },
-  { month: 'May', earnings: 112000, projects: 4 },
-  { month: 'Jun', earnings: 189000, projects: 7 },
-  { month: 'Jul', earnings: 145000, projects: 5 },
-  { month: 'Aug', earnings: 168000, projects: 6 },
-  { month: 'Sep', earnings: 142000, projects: 5 }
-];
+// const monthlyEarningsData = [
+//   { month: 'Jan', earnings: 85000, projects: 3 },
+//   { month: 'Feb', earnings: 125000, projects: 5 },
+//   { month: 'Mar', earnings: 98000, projects: 4 },
+//   { month: 'Apr', earnings: 156000, projects: 6 },
+//   { month: 'May', earnings: 112000, projects: 4 },
+//   { month: 'Jun', earnings: 189000, projects: 7 },
+//   { month: 'Jul', earnings: 145000, projects: 5 },
+//   { month: 'Aug', earnings: 168000, projects: 6 },
+//   { month: 'Sep', earnings: 142000, projects: 5 }
+// ];
 
-const projectStatusData = [
-  { name: 'Completed', value: 65, count: 13, color: '#10B981' },
-  { name: 'In Progress', value: 25, count: 5, color: '#F59E0B' },
-  { name: 'Canceled', value: 10, count: 2, color: '#EF4444' }
-];
+const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+
+// const projectStatusData = [
+//   { name: 'Completed', value: 65, count: 13, color: '#10B981' },
+//   { name: 'In Progress', value: 25, count: 5, color: '#F59E0B' },
+//   { name: 'Canceled', value: 10, count: 2, color: '#EF4444' }
+// ];
 
 const paymentMethodData = [
   { name: 'Stripe', value: 45, color: '#8B5CF6' },
@@ -200,41 +73,275 @@ const ratingsOverTimeData = [
   { month: 'Jun', rating: 4.8 },
   { month: 'Jul', rating: 4.9 },
   { month: 'Aug', rating: 4.8 },
-  { month: 'Sep', rating: 4.9 }
+  { month: 'Sep', rating: 4.9 },
+  { month: 'Oct', rating: 4.9 },
 ];
 
-const AnalyticsSection = () => {
+const AnalyticsSection = ({ paymentHistory, totalPages, setTotalPages, loadingPayments, activeProjects }) => {
   const [timeRange, setTimeRange] = useState('3months');
   const [selectedMetric, setSelectedMetric] = useState('earnings');
 
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
+  const [sortKey, setSortKey] = useState("date");
+  const [sortOrder, setSortOrder] = useState("desc");
+
+  const [projectSearch, setProjectSearch] = useState("");
+  const [projectStatusFilter, setProjectStatusFilter] = useState("all");
+  const [projectSortField, setProjectSortField] = useState("title");
+  const [projectSortOrder, setProjectSortOrder] = useState("asc");
+  const [projectPage, setProjectPage] = useState(1);
+  const projectItemsPerPage = 5;
+
+  const filteredTransactions = useMemo(() => {
+    let filtered = paymentHistory.filter(transaction => {
+      const freelancer = String(transaction.freelancer_name ?? "").toLowerCase();
+      const service = String(transaction.description ?? "").toLowerCase();
+      const id = String(transaction.id ?? "").toLowerCase();
+
+      const lowerSearch = searchTerm.toLowerCase();
+
+      const matchesSearch =
+        freelancer.includes(lowerSearch) ||
+        service.includes(lowerSearch) ||
+        id.includes(lowerSearch);
+      const matchesStatus = statusFilter === 'all' || transaction.status?.toLowerCase() === statusFilter.toLowerCase();
+      return matchesSearch && matchesStatus;
+    });
+    console.log("filtering paymentHistory:", paymentHistory);
+    console.log("filtered by search/status:", filtered.length);
+
+    // Sort
+    filtered.sort((a, b) => {
+      let aVal = a[sortKey];
+      let bVal = b[sortKey];
+
+      if (sortKey === 'date') {
+        aVal = new Date(aVal);
+        bVal = new Date(bVal);
+      }
+
+      if (sortOrder === 'asc') {
+        return aVal > bVal ? 1 : -1;
+      } else {
+        return aVal < bVal ? 1 : -1;
+      }
+    });
+
+    return filtered;
+  }, [searchTerm, statusFilter, sortKey, sortOrder, paymentHistory]);
+
+  useEffect(() => {
+    setTotalPages(Math.ceil(filteredTransactions.length / itemsPerPage));
+  }, [filteredTransactions]);
+
+  const paginatedTransactions = filteredTransactions.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
+  const handleSort = (key) => {
+    if (sortKey === key) {
+      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+    } else {
+      setSortKey(key);
+      setSortOrder("asc");
+    }
+  };
+
+  const filteredProjects = useMemo(() => {
+    return activeProjects.filter((project) => {
+      const matchesSearch =
+        project.title.toLowerCase().includes(projectSearch.toLowerCase()) ||
+        project.client.toLowerCase().includes(projectSearch.toLowerCase()) ||
+        project.category.toLowerCase().includes(projectSearch.toLowerCase());
+
+      const matchesStatus =
+        projectStatusFilter === "all" ? true : project.status === projectStatusFilter;
+
+      return matchesSearch && matchesStatus;
+    });
+  }, [activeProjects, projectSearch, projectStatusFilter]);
+
+  const monthlyEarningsData = useMemo(() => {
+    if (!Array.isArray(paymentHistory) || paymentHistory.length === 0) return [];
+
+    // Initialize totals for every month
+    const monthlyTotals = months.reduce((acc, m) => ({ ...acc, [m]: { earnings: 0, projects: 0 } }), {});
+
+    paymentHistory.forEach(payment => {
+      const status = payment.status?.toLowerCase();
+      if (status !== "completed" && status !== "paid") return; // ✅ accept both
+      if (!payment.created_at || !payment.amount) return;
+
+      const date = new Date(payment.created_at);
+      const monthName = months[date.getMonth()];
+      const amountNum = parseFloat(payment.amount);
+
+      if (!isNaN(amountNum)) {
+        monthlyTotals[monthName].earnings += amountNum;
+        monthlyTotals[monthName].projects += 1;
+      }
+    });
+
+    // Convert object into array
+    return months.map(m => ({
+      month: m,
+      earnings: monthlyTotals[m].earnings,
+      projects: monthlyTotals[m].projects,
+    }));
+  }, [paymentHistory]);
+
+  const handleProjectSort = (field) => {
+    if (projectSortField === field) {
+      setProjectSortOrder(projectSortOrder === "asc" ? "desc" : "asc");
+    } else {
+      setProjectSortField(field);
+      setProjectSortOrder("asc");
+    }
+  };
+
+  const sortedProjects = useMemo(() => {
+    return [...filteredProjects].sort((a, b) => {
+      let aVal = a[projectSortField];
+      let bVal = b[projectSortField];
+
+      if (typeof aVal === "string") {
+        aVal = aVal.toLowerCase();
+        bVal = bVal.toLowerCase();
+      }
+
+      if (aVal < bVal) return projectSortOrder === "asc" ? -1 : 1;
+      if (aVal > bVal) return projectSortOrder === "asc" ? 1 : -1;
+      return 0;
+    });
+  }, [filteredProjects, projectSortField, projectSortOrder]);
+
+  const totalProjectPages = Math.ceil(sortedProjects.length / projectItemsPerPage);
+  const paginatedProjects = sortedProjects.slice(
+    (projectPage - 1) * projectItemsPerPage,
+    projectPage * projectItemsPerPage
+  );
+
+  const renderPageNumbers = () => {
+    return Array.from({ length: totalPages }, (_, i) => (
+      <button
+        key={i}
+        onClick={() => setCurrentPage(i + 1)}
+        className={`px-3 py-1 rounded-lg ${currentPage === i + 1
+          ? "bg-purple-500 text-white"
+          : "bg-white/10 text-white/60 hover:bg-white/20"
+          }`}
+      >
+        {i + 1}
+      </button>
+    ));
+  };
+
+  const renderProjectPageNumbers = () => {
+    const pages = [];
+    for (let i = 1; i <= totalProjectPages; i++) {
+      pages.push(
+        <button
+          key={i}
+          onClick={() => setProjectPage(i)}
+          className={`px-3 py-1 rounded-lg ${projectPage === i
+            ? "bg-purple-500 text-white"
+            : "bg-white/10 text-white hover:bg-white/20"
+            }`}
+        >
+          {i}
+        </button>
+      );
+    }
+    return pages;
+  };
+
+  const projectStatusData = useMemo(() => {
+    if (!Array.isArray(activeProjects) || activeProjects.length === 0) return [];
+
+    const total = activeProjects.length;
+
+    const statusCounts = activeProjects.reduce((acc, project) => {
+      const status = project.status?.toLowerCase() || "unknown";
+      acc[status] = (acc[status] || 0) + 1;
+      return acc;
+    }, {});
+
+    const statusColors = {
+      completed: { hex: "#10B981", class: "bg-green-500/20 text-green-400 border-green-500/30" },
+      planning: { hex: "#A855F7", class: "bg-purple-500/20 text-purple-400 border-purple-500/30" },
+      advance: { hex: "#34D399", class: "bg-emerald-500/20 text-emerald-400 border-emerald-500/30" },
+      draft: { hex: "#9CA3AF", class: "bg-gray-500/20 text-gray-400 border-white-500/30" },
+      submitted: { hex: "#6366F1", class: "bg-indigo-500/20 text-indigo-400 border-indigo-500/30" },
+      "in-progress": { hex: "#3B82F6", class: "bg-blue-500/20 text-blue-400 border-blue-500/30" },
+      "milestone-1": { hex: "#F97316", class: "bg-orange-500/20 text-orange-400 border-orange-500/30" },
+      revision: { hex: "#EC4899", class: "bg-pink-500/20 text-pink-400 border-pink-500/30" },
+      "final-review": { hex: "#FBBF24", class: "bg-yellow-300/20 text-yellow-400 border-yellow-200/20" },
+      pending: { hex: "#F59E0B", class: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30" },
+      paid: { hex: "#22C55E", class: "bg-green-500/20 text-green-400 border-green-500/30" },
+      unknown: { hex: "#6B7280", class: "bg-gray-500/20 text-gray-400 border-gray-500/30" },
+    };
+
+    return Object.entries(statusCounts).map(([status, count]) => ({
+      name: status.charAt(0).toUpperCase() + status.slice(1),
+      value: Math.round((count / total) * 100),
+      count,
+      color: statusColors[status]?.hex || "#6B7280", // ✅ use HEX for PieChart
+      className: statusColors[status]?.class || statusColors.unknown.class, // ✅ use class for list
+    }));
+  }, [activeProjects]);
+
   // Dynamic Calculations
   const analytics = useMemo(() => {
-    const completedPayments = mockPayments.filter(p => p.status === 'completed');
-    const completedProjects = mockProjects.filter(p => p.status === 'completed');
-    const pendingPayments = mockPayments.filter(p => p.status === 'pending');
-    const inProgressProjects = mockProjects.filter(p => p.status === 'in-progress');
+    const successfulPayments = paymentHistory.filter(
+      (t) => t.status?.toLowerCase() === "completed"
+    );
+    const completedProjects = (Array.isArray(activeProjects) ? activeProjects : []).filter(
+      (p) => ["completed", "paid"].includes(p.status?.toLowerCase())
+    );
 
-    const totalEarnings = completedPayments.reduce((sum, p) => sum + p.netEarning, 0);
-    const totalCommissionPaid = completedPayments.reduce((sum, p) => sum + p.platformFee, 0);
-    const pendingAmount = pendingPayments.reduce((sum, p) => sum + p.netEarning, 0);
+    const pendingPayments = (Array.isArray(paymentHistory) ? paymentHistory : []).filter(
+      (p) => p.status?.toLowerCase() === "pending"
+    );
 
-    const ratingsAverage = completedPayments
+    const inProgressProjects = activeProjects.filter(p => p.status === 'in-progress');
+
+    const totalAmount = successfulPayments.reduce(
+      (sum, t) => sum + Number(t.amount),
+      0
+    );
+    const commission = successfulPayments.length * 150;
+    const totalCommission = successfulPayments.reduce(
+      (sum, t) => sum + Number(t.platform_fee || 0),
+      0
+    );
+    const pendingAmount = pendingPayments.reduce(
+      (sum, p) => sum + Number(p.amount || 0),
+      0
+    );
+
+    const ratingsAverage = successfulPayments
       .filter(p => p.rating)
       .reduce((sum, p, _, arr) => sum + p.rating / arr.length, 0);
 
-    const averageProjectValue = completedPayments.length > 0
-      ? totalEarnings / completedPayments.length
+    const averageProjectValue = successfulPayments.length > 0
+      ? totalAmount / successfulPayments.length
       : 0;
 
     return {
-      totalEarnings,
+      totalAmount,
       completedProjectsCount: completedProjects.length,
-      totalCommissionPaid,
+      commission,
+      totalCommission,
       averageProjectValue,
       pendingAmount,
+      pendingPaymentsLength: pendingPayments.length,
       ratingsAverage,
       inProgressCount: inProgressProjects.length,
-      totalProjects: mockProjects.length
+      totalProjects: activeProjects.length
     };
   }, []);
 
@@ -256,34 +363,138 @@ const AnalyticsSection = () => {
 
   const getStatusBadge = (status) => {
     const statusStyles = {
-      completed: 'bg-green-500/20 text-green-400 border-green-500/30',
-      pending: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30',
-      'in-progress': 'bg-blue-500/20 text-blue-400 border-blue-500/30',
-      canceled: 'bg-red-500/20 text-red-400 border-red-500/30'
+      completed: "bg-green-500/20 text-green-400 border-green-500/30",
+      planning: "bg-purple-500/20 text-purple-400 border-purple-500/30",
+      advance: "bg-emerald-500/20 text-emerald-400 border-emerald-500/30",
+      draft: "bg-gray-500/20 text-gray-400 border-white-500/30",
+      submitted: "bg-indigo-500/20 text-indigo-400 border-indigo-500/30",
+      "in-progress": "bg-blue-500/20 text-blue-400 border-blue-500/30",
+      "milestone-1": "bg-orange-500/20 text-orange-400 border-orange-500/30",
+      revision: "bg-pink-500/20 text-pink-400 border-pink-500/30",
+      "final-review": "bg-yellow-300/20 text-yellow-400 border-yellow-200/20",
+      pending: "bg-red-500/20 text-red-400 border-red-500/30",
+      paid: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30",
     };
-
     return (
-      <span className={`px-2 py-1 rounded-full text-xs font-medium border ${statusStyles[status]}`}>
-        {status.charAt(0).toUpperCase() + status.slice(1).replace('-', ' ')}
+      <span
+        className={`px-2 py-1 rounded-full text-xs font-medium border ${statusStyles[status] || ""
+          }`}
+      >
+        {status ? status.charAt(0).toUpperCase() + status.slice(1) : ""}
       </span>
     );
   };
 
-  const CustomTooltip = ({ active, payload, label }) => {
+  const CustomTooltip = ({ active, payload, label, selectedMetric }) => {
     if (active && payload && payload.length) {
+      const data = payload[0].payload;
+
+      // Determine display values based on the chart type
+      const name = data.name ?? label ?? "Unknown"; // Pie: name, Bar/Line: label
+      const value = data.value ?? data[selectedMetric] ?? payload[0].value ?? 0;
+      const count = data.count ?? data.projects ?? "—";
+      const color = data.color ?? "#fff";
+
       return (
         <div className="bg-gray-900/95 backdrop-blur-lg p-3 rounded-lg border border-white/20 shadow-xl">
-          <p className="text-white font-medium">{`${label}`}</p>
-          {payload.map((pld, index) => (
-            <p key={index} className="text-sm" style={{ color: pld.color }}>
-              {`${pld.dataKey}: ${typeof pld.value === 'number' && pld.dataKey.includes('earnings') ? formatCurrency(pld.value) : pld.value}`}
-            </p>
-          ))}
+          <p className="text-white font-medium">{name}</p>
+          <p className="text-sm" style={{ color }}>
+            {selectedMetric === "earnings"
+              ? `₹${value.toLocaleString()}`
+              : selectedMetric === "projects"
+                ? `${count} projects`
+                : data.value !== undefined
+                  ? `${count} projects (${value}%)`
+                  : `${value}`}
+          </p>
         </div>
       );
     }
     return null;
   };
+
+  const PaymentDashboardSkeleton = () => {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-grey-900 via-blue-900 to-blue-900 p-4 lg:p-8">
+        <div className="max-w-7xl mx-auto space-y-8">
+          {/* Header Skeleton */}
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+            <div>
+              <div className="h-8 bg-white/10 rounded-lg w-64 animate-pulse mb-2"></div>
+              <div className="h-4 bg-white/5 rounded w-96 animate-pulse"></div>
+            </div>
+            <div className="flex gap-3">
+              <div className="h-10 bg-white/10 rounded-lg w-32 animate-pulse"></div>
+              <div className="h-10 bg-blue-600/20 rounded-lg w-24 animate-pulse"></div>
+            </div>
+          </div>
+
+          {/* Summary Cards Skeleton */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="bg-black/20 backdrop-blur-lg rounded-2xl border border-white/10 p-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <div className="h-4 bg-white/10 rounded w-24 animate-pulse mb-3"></div>
+                    <div className="h-8 bg-white/20 rounded w-20 animate-pulse"></div>
+                  </div>
+                  <div className="bg-white/10 p-3 rounded-xl animate-pulse">
+                    <div className="w-6 h-6 bg-white/20 rounded"></div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Charts Skeleton */}
+          <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+            <div className="xl:col-span-2 bg-black/20 backdrop-blur-lg rounded-2xl border border-white/10 p-6">
+              <div className="h-6 bg-white/10 rounded w-32 animate-pulse mb-6"></div>
+              <div className="h-80 bg-white/5 rounded-lg animate-pulse"></div>
+            </div>
+            <div className="bg-black/20 backdrop-blur-lg rounded-2xl border border-white/10 p-6">
+              <div className="h-6 bg-white/10 rounded w-28 animate-pulse mb-6"></div>
+              <div className="h-64 bg-white/5 rounded-lg animate-pulse mb-4"></div>
+              <div className="space-y-2">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="flex justify-between">
+                    <div className="h-4 bg-white/10 rounded w-16 animate-pulse"></div>
+                    <div className="h-4 bg-white/10 rounded w-8 animate-pulse"></div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Table Skeleton */}
+          <div className="bg-black/20 backdrop-blur-lg rounded-2xl border border-white/10 p-6">
+            <div className="flex justify-between mb-6">
+              <div className="h-6 bg-white/10 rounded w-40 animate-pulse"></div>
+              <div className="flex gap-3">
+                <div className="h-10 bg-white/10 rounded-lg w-64 animate-pulse"></div>
+                <div className="h-10 bg-white/10 rounded-lg w-32 animate-pulse"></div>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              {[1, 2, 3, 4, 5].map((i) => (
+                <div key={i} className="flex space-x-4 p-4 bg-white/5 rounded-lg">
+                  <div className="h-4 bg-white/10 rounded flex-1 animate-pulse"></div>
+                  <div className="h-4 bg-white/10 rounded w-24 animate-pulse"></div>
+                  <div className="h-4 bg-white/10 rounded w-20 animate-pulse"></div>
+                  <div className="h-4 bg-white/10 rounded w-16 animate-pulse"></div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  if (loadingPayments) {
+    return <PaymentDashboardSkeleton />;
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-1000 via-purple-900 to-purple-900 p-4 lg:p-8">
@@ -326,7 +537,7 @@ const AnalyticsSection = () => {
             <div>
               <p className="text-white/60 text-sm font-medium">Total Earnings</p>
               <p className="text-2xl font-bold text-white mt-1">
-                {formatCurrency(analytics.totalEarnings)}
+                {formatCurrency(analytics.totalAmount)}
               </p>
             </div>
           </div>
@@ -356,7 +567,7 @@ const AnalyticsSection = () => {
             <div>
               <p className="text-white/60 text-sm font-medium">Commission Paid</p>
               <p className="text-2xl font-bold text-white mt-1">
-                {formatCurrency(analytics.totalCommissionPaid)}
+                {formatCurrency(analytics.commission)}
               </p>
             </div>
           </div>
@@ -383,7 +594,7 @@ const AnalyticsSection = () => {
               <div className="bg-yellow-500/20 p-3 rounded-xl">
                 <Clock className="text-yellow-400" size={24} />
               </div>
-              <div className="text-yellow-400 text-sm font-medium">2 pending</div>
+              <div className="text-yellow-400 text-sm font-medium">{analytics.pendingPaymentsLength}</div>
             </div>
             <div>
               <p className="text-white/60 text-sm font-medium">Pending Payments</p>
@@ -442,7 +653,7 @@ const AnalyticsSection = () => {
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={monthlyEarningsData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#ffffff20" />
-                  <XAxis dataKey="month" stroke="#ffffff60" />
+                  <XAxis dataKey="month" stroke="#ffffff60" interval={0} allowDuplicatedCategory={false} />
                   <YAxis stroke="#ffffff60" />
                   <Tooltip content={<CustomTooltip />} />
                   <Bar
@@ -486,12 +697,12 @@ const AnalyticsSection = () => {
               </div>
               <div className="flex-1 space-y-4">
                 {projectStatusData.map((status, index) => (
-                  <div key={index} className="flex items-center justify-between bg-white/5 rounded-lg p-3">
+                  <div
+                    key={index}
+                    className={`flex items-center justify-between rounded-lg p-3 border ${status.className}`}
+                  >
                     <div className="flex items-center space-x-3">
-                      <div
-                        className="w-4 h-4 rounded-full"
-                        style={{ backgroundColor: status.color }}
-                      />
+                      <div className="w-4 h-4 rounded-full" style={{ backgroundColor: status.color }} />
                       <span className="text-white/80">{status.name}</span>
                     </div>
                     <div className="text-right">
@@ -503,6 +714,7 @@ const AnalyticsSection = () => {
               </div>
             </div>
           </div>
+
 
           {/* Payment Methods */}
           <div className="bg-black/20 backdrop-blur-lg rounded-2xl border border-white/10 p-6">
@@ -516,6 +728,7 @@ const AnalyticsSection = () => {
                     cy="50%"
                     outerRadius={80}
                     dataKey="value"
+                    nameKey="name"
                   >
                     {paymentMethodData.map((entry, index) => (
                       <Cell key={index} fill={entry.color} />
@@ -563,83 +776,215 @@ const AnalyticsSection = () => {
         </div>
 
         {/* Tables Section */}
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-
+        <div className="flex flex-col gap-6">
           {/* Recent Payments */}
           <div className="bg-black/20 backdrop-blur-lg rounded-2xl border border-white/10 p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-bold text-white">Recent Payments</h3>
-              <button className="text-purple-400 hover:text-purple-300 text-sm font-medium flex items-center space-x-1">
-                <span>View All</span>
-                <ChevronRight size={16} />
-              </button>
-            </div>
-            <div className="space-y-4">
-              {mockPayments.slice(0, 5).map((payment) => (
-                <div
-                  key={payment.id}
-                  className="flex items-center justify-between p-4 bg-white/5 rounded-lg border border-white/10 hover:bg-white/10 transition-colors"
-                >
-                  <div className="flex items-center space-x-4">
-                    <div className="bg-green-500/20 p-2 rounded-lg">
-                      <DollarSign className="text-green-400" size={16} />
-                    </div>
-                    <div>
-                      <div className="text-white font-medium">{payment.client}</div>
-                      <div className="text-white/60 text-sm">{payment.project}</div>
-                      <div className="text-white/40 text-xs">{formatDate(payment.date)}</div>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-white font-bold">{formatCurrency(payment.netEarning)}</div>
-                    <div className="mb-2">{getStatusBadge(payment.status)}</div>
-                    {payment.rating && (
-                      <div className="text-yellow-400 text-sm">★ {payment.rating}</div>
-                    )}
-                  </div>
+            {/* Filters and Search */}
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6">
+              <h3 className="text-xl font-bold text-white">Transaction History</h3>
+              <div className="flex flex-col sm:flex-row gap-3">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white/40" size={16} />
+                  <input
+                    type="text"
+                    placeholder="Search transactions..."
+                    className="bg-white/10 border border-white/20 rounded-lg pl-10 pr-4 py-2 text-white placeholder-white/40 focus:outline-none focus:border-purple-500/50 w-full sm:w-64"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
                 </div>
-              ))}
+                <div className="relative">
+                  <select
+                    className="bg-white/10 border border-white/20 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-purple-500/50 appearance-none pr-8"
+                    value={statusFilter}
+                    onChange={(e) => setStatusFilter(e.target.value)}
+                  >
+                    <option value="all" className="bg-gray-900">All Status</option>
+                    <option value="completed" className="bg-gray-900">Completed</option>
+                    <option value="pending" className="bg-gray-900">Pending</option>
+                    <option value="failed" className="bg-gray-900">Failed</option>
+                  </select>
+                  <ChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 text-white/40" size={16} />
+                </div>
+              </div>
+            </div>
+
+            {/* Transaction Table */}
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-white/10">
+                    <th className="text-left py-3 px-4 text-white/60 font-medium">
+                      <button onClick={() => handleSort("id")} className="flex items-center space-x-1 hover:text-white/80">
+                        <span>Transaction ID</span>
+                        <ArrowUpDown size={14} />
+                      </button>
+                    </th>
+                    <th className="text-left py-3 px-4 text-white/60 font-medium">Client</th>
+                    <th className="text-left py-3 px-4 text-white/60 font-medium">Method</th>
+                    <th className="text-left py-3 px-4 text-white/60 font-medium">
+                      <button onClick={() => handleSort("amount")} className="flex items-center space-x-1 hover:text-white/80">
+                        <span>Amount</span>
+                        <ArrowUpDown size={14} />
+                      </button>
+                    </th>
+                    <th className="text-left py-3 px-4 text-white/60 font-medium">Status</th>
+                    <th className="text-left py-3 px-4 text-white/60 font-medium">
+                      <button onClick={() => handleSort("date")} className="flex items-center space-x-1 hover:text-white/80">
+                        <span>Date</span>
+                        <ArrowUpDown size={14} />
+                      </button>
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {paginatedTransactions.map(payment => (
+                    <tr key={payment.id} className="border-b border-white/5 hover:bg-white/5 transition-colors">
+                      <td className="py-4 px-4 text-white/80 font-mono text-sm">txn_{payment.transaction_id}</td>
+                      <td className="py-4 px-4 text-white/80">{payment.payee_name}</td>
+                      <td className="py-4 px-4 text-white/60 text-sm">{payment.payment_method}</td>
+                      <td className="py-4 px-4 text-white font-medium">{formatCurrency(payment.amount)}</td>
+                      <td className="py-4 px-4">{getStatusBadge(payment.status)}</td>
+                      <td className="py-4 px-4 text-white/60 text-sm">{formatDate(payment.updated_at)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Pagination */}
+            <div className="flex flex-col sm:flex-row items-center justify-between mt-6 gap-4">
+              <div className="text-white/60 text-sm">
+                Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, filteredTransactions.length)} of {filteredTransactions.length} transactions
+              </div>
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                  disabled={currentPage === 1}
+                  className="bg-white/10 text-white p-2 rounded-lg hover:bg-white/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <ChevronLeft size={16} />
+                </button>
+
+                <div className="flex space-x-1">{renderPageNumbers()}</div>
+
+                <button
+                  onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                  disabled={currentPage === totalPages}
+                  className="bg-white/10 text-white p-2 rounded-lg hover:bg-white/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <ChevronRight size={16} />
+                </button>
+              </div>
             </div>
           </div>
 
-          {/* Recent Projects */}
           <div className="bg-black/20 backdrop-blur-lg rounded-2xl border border-white/10 p-6">
-            <div className="flex items-center justify-between mb-6">
+            {/* Filters + Search */}
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6">
               <h3 className="text-xl font-bold text-white">Project Overview</h3>
-              <button className="text-purple-400 hover:text-purple-300 text-sm font-medium flex items-center space-x-1">
-                <span>Manage Projects</span>
-                <ChevronRight size={16} />
-              </button>
-            </div>
-            <div className="space-y-4">
-              {mockProjects.slice(0, 5).map((project) => (
-                <div
-                  key={project.id}
-                  className="flex items-center justify-between p-4 bg-white/5 rounded-lg border border-white/10 hover:bg-white/10 transition-colors"
-                >
-                  <div className="flex items-center space-x-4">
-                    <div className="bg-blue-500/20 p-2 rounded-lg">
-                      <Briefcase className="text-blue-400" size={16} />
-                    </div>
-                    <div>
-                      <div className="text-white font-medium">{project.title}</div>
-                      <div className="text-white/60 text-sm">{project.client}</div>
-                      <div className="text-white/40 text-xs">{project.category}</div>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-white font-bold">{formatCurrency(project.value)}</div>
-                    <div className="mb-2">{getStatusBadge(project.status)}</div>
-                    {project.rating && (
-                      <div className="text-yellow-400 text-sm">★ {project.rating}</div>
-                    )}
-                  </div>
+              <div className="flex flex-col sm:flex-row gap-3">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white/40" size={16} />
+                  <input
+                    type="text"
+                    placeholder="Search projects..."
+                    className="bg-white/10 border border-white/20 rounded-lg pl-10 pr-4 py-2 text-white placeholder-white/40 focus:outline-none focus:border-purple-500/50 w-full sm:w-64"
+                    value={projectSearch}
+                    onChange={(e) => setProjectSearch(e.target.value)}
+                  />
                 </div>
-              ))}
+                <div className="relative">
+                  <select
+                    className="bg-white/10 border border-white/20 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-purple-500/50 appearance-none pr-8"
+                    value={projectStatusFilter}
+                    onChange={(e) => setProjectStatusFilter(e.target.value)}
+                  >
+                    <option value="all" className="bg-gray-900">All Status</option>
+                    <option value="completed" className="bg-gray-900">Completed</option>
+                    <option value="planning" className="bg-gray-900">Planning</option>
+                    <option value="advance" className="bg-gray-900">Advance</option>
+                    <option value="draft" className="bg-gray-900">Draft</option>
+                    <option value="submitted" className="bg-gray-900">Submitted</option>
+                    <option value="in-progress" className="bg-gray-900">In Progress</option>
+                    <option value="milestone-1" className="bg-gray-900">Milestone 1</option>
+                    <option value="revision" className="bg-gray-900">Revision</option>
+                    <option value="final-review" className="bg-gray-900">Final Review</option>
+                    <option value="pending" className="bg-gray-900">Pending</option>
+                    <option value="failed" className="bg-gray-900">Failed</option>
+                  </select>
+                  <ChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 text-white/40" size={16} />
+                </div>
+              </div>
+            </div>
+
+            {/* Table */}
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-white/10">
+                    <th className="text-left py-3 px-4 text-white/60 font-medium">
+                      <button onClick={() => handleProjectSort("title")} className="flex items-center space-x-1 hover:text-white/80">
+                        <span>Title</span>
+                        <ArrowUpDown size={14} />
+                      </button>
+                    </th>
+                    <th className="text-left py-3 px-4 text-white/60 font-medium">Client</th>
+                    <th className="text-left py-3 px-4 text-white/60 font-medium">Category</th>
+                    <th className="text-left py-3 px-4 text-white/60 font-medium">
+                      <button onClick={() => handleProjectSort("value")} className="flex items-center space-x-1 hover:text-white/80">
+                        <span>Value</span>
+                        <ArrowUpDown size={14} />
+                      </button>
+                    </th>
+                    <th className="text-left py-3 px-4 text-white/60 font-medium">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {paginatedProjects.map((project) => (
+                    <tr key={project.id} className="border-b border-white/5 hover:bg-white/5 transition-colors">
+                      <td className="py-4 px-4 text-white/80 flex items-center gap-2">
+                        {project.title}
+                      </td>
+                      <td className="py-4 px-4 text-white/80">{project.client}</td>
+                      <td className="py-4 px-4 text-white/60 text-sm">{project.category}</td>
+                      <td className="py-4 px-4 text-white font-medium">{formatCurrency(project.amount)}</td>
+                      <td className="py-4 px-4">{getStatusBadge(project.status)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Pagination */}
+            <div className="flex flex-col sm:flex-row items-center justify-between mt-6 gap-4">
+              <div className="text-white/60 text-sm">
+                Showing {(projectPage - 1) * projectItemsPerPage + 1} to{" "}
+                {Math.min(projectPage * projectItemsPerPage, filteredProjects.length)} of{" "}
+                {filteredProjects.length} projects
+              </div>
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={() => setProjectPage(Math.max(1, projectPage - 1))}
+                  disabled={projectPage === 1}
+                  className="bg-white/10 text-white p-2 rounded-lg hover:bg-white/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <ChevronLeft size={16} />
+                </button>
+
+                <div className="flex space-x-1">{renderProjectPageNumbers()}</div>
+
+                <button
+                  onClick={() => setProjectPage(Math.min(totalProjectPages, projectPage + 1))}
+                  disabled={projectPage === totalProjectPages}
+                  className="bg-white/10 text-white p-2 rounded-lg hover:bg-white/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <ChevronRight size={16} />
+                </button>
+              </div>
             </div>
           </div>
         </div>
-
         {/* Performance Insights */}
         <div className="bg-black/20 backdrop-blur-lg rounded-2xl border border-white/10 p-6">
           <h3 className="text-xl font-bold text-white mb-6">Performance Insights</h3>

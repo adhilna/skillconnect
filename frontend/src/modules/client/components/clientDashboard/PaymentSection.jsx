@@ -209,7 +209,7 @@ const PaymentDashboard = ({
       const options = {
         key: razorpay_key,
         order_id,
-        amount,
+        amount: amount + 150 * 100,
         currency,
         name: 'Skill+Connect',
         description,
@@ -298,7 +298,7 @@ const PaymentDashboard = ({
         <div className="bg-white/5 border border-white/10 rounded-xl p-3 sm:p-4 mb-4 sm:mb-6 space-y-2 sm:space-y-3">
           <div className="flex justify-between">
             <span className="text-white/70 text-xs sm:text-sm">Amount</span>
-            <span className="text-white font-semibold text-sm sm:text-base">${selectedPayment?.amount}</span>
+            <span className="text-white font-semibold text-sm sm:text-base">₹{Number(selectedPayment?.amount) + 150}</span>
           </div>
           <div className="flex justify-between">
             <span className="text-white/70 text-xs sm:text-sm">Freelancer</span>

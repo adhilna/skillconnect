@@ -214,7 +214,7 @@ const PaymentFlow = ({
                     <div className="bg-white/5 border border-white/10 rounded-xl p-3 sm:p-4">
                         <div className="flex justify-between items-center">
                             <span className="text-white/60 text-xs sm:text-sm">Amount</span>
-                            <span className="text-white font-semibold text-sm sm:text-base">${selectedPayment?.amount}</span>
+                            <span className="text-white font-semibold text-sm sm:text-base">₹{Number(selectedPayment?.amount) + 150}</span>
                         </div>
                     </div>
                 </div>

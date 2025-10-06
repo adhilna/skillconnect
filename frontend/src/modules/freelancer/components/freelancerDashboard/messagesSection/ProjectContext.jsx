@@ -4,9 +4,8 @@ import { Calendar, FileText, Clock, CheckCircle, X, ChevronDown, ChevronUp, Mini
 
 const ProjectContext = ({
     project,
-    budget,
+    // budget,
     status,
-
     contract,
     currentWorkflowStatus,
     loadingContract,
@@ -261,7 +260,7 @@ const ProjectContext = ({
                     </span>
                 </div>
                 <div className="flex items-center justify-between text-xs">
-                    <span className="text-green-400 font-medium">{budget || '$5,000'}</span>
+                    <span className="text-green-400 font-medium">{contract?.amount || 'N/A'}</span>
                     <div className="flex items-center text-gray-400">
                         <Calendar size={15} className="mr-1" />
                         {contractForm.deadline}

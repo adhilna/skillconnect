@@ -24,47 +24,12 @@ const paymentMethodData = [
 ];
 
 const AnalyticsSection = ({paymentHistory, totalPages, setTotalPages, loadingPayments }) => {
-    // const [paymentHistory, setPaymentHistory] = useState([]);
-    // const [loading, setLoading] = useState(false);
-    // const [totalPages, setTotalPages] = useState(1);
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
     const [currentPage, setCurrentPage] = useState(1);
     const [sortField, setSortField] = useState('date');
     const [sortDirection, setSortDirection] = useState('desc');
-    // const { token } = useContext(AuthContext);
     const itemsPerPage = 5;
-
-    // useEffect(() => {
-    //     const fetchPayments = async () => {
-    //         setLoading(true);
-    //         try {
-    //             const response = await api.get(
-    //                 `/api/v1/messaging/payment-requests-full/`,
-    //                 {
-    //                     headers: {
-    //                         Authorization: `Bearer ${token}`,
-    //                         "Content-Type": "application/json",
-    //                     },
-    //                 }
-    //             );
-    //             const data = response.data;
-    //             console.log("API data:", data);
-    //             if (Array.isArray(data)) {
-    //                 setPaymentHistory(data);
-    //                 setTotalPages(1);
-    //             } else {
-    //                 setPaymentHistory(data.results || []);
-    //                 setTotalPages(data.total_pages || 1);
-    //             }
-    //         } catch (error) {
-    //             console.error("Failed to fetch payment requests:", error);
-    //         } finally {
-    //             setLoading(false);
-    //         }
-    //     };
-    //     if (token) fetchPayments();
-    // }, [token]);
 
     useEffect(() => {
         console.log("paymentHistory updated:", paymentHistory);

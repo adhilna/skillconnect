@@ -71,8 +71,6 @@ class IsParticipantPermission(permissions.BasePermission):
 
         return client_ok or freelancer_ok
 
-# --- Conversation ViewSet
-
 class ConversationViewSet(viewsets.ModelViewSet):
     serializer_class = ConversationSerializer
     permission_classes = [permissions.IsAuthenticated, IsParticipantPermission]
@@ -128,8 +126,6 @@ class ConversationViewSet(viewsets.ModelViewSet):
         )
 
         serializer.instance = convo
-
-# --- Message ViewSet
 
 class MessageViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated, IsParticipantPermission]
@@ -337,7 +333,7 @@ class ContractViewSet(viewsets.ModelViewSet):
         active_steps = [
             'planning', 'advance', 'draft', 'submitted',
             'in-progress', 'milestone-1', 'revision', 'final-review',
-            'completed'
+            'completed', 'paid'
         ]
 
         contracts = Contract.objects.filter(
@@ -365,6 +361,7 @@ class ContractViewSet(viewsets.ModelViewSet):
             order = contract.service_order or contract.proposal_order
 
             freelancer_name = "N/A"
+            client_name = "N/A"
             title = ""
             category_name = None
 
@@ -372,6 +369,10 @@ class ContractViewSet(viewsets.ModelViewSet):
                 freelancer_profile = getattr(order, 'freelancer', None)
                 if freelancer_profile:
                     freelancer_name = getattr(freelancer_profile, 'full_name', None) or getattr(freelancer_profile, 'name', None) or str(freelancer_profile)
+
+                client_profile = getattr(order, 'client', None)
+                if client_profile:
+                    client_name = getattr(client_profile, 'full_name', None) or getattr(client_profile, 'name', None) or str(client_profile)
 
                 if hasattr(order, 'service') and order.service:
                     # ServiceOrder case
@@ -389,6 +390,7 @@ class ContractViewSet(viewsets.ModelViewSet):
                 'id': contract.id,
                 'title': title,
                 'freelancer': freelancer_name,
+                'client': client_name,
                 'category': category_name,
                 'status': contract.workflow_status,
                 'deadline': contract.deadline,
@@ -397,7 +399,6 @@ class ContractViewSet(viewsets.ModelViewSet):
             })
 
         return Response(data)
-
 
     @action(detail=False, methods=['get'])
     def unique_freelancers(self, request):
@@ -442,7 +443,6 @@ class ContractViewSet(viewsets.ModelViewSet):
             'freelancers': freelancers
         })
 
-
 class PaymentRequestViewSet(viewsets.ModelViewSet):
     serializer_class = PaymentRequestSerializer
     permission_classes = [permissions.IsAuthenticated, IsPaymentParticipantPermission]
@@ -482,6 +482,7 @@ class PaymentRequestViewSet(viewsets.ModelViewSet):
         else:
             # For other updates, allow normally
             serializer.save()
+
 class PaymentViewSet(viewsets.ModelViewSet):
     queryset = PaymentRequest.objects.all()
     serializer_class = PaymentRequestSerializer

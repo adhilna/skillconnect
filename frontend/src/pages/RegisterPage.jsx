@@ -146,7 +146,7 @@ export default function Register() {
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gradient-to-r from-blue-900 via-purple-900 to-indigo-900 px-4 py-12">
+        <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-r from-blue-900 via-purple-900 to-indigo-900 px-4 py-12">
             <div className="bg-white/10 backdrop-blur-sm p-8 rounded-xl w-full max-w-md shadow-2xl">
                 <Stepper formStep={formStep} />
 
@@ -194,7 +194,13 @@ export default function Register() {
                     />
                 )}
             </div>
+            {formStep === 0 && (
+            <div className="text-center mt-6">
+                <p className="text-purple-200">
+                    Aready have an account? <a href="/login" className="text-purple-400 hover:text-white font-medium">Sign in</a>
+                </p>
+            </div>
+            )}
         </div>
-
     );
 }

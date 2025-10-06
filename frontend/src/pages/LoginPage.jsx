@@ -34,11 +34,12 @@ export default function LoginPage() {
   }, []);
 
   const handleSubmit = async (e) => {
+    console.log("Submit triggered");
     e.preventDefault();
     setIsLoading(true);
     try {
       // Step 1: Call login API
-      const response = await api.post('/api/v1/auth/token/', { email, password });
+      const response = await api.post('/api/v1/auth/users/login/', { email, password });
       const { access, refresh } = response.data;
 
       // Step 2: Fetch user profile (if not returned by login API)
@@ -48,7 +49,6 @@ export default function LoginPage() {
       });
       const userData = userResponse.data;
 
-
       // Step 3: Call login in AuthContext
       login(userData, access, refresh);
 
@@ -57,7 +57,11 @@ export default function LoginPage() {
       navigate(dashboardPath);
 
     } catch (err) {
-      setError(err.response?.data?.detail || 'Login failed');
+      if (err.response?.data?.detail) {
+        setError(err.response?.data?.detail || 'Login failed');
+      } else {
+        setError("Invalid email or password");
+      }
     } finally {
       setIsLoading(false);
     }
@@ -82,6 +86,7 @@ export default function LoginPage() {
     }
     setGoogleLoading(false);
   };
+
 
   const handleRoleContinue = async () => {
     setGoogleLoading(true);
@@ -212,9 +217,6 @@ export default function LoginPage() {
                   logo_alignment="center"
                   disabled={googleLoading}
                 />
-                {/* <button className="p-3 rounded-lg bg-white/10 hover:bg-white/20 transition-colors">
-                  <FaApple className="text-white" size={20} />
-                </button> */}
               </div>
             </div>
           </div>

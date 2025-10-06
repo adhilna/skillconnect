@@ -335,7 +335,7 @@ const ClientDashboard = () => {
         { id: 'messages', label: 'Messages', icon: MessageCircle },
         { id: 'freelancers', label: 'My Freelancers', icon: Users },
         { id: 'payments', label: 'Payments', icon: CreditCard },
-        { id: 'analytics', label: 'Payment Analytics', icon: BarChart3 },
+        { id: 'analytics', label: 'Analytics', icon: BarChart3 },
         { id: 'profile', label: 'Company Profile', icon: User },
         { id: 'settings', label: 'Settings', icon: Settings },
     ];

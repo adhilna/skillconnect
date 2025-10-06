@@ -53,7 +53,7 @@ const DashboardOverview = (props) => {
                 <div className="flex items-center justify-between">
                     <div>
                         <h3 className="text-2xl font-bold text-white mb-2">Here&apos;s your dashboard {profileData?.first_name} 🌟</h3>
-                        <p className="text-white/80">You have 3 active projects and 5 new freelancer proposals to review.</p>
+                        <p className="text-white/80">You have {activeProjectsCount} active projects and 5 new freelancer proposals to review.</p>
                     </div>
                     <div className="hidden md:block">
                         <div className="text-right">
@@ -72,7 +72,7 @@ const DashboardOverview = (props) => {
                         loadingPayments ? (
                             <span className="inline-block w-5 h-5 border-2 border-t-transparent border-gray-400 rounded-full animate-spin mx-auto"></span>
                         ) : (
-                            `$${summaryMetrics.totalAmount.toLocaleString()}`
+                            `${summaryMetrics.totalAmount.toLocaleString()}`
                         )
                     }
                     icon={IndianRupee}

@@ -16,7 +16,7 @@ const PaymentRequestModal = ({
   const [formData, setFormData] = useState({
     amount: '',
     description: '',
-    paymentMethod: null,
+    paymentMethod: '',
   });
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
@@ -33,8 +33,8 @@ const PaymentRequestModal = ({
       newErrors.amount = 'Amount is required';
     } else if (isNaN(amount) || amount <= 0) {
       newErrors.amount = 'Amount must be greater than 0';
-    } else if (amount > 999999.99) {
-      newErrors.amount = 'Amount cannot exceed 999,999.99';
+    } else if (amount > 49999.99) {
+      newErrors.amount = 'Amount cannot exceed 49999.99';
     }
 
     // Description validation
@@ -116,6 +116,15 @@ const PaymentRequestModal = ({
     }
   };
 
+  const isFormValid =
+    formData.amount.trim() &&
+    !isNaN(parseFloat(formData.amount)) &&
+    parseFloat(formData.amount) > 0 &&
+    formData.description.trim().length >= 10 &&
+    formData.paymentMethod;
+
+
+
   const handleClose = () => {
     if (isLoading) return; // Prevent closing while loading
 
@@ -146,6 +155,7 @@ const PaymentRequestModal = ({
 
     return cleaned;
   };
+
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
@@ -273,7 +283,7 @@ const PaymentRequestModal = ({
             <button
               type="button"
               onClick={handleClose}
-              disabled={isLoading}
+              disabled={isLoading || !isFormValid}
               className="flex-1 bg-white/10 text-white py-2.5 sm:py-3 rounded-xl text-sm sm:text-base font-medium hover:bg-white/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Cancel
