@@ -107,6 +107,10 @@ class VerifyOTPSerializer(serializers.Serializer):
         if cached["otp"] != otp:
             raise serializers.ValidationError("Invalid OTP.")
 
+        from .models import User
+        if User.objects.filter(email=email).exists():
+            raise serializers.ValidationError("This email is already registered.")
+
         attrs["cached_data"] = cached
         return attrs
 

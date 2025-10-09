@@ -104,3 +104,65 @@ class LoginUserTests(APITestCase):
         response = self.client.post(self.login_url, payload)
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
         self.assertIn("Account disabled", str(response.data))
+
+class VerifyOTPTests(APITestCase):
+    def setUp(self):
+        self.verify_otp_url = '/api/v1/auth/users/verify-otp/'
+        self.email = 'newuser@example.com'
+        self.password = 'testpassword123'
+        self.role = 'CLIENT'
+        self.otp = '123456'
+        # Simulate registration cache (normally set by RegisterSerializer.save())
+        cache.set(f"register:{self.email}", {
+            "password": self.password,
+            "role": self.role,
+            "otp": self.otp,
+        }, timeout=5*60)
+
+    def test_verify_otp_success(self):
+        payload = {
+            "email": self.email,
+            "otp": self.otp
+        }
+        response = self.client.post(self.verify_otp_url, payload)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        # The user should now exist in DB and be verified
+        user = User.objects.get(email=self.email)
+        self.assertTrue(user.is_verified)
+        self.assertTrue(user.first_login)
+        self.assertEqual(user.role, self.role)
+        self.assertEqual(user.email, self.email)
+        # OTP and OTP_created_at should be null/empty
+        self.assertIsNone(user.otp)
+        self.assertIsNone(user.otp_created_at)
+
+    def test_verify_otp_invalid(self):
+        payload = {
+            "email": self.email,
+            "otp": "000000",
+        }
+        response = self.client.post(self.verify_otp_url, payload)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("Invalid OTP", str(response.data))
+
+    def test_verify_otp_no_cache(self):
+        # Remove cache/registration session
+        cache.delete(f"register:{self.email}")
+        payload = {
+            "email": self.email,
+            "otp": self.otp,
+        }
+        response = self.client.post(self.verify_otp_url, payload)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("Registration session expired", str(response.data))
+
+    def test_verify_otp_existing_email(self):
+        # Create user with same email before verifying OTP
+        User.objects.create_user(email=self.email, password="test", role="CLIENT", is_verified=True)
+        payload = {
+            "email": self.email,
+            "otp": self.otp,
+        }
+        response = self.client.post(self.verify_otp_url, payload)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        # Response could include "already registered" depending on serializer logic
