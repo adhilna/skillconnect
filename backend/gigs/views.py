@@ -137,7 +137,7 @@ class ExploreServicesViewSet(viewsets.ReadOnlyModelViewSet):
         'description',
         'category__name',
         'skills__name',
-        'freelancer__user__username'
+        'freelancer__user__first_name'
     ]
     ordering_fields = ['price', 'delivery_time', 'created_at']
 

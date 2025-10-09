@@ -89,3 +89,64 @@ class ProposalViewSetTests(APITestCase):
         # Use res.data for non-paginated, res.data['results'] for paginated
         self.assertTrue(any(p['title'] == "Old Proposal" for p in res.data))
 
+class ExploreServicesViewSetTests(APITestCase):
+    def setUp(self):
+        user = User.objects.create_user(email='freelancer@test.com', password='pw')
+        self.freelancer = FreelancerProfile.objects.create(user=user, first_name="John", last_name="Doe")
+        self.category = Category.objects.create(name="Programming")
+        self.skill_python = Skill.objects.create(name="Python")
+        self.skill_django = Skill.objects.create(name="Django")
+
+        s1 = Service.objects.create(
+            freelancer=self.freelancer,
+            title="Build Website",
+            description="Use Django and Python",
+            price=1000,
+            delivery_time=5,
+            revisions=1,
+            category=self.category,
+            is_active=True
+        )
+        s1.skills.add(self.skill_python, self.skill_django)
+
+        s2 = Service.objects.create(
+            freelancer=self.freelancer,
+            title="Bug Fixing",
+            description="Quick Django fixes",
+            price=500,
+            delivery_time=2,
+            revisions=1,
+            category=self.category,
+            is_active=True
+        )
+        s2.skills.add(self.skill_django)
+
+        self.client.force_authenticate(user)
+
+    def test_filter_by_category(self):
+        url = reverse('explore-services-list')
+        res = self.client.get(url, {'category': self.category.id})
+        self.assertEqual(res.status_code, 200)
+        titles = [x['title'] for x in res.data['results']]
+        self.assertIn("Build Website", titles)
+        self.assertIn("Bug Fixing", titles)
+
+    def test_filter_by_skill(self):
+        url = reverse('explore-services-list')
+        res = self.client.get(url, {'skills': 'Python'})
+        self.assertEqual(res.status_code, 200)
+        titles = [x['title'] for x in res.data['results']]
+        self.assertIn("Build Website", titles)
+        self.assertNotIn("Bug Fixing", titles)
+
+    def test_search_title(self):
+        url = reverse('explore-services-list')
+        res = self.client.get(url, {'search': 'Bug'})
+        self.assertTrue(any('Bug' in title for title in [x['title'] for x in res.data['results']]
+))
+
+    def test_order_by_price(self):
+        url = reverse('explore-services-list')
+        res = self.client.get(url, {'ordering': 'price'})
+        prices = [float(x['price']) for x in res.data['results']]
+        self.assertEqual(prices, sorted(prices))
