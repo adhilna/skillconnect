@@ -3,6 +3,7 @@ from django.core.cache import cache
 from django.contrib.auth import get_user_model
 from rest_framework.test import APITestCase
 from rest_framework import status
+from django.utils import timezone
 
 User = get_user_model()
 
@@ -206,3 +207,71 @@ class ResendOTPTests(APITestCase):
         response = self.client.post(self.resend_otp_url, payload)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn("does not exist", str(response.data))
+
+class ForgotPasswordTests(APITestCase):
+    def setUp(self):
+        self.forgot_request_url = '/api/v1/auth/users/forgot-password/request/'
+        self.forgot_verify_url = '/api/v1/auth/users/forgot-password/verify/'
+        self.email = 'forgotme@example.com'
+        self.password = 'origpassword123'
+        self.role = 'CLIENT'
+
+        # Create a user to test forgot password
+        self.user = User.objects.create_user(
+            email=self.email,
+            password=self.password,
+            role=self.role,
+            is_verified=True
+        )
+
+    def test_forgot_password_request_success(self):
+        payload = {"email": self.email}
+        response = self.client.post(self.forgot_request_url, payload)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn("OTP sent to email", str(response.data))
+        # Verify that OTP and otp_created_at are set
+        user = User.objects.get(email=self.email)
+        self.assertIsNotNone(user.otp)
+        self.assertIsNotNone(user.otp_created_at)
+
+    def test_forgot_password_request_nonexistent_user(self):
+        payload = {"email": "unknown@example.com"}
+        response = self.client.post(self.forgot_request_url, payload)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("No user is registered", str(response.data))
+
+    def test_forgot_password_verify_success(self):
+        # First, request to set OTP
+        self.client.post(self.forgot_request_url, {"email": self.email})
+        user = User.objects.get(email=self.email)
+        payload = {
+            "email": self.email,
+            "otp": user.otp
+        }
+        response = self.client.post(self.forgot_verify_url, payload)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn("OTP is valid", str(response.data))
+
+    def test_forgot_password_verify_invalid_otp(self):
+        self.client.post(self.forgot_request_url, {"email": self.email})
+        payload = {
+            "email": self.email,
+            "otp": "000000"
+        }
+        response = self.client.post(self.forgot_verify_url, payload)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("Invalid OTP", str(response.data))
+
+    def test_forgot_password_verify_expired_otp(self):
+        # Set OTP and expired timestamp manually
+        self.client.post(self.forgot_request_url, {"email": self.email})
+        user = User.objects.get(email=self.email)
+        user.otp_created_at = timezone.now() - timezone.timedelta(minutes=2)
+        user.save()
+        payload = {
+            "email": self.email,
+            "otp": user.otp
+        }
+        response = self.client.post(self.forgot_verify_url, payload)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("OTP has expired", str(response.data))
