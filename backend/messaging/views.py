@@ -1,4 +1,4 @@
-from rest_framework import viewsets, permissions, serializers
+from rest_framework import viewsets, permissions, serializers, status
 from rest_framework.response import Response
 from django.contrib.contenttypes.models import ContentType
 from django.shortcuts import get_object_or_404
@@ -217,6 +217,16 @@ class MessageViewSet(viewsets.ModelViewSet):
         )
 
         return Response(serialized)
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        # Perform creation (calls perform_create under the hood)
+        self.perform_create(serializer)
+        # 'serializer.instance' is now the created message
+        obj = serializer.instance
+        full_data = MessageSerializer(obj, context=self.get_serializer_context()).data
+        return Response(full_data, status=status.HTTP_201_CREATED)
 
 def broadcast_contract_update(contract):
     """
