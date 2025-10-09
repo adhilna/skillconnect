@@ -7,6 +7,8 @@ from core.serializers import CategorySerializer, SkillSerializer
 import json
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
+from rest_framework.exceptions import PermissionDenied
+
 
 class ServiceSerializer(serializers.ModelSerializer):
     skills_output = serializers.SerializerMethodField()
@@ -294,6 +296,9 @@ class ProposalOrderSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         request = self.context.get('request')
+        if not hasattr(request.user, "freelancer_profile"):
+            raise PermissionDenied("Only freelancers can create proposal orders.")
+
         freelancer_profile = request.user.freelancer_profile
         proposal = validated_data['proposal']
         client_profile = proposal.client  # Proposal already has client

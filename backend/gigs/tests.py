@@ -2,7 +2,7 @@ from django.contrib.auth import get_user_model
 User = get_user_model()
 from profiles.models import FreelancerProfile, ClientProfile
 from core.models import Category, Skill
-from gigs.models import Service, Proposal, ServiceOrder
+from gigs.models import Service, Proposal, ServiceOrder, ProposalOrder
 from rest_framework.test import APITestCase
 from django.urls import reverse
 from rest_framework import status
@@ -308,3 +308,98 @@ class ServiceOrderViewSetTests(APITestCase):
         url = reverse('serviceorder-detail', args=[self.order1.id])
         res = self.client.patch(url, {'status': 'accepted'}, format='json')
         self.assertEqual(res.status_code, status.HTTP_403_FORBIDDEN)
+
+class ProposalOrderViewSetTests(APITestCase):
+    def setUp(self):
+        # User setup
+        self.client_user = User.objects.create_user(email='client@test.com', password='pw')
+        self.freelancer_user = User.objects.create_user(email='freelancer@test.com', password='pw')
+        self.client_profile = ClientProfile.objects.create(user=self.client_user, first_name="Test", last_name="Client")
+        self.freelancer_profile = FreelancerProfile.objects.create(user=self.freelancer_user, first_name="Test", last_name="Freelancer")
+        self.category = Category.objects.create(name="Web")
+
+        # Proposal from client
+        self.proposal = Proposal.objects.create(
+            client=self.client_profile,
+            title="Web Project",
+            description="Build a Django app",
+            category=self.category,     # Provide valid category if required; adjust field name if needed
+            budget_min=1000,
+            budget_max=3000,
+            timeline_days=14,
+            is_active=True
+        )
+
+        # ProposalOrder by freelancer
+        self.porder1 = ProposalOrder.objects.create(
+            proposal=self.proposal,
+            client=self.client_profile,
+            freelancer=self.freelancer_profile,
+            status='pending'
+        )
+        self.porder2 = ProposalOrder.objects.create(
+            proposal=self.proposal,
+            client=self.client_profile,
+            freelancer=self.freelancer_profile,
+            status='completed'
+        )
+
+    def test_client_lists_own_proposalorders(self):
+        self.client.force_authenticate(self.client_user)
+        url = reverse('proposalorder-list')
+        res = self.client.get(url)
+        ids = [order['id'] for order in res.data['results']]
+        self.assertIn(self.porder1.id, ids)
+        self.assertIn(self.porder2.id, ids)
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+
+    def test_freelancer_cannot_list_proposalorders(self):
+        self.client.force_authenticate(self.freelancer_user)
+        url = reverse('proposalorder-list')
+        res = self.client.get(url)
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(res.data['results'], [])
+
+    def test_freelancer_create_proposalorder_application(self):
+        self.client.force_authenticate(self.freelancer_user)
+        url = reverse('proposalorder-list')
+        data = {
+            'proposal_id': self.proposal.id,
+            'message': "Interested in this project"
+        }
+        res = self.client.post(url, data)
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(res.data['status'], 'pending')
+
+    def test_client_cannot_create_proposalorder(self):
+        self.client.force_authenticate(self.client_user)
+        url = reverse('proposalorder-list')
+        data = {
+            'proposal_id': self.proposal.id,
+            'message': "Should be rejected"
+        }
+        res = self.client.post(url, data)
+        self.assertEqual(res.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_client_partial_update_status(self):
+        self.client.force_authenticate(self.client_user)
+        url = reverse('proposalorder-detail', args=[self.porder1.id])
+        res = self.client.patch(url, {'status': 'accepted'}, format='json')
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(res.data['status'], 'accepted')
+
+        bad_res = self.client.patch(url, {'status': 'invalidstatus'}, format='json')
+        self.assertEqual(bad_res.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_freelancer_cannot_update_status(self):
+        self.client.force_authenticate(self.freelancer_user)
+        url = reverse('proposalorder-detail', args=[self.porder1.id])
+        res = self.client.patch(url, {'status': 'accepted'}, format='json')
+        self.assertEqual(res.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_client_retrieve_proposalorder(self):
+        self.client.force_authenticate(self.client_user)
+        url = reverse('proposalorder-detail', args=[self.porder1.id])
+        res = self.client.get(url)
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(res.data['id'], self.porder1.id)

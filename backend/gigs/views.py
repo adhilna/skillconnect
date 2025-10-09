@@ -8,7 +8,7 @@ import json
 from rest_framework.response import Response
 import django_filters
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework.exceptions import ValidationError
+from rest_framework.exceptions import PermissionDenied
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 from .utils import create_conversation_if_not_exists
