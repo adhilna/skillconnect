@@ -1,1 +1,0 @@
-[{"id":1,"title":"Fix Leaky Pipe","description":"Pipe repair service","price":"50.00","worker":2,"category":{"id":1,"name":"Plumbing"},"worker_location":"Brooklyn, NY"}]

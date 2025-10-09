@@ -80,41 +80,50 @@ const FreelancerProfileView = () => {
     const { id } = useParams();
     const navigate = useNavigate();
     const location = useLocation();
+    const from = location.state?.from || "explore";
     const { token } = useContext(AuthContext);
 
     const [profile, setProfile] = useState(location.state?.freelancerProfileData || null);
     const [loading, setLoading] = useState(!profile);
     const [error, setError] = useState('');
 
-    useEffect(() => {
-    const hasValidData = profile && profile.id;
-    if (hasValidData) return;
-
-    if (!token) {
-        setError('Authentication required');
-        setLoading(false);
-        return;
-    }
-
-    const fetchProfile = async () => {
-        setLoading(true);
-        setError('');
-        try {
-            const response = await api.get(`/api/v1/profiles/freelancers/browse/${id}/`, {
-                headers: { Authorization: `Bearer ${token}` },
-            });
-            setProfile(response.data);
-        } catch (err) {
-            console.error(err);
-            setError('Failed to load profile.');
-        } finally {
-            setLoading(false);
+    const handleBack = () => {
+        if (from === "browse") {
+            navigate("/client/dashboard", { state: { section: "browse" } });
+        } else {
+            navigate("/client/dashboard", { state: { section: "explore" } });
         }
     };
 
-    fetchProfile();
+    useEffect(() => {
+        const hasValidData = profile && profile.id;
+        if (hasValidData) return;
 
-}, [id, profile, token]);
+        if (!token) {
+            setError('Authentication required');
+            setLoading(false);
+            return;
+        }
+
+        const fetchProfile = async () => {
+            setLoading(true);
+            setError('');
+            try {
+                const response = await api.get(`/api/v1/profiles/freelancers/browse/${id}/`, {
+                    headers: { Authorization: `Bearer ${token}` },
+                });
+                setProfile(response.data);
+            } catch (err) {
+                console.error(err);
+                setError('Failed to load profile.');
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchProfile();
+
+    }, [id, profile, token]);
 
 
     if (loading) {
@@ -186,12 +195,13 @@ const FreelancerProfileView = () => {
                 {/* Header */}
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <button
-                        onClick={() => navigate('/client/dashboard', { state: { section: 'explore' } })}
+                        onClick={handleBack}
                         className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/10 backdrop-blur-xl border border-white/20 text-white/90 hover:bg-white/20 transition-colors"
-                        aria-label="Back to Dashboard"
                     >
                         <ArrowLeft className="w-4 h-4" />
-                        <span className="font-medium">Back to Explore</span>
+                        <span className="font-medium">
+                            {from === "browse" ? "Back to Browse Talent" : "Back to Explore"}
+                        </span>
                     </button>
 
                     <div className="flex items-center gap-2 text-white/60">

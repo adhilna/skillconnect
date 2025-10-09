@@ -291,7 +291,12 @@ const ExploreServicesSection = () => {
     };
 
     const handleViewProfile = (freelancer) => {
-        navigate(`/freelancers/${freelancer.id}/view`, { state: { freelancerProfileData: freelancer } });
+        navigate(`/freelancers/${freelancer.id}/view`, {
+            state: {
+                freelancerProfileData: freelancer,
+                from: 'explore'
+            }
+        });
     };
 
 

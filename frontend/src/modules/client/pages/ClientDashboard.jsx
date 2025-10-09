@@ -20,7 +20,6 @@ import { AuthContext } from '../../../context/AuthContext';
 import api from '../../../api/api';
 import OrderSection from '../components/clientDashboard/OrderSection';
 
-
 const ClientDashboard = () => {
     const { token } = useContext(AuthContext);
     const location = useLocation();
@@ -223,10 +222,16 @@ const ClientDashboard = () => {
                     availability: freelancer.is_available ? 'Available' : 'Busy',
                     reviewCount: freelancer.review_count ?? 0,
                     bio: freelancer.about ?? '',
-                    skills: freelancer.skills || [],
+                    skills: freelancer.skills_output || [],
+                    educations_output: freelancer.educations_output || [],
+                    experiences_output: freelancer.experiences_output || [],
+                    languages_output: freelancer.languages_output || [],
+                    portfolios_output: freelancer.portfolios_output || [],
+                    social_links_output: freelancer.social_links_output || {},
+                    verification_output: freelancer.verification_output || {},
                 }));
 
-                setFreelancers(transformed);
+                setFreelancers(transformed); // ✅ now an array
             } catch (err) {
                 console.error('Error fetching freelancers:', err);
                 setFreelancers([]);

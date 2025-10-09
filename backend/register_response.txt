@@ -1,1 +1,0 @@
-{"email":"customer3@example.com","role":"customer"}

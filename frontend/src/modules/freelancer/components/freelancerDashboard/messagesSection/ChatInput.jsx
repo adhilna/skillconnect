@@ -4,7 +4,7 @@ import AttachmentMenu from './AttachmentMenu';
 import FilePreview from './FilePreview';
 import PaymentRequestModal from './PaymentRequestModal';
 import api from '../../../../../api/api';
-
+import { useToast } from '../../../../../hooks/useToast';
 
 const ChatInput = ({
     newMessage,
@@ -26,6 +26,7 @@ const ChatInput = ({
 }) => {
     const typingTimeoutRef = React.useRef(null);
     const [showPaymentRequestModal, setShowPaymentRequestModal] = useState(false);
+    const { success, error: showError } = useToast();
 
     const handleInputChange = (e) => {
         setNewMessage(e.target.value);
@@ -44,7 +45,7 @@ const ChatInput = ({
 
     const handlePaymentRequestSubmit = async (paymentRequestData) => {
         if (!contract?.id) {
-            alert('No active contract to link payment request.');
+            showError('No active contract to link payment request.');
             return;
         }
 
@@ -61,32 +62,7 @@ const ChatInput = ({
                 headers: { Authorization: `Bearer ${token}` },
             });
 
-            alert('Payment request sent successfully!');
-
-            // Optional: Add optimistic message to UI with temp id
-            // const tempId = `temp-${Date.now()}`;
-            // const paymentMessage = {
-            //     id: tempId,
-            //     sender: user || 'me',
-            //     isMe: true,
-            //     time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-            //     type: 'payment',
-            //     content: response.data.description,
-            //     paymentData: {
-            //         amount: response.data.amount,
-            //         description: response.data.description,
-            //         status: response.data.status,
-            //         isRequest: true,
-            //         onPayment: () => alert('Implement actual payment flow here'),
-            //     },
-            //     conversation_id: selectedChat.id,
-            // };
-
-            // Add optimistic message if you want immediate feedback
-            // setMessages(prev => [...prev, paymentMessage]);
-
-            // Do NOT send this payment message over WebSocket manually;
-            // backend will broadcast the confirmed payment message.
+            success('Payment request sent successfully!');
 
             setShowPaymentRequestModal(false);
         } catch (error) {
@@ -94,8 +70,6 @@ const ChatInput = ({
             // Handle error more gracefully in UI
         }
     };
-
-
 
     return (
         <>
