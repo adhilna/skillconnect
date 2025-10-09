@@ -15,9 +15,8 @@ from rest_framework.response import Response
 from rest_framework.decorators import action
 import json
 import pprint
-from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from django_filters.rest_framework import DjangoFilterBackend
-
 
 CITIES = [
     # Andhra Pradesh (20 cities)
@@ -202,7 +201,7 @@ class FreelancerProfileSetupViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated, IsOwnerOrReadOnly]
     queryset = FreelancerProfile.objects.all()
     serializer_class = FreelancerProfileSetupSerializer
-    parser_classes = [MultiPartParser, FormParser]
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
 
     def get_queryset(self):
         # Only allow users to access their own profiles
@@ -232,9 +231,12 @@ class FreelancerProfileSetupViewSet(viewsets.ModelViewSet):
 
         # Extract FormData safely
         parsed_data = {}
-        for key in data:
-            val = data.getlist(key) if isinstance(data.getlist(key), list) and len(data.getlist(key)) > 1 else data.get(key)
-            parsed_data[key] = val
+        if hasattr(data, "getlist"):
+            for key in data:
+                val = data.getlist(key) if len(data.getlist(key)) > 1 else data.get(key)
+                parsed_data[key] = val
+        else:
+            parsed_data = data
 
         # Parse JSON fields safely
         for field in json_fields:
@@ -364,7 +366,7 @@ class ClientProfileSetupViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         return ClientProfile.objects.filter(user=self.request.user)
-    
+
     def get_serializer_context(self):
         context = super().get_serializer_context()
         context['request'] = self.request
