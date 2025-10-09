@@ -403,7 +403,7 @@ class PaymentRequestSerializer(serializers.ModelSerializer):
             'updated_at',
             'conversation_id',
         ]
-        read_only_fields = ['id', 'status', 'transaction_id', 'created_at', 'updated_at', 'requested_by', 'payee']
+        read_only_fields = ['id', 'transaction_id', 'created_at', 'updated_at', 'requested_by', 'payee']
 
     def validate_amount(self, value):
         if value <= 0:

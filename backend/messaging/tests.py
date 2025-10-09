@@ -1,7 +1,7 @@
 from django.urls import reverse
 from rest_framework.test import APITestCase
 from rest_framework import status
-from messaging.models import Conversation, Message, Contract
+from messaging.models import Conversation, Message, Contract, PaymentRequest
 from gigs.models import ServiceOrder, ProposalOrder
 from profiles.models import ClientProfile, FreelancerProfile
 from django.contrib.auth import get_user_model
@@ -244,3 +244,89 @@ class ContractViewSetTests(APITestCase):
         url = reverse('contract-detail', args=[self.contract.id])
         res = self.client.get(url)
         self.assertEqual(res.status_code, status.HTTP_404_NOT_FOUND)
+
+class PaymentRequestViewSetTests(APITestCase):
+    def setUp(self):
+        self.client_user = User.objects.create_user(email='client@test.com', password='pw')
+        self.freelancer_user = User.objects.create_user(email='freelancer@test.com', password='pw')
+        self.client_profile = ClientProfile.objects.create(user=self.client_user, first_name="Client", last_name="Z")
+        self.freelancer_profile = FreelancerProfile.objects.create(user=self.freelancer_user, first_name="Free", last_name="X")
+        self.service = Service.objects.create(
+            title="App Build", price=6000, delivery_time=10, freelancer=self.freelancer_profile
+        )
+        self.service_order = ServiceOrder.objects.create(
+            client=self.client_profile,
+            freelancer=self.freelancer_profile,
+            service=self.service, status="accepted"
+        )
+        self.conversation, _ = Conversation.objects.get_or_create(
+            content_type=ContentType.objects.get_for_model(ServiceOrder),
+            object_id=self.service_order.id,
+            client=self.client_profile,
+            freelancer=self.freelancer_profile
+        )
+        self.contract = Contract.objects.create(
+            service_order=self.service_order,
+            amount=6000,
+            deadline='2025-10-20',
+            status='accepted',
+            workflow_status='submitted'
+        )
+        self.payment_request = PaymentRequest.objects.create(
+            contract=self.contract,
+            requested_by=self.freelancer_user,
+            payee=self.client_user,
+            amount=2000,
+            description="Advance payment",
+            status='pending'
+        )
+
+    def test_freelancer_can_create_payment_request(self):
+        self.client.force_authenticate(self.freelancer_user)
+        url = reverse('paymentrequest-list')
+        data = {
+            'contract': self.contract.id,
+            'amount': 1500,
+            'description': "Milestone 1",
+            'conversation_id': self.conversation.id,
+        }
+        res = self.client.post(url, data)
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(float(res.data['amount']), 1500.0)
+        self.assertEqual(res.data['requested_by'], self.freelancer_user.id)
+        self.assertEqual(res.data['payee'], self.client_user.id)
+
+    def test_client_can_list_payment_requests(self):
+        self.client.force_authenticate(self.client_user)
+        url = reverse('paymentrequest-list')
+        res = self.client.get(url)
+        paged = res.data if isinstance(res.data, list) else res.data['results']
+        self.assertIn(self.payment_request.id, [r['id'] for r in paged])
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+
+    def test_freelancer_can_list_payment_requests(self):
+        self.client.force_authenticate(self.freelancer_user)
+        url = reverse('paymentrequest-list')
+        res = self.client.get(url)
+        paged = res.data if isinstance(res.data, list) else res.data['results']
+        self.assertIn(self.payment_request.id, [r['id'] for r in paged])
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+
+    def test_payee_can_update_status(self):
+        self.client.force_authenticate(self.client_user)
+        url = reverse('paymentrequest-detail', args=[self.payment_request.id])
+        patch_data = {'status': 'completed'}
+        res = self.client.patch(url, patch_data)
+        print(res.status_code)
+        print(res.data)
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.payment_request.refresh_from_db()
+        self.assertEqual(self.payment_request.status, 'completed')
+
+    def test_permission_blocks_non_participant(self):
+        outsider = User.objects.create_user(email='outsider@test.com', password='pw')
+        self.client.force_authenticate(outsider)
+        url = reverse('paymentrequest-detail', args=[self.payment_request.id])
+        res = self.client.get(url)
+        self.assertEqual(res.status_code, status.HTTP_404_NOT_FOUND)
+
