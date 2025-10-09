@@ -150,3 +150,70 @@ class ExploreServicesViewSetTests(APITestCase):
         res = self.client.get(url, {'ordering': 'price'})
         prices = [float(x['price']) for x in res.data['results']]
         self.assertEqual(prices, sorted(prices))
+
+class ExploreProposalsViewSetTests(APITestCase):
+    def setUp(self):
+        user = User.objects.create_user(email='client@test.com', password='pw')
+        self.client_profile = ClientProfile.objects.create(user=user, first_name="Test", last_name="Client")
+        self.category_design = Category.objects.create(name="Design")
+        self.category_web = Category.objects.create(name="Web")
+        self.skill_figma = Skill.objects.create(name="Figma")
+        self.skill_python = Skill.objects.create(name="Python")
+        self.skill_logo = Skill.objects.create(name="Logo Design") 
+
+        prop1 = Proposal.objects.create(
+            client=self.client_profile,
+            title="Logo Design",
+            description="Logo for startup.",
+            category=self.category_design,
+            budget_min="200",
+            budget_max="500",
+            timeline_days=7,
+            is_active=True
+        )
+        prop2 = Proposal.objects.create(
+            client=self.client_profile,
+            title="Build Website",
+            description="Django web service.",
+            category=self.category_web,
+            budget_min="900",
+            budget_max="2500",
+            timeline_days=20,
+            is_active=True
+        )
+        prop1.required_skills.add(self.skill_figma)
+        prop2.required_skills.add(self.skill_python)
+        self.client.force_authenticate(user)
+
+    def test_filter_by_category(self):
+        url = reverse('explore-proposals-list')
+        res = self.client.get(url, {'category': self.category_web.id})
+        titles = [x['title'] for x in res.data['results']]
+        self.assertIn("Build Website", titles)
+        self.assertNotIn("Logo Design", titles)
+
+    def test_filter_by_skill(self):
+        url = reverse('explore-proposals-list')
+        res = self.client.get(url, {'search': 'Logo Design'})
+        titles = [x['title'] for x in res.data['results']]
+        self.assertIn("Logo Design", titles)
+        self.assertNotIn("Build Website", titles)
+
+
+    def test_filter_by_min_budget(self):
+        url = reverse('explore-proposals-list')
+        res = self.client.get(url, {'min_budget': 800})
+        titles = [x['title'] for x in res.data['results']]
+        self.assertIn("Build Website", titles)
+        self.assertNotIn("Logo Design", titles)
+
+    def test_search_title(self):
+        url = reverse('explore-proposals-list')
+        res = self.client.get(url, {'search': 'Logo'})
+        self.assertTrue(any('Logo' in x['title'] for x in res.data['results']))
+
+    def test_order_by_budget_min(self):
+        url = reverse('explore-proposals-list')
+        res = self.client.get(url, {'ordering': 'budget_min'})
+        budgets = [float(x['budget_min']) for x in res.data['results']]
+        self.assertEqual(budgets, sorted(budgets))

@@ -162,13 +162,14 @@ class ExploreProposalsViewSet(viewsets.ReadOnlyModelViewSet):
     pagination_class = ExploreServicesPagination
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_class = ExploreProposalFilter
-    search_fields = ['title', 'description', 'category__name', 'skills__name', 'client__user__username']
+    search_fields = ['title', 'description', 'category__name', 'required_skills__name', 'client__user__first_name']
     ordering_fields = ['budget', 'delivery_time', 'created_at']
 
     def get_queryset(self):
         return Proposal.objects.filter(is_active=True) \
             .select_related('client', 'category') \
-            .prefetch_related('required_skills')
+            .prefetch_related('required_skills') \
+            .order_by("id")
 
 class ServiceOrderViewSet(viewsets.ModelViewSet):
     queryset = ServiceOrder.objects.all().order_by('-created_at')
