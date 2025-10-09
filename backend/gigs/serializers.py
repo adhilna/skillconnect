@@ -266,41 +266,9 @@ class ServiceOrderSerializer(serializers.ModelSerializer):
         return order
 
     def validate(self, attrs):
-        # request = self.context.get('request')
-        # client_profile = request.user.client_profile
-        # service = attrs.get('service')
-
-        # # Prevent duplicate active orders (pending or accepted) by same client & service
-        # if ServiceOrder.objects.filter(
-        #     client=client_profile,
-        #     service=service,
-        #     status__in=['pending', 'accepted']
-        # ).exists():
-        #     raise serializers.ValidationError("You already have an active order for this service.")
-
         return attrs
 
     def validate_status(self, value):
-        # instance = getattr(self, 'instance', None)
-        # if instance:
-        #     current_status = instance.status.lower()
-        #     new_status = value.lower()
-
-        #     allowed_transitions = {
-        #         'pending': ['accepted', 'rejected'],
-        #         'accepted': ['completed', 'canceled'],
-        #         'rejected': [],
-        #         'completed': [],
-        #         'canceled': [],
-        #     }
-
-        #     if current_status not in allowed_transitions:
-        #         raise serializers.ValidationError(f"Unknown current status '{current_status}'.")
-
-        #     if new_status not in allowed_transitions[current_status]:
-        #         raise serializers.ValidationError(
-        #             f"Order status can only be changed from '{current_status}' to one of {allowed_transitions[current_status]}."
-        #         )
         return value
 
 class ProposalOrderSerializer(serializers.ModelSerializer):

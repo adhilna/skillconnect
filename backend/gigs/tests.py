@@ -2,7 +2,7 @@ from django.contrib.auth import get_user_model
 User = get_user_model()
 from profiles.models import FreelancerProfile, ClientProfile
 from core.models import Category, Skill
-from gigs.models import Service, Proposal
+from gigs.models import Service, Proposal, ServiceOrder
 from rest_framework.test import APITestCase
 from django.urls import reverse
 from rest_framework import status
@@ -217,3 +217,94 @@ class ExploreProposalsViewSetTests(APITestCase):
         res = self.client.get(url, {'ordering': 'budget_min'})
         budgets = [float(x['budget_min']) for x in res.data['results']]
         self.assertEqual(budgets, sorted(budgets))
+
+class ServiceOrderViewSetTests(APITestCase):
+    def setUp(self):
+        # Set up one client, one freelancer, and one service (by freelancer)
+        self.client_user = User.objects.create_user(email='client@test.com', password='pw')
+        self.freelancer_user = User.objects.create_user(email='freelancer@test.com', password='pw')
+        self.client_profile = ClientProfile.objects.create(user=self.client_user, first_name="Test", last_name="Client")
+        self.freelancer_profile = FreelancerProfile.objects.create(user=self.freelancer_user, first_name="Test", last_name="Freelancer")
+
+        # NOTE: Use your actual Service model's field names here!
+        self.service = Service.objects.create(
+            title="Logo Design",                # Change field name as per your Service model
+            description="Branding",             # Change if needed
+            freelancer=self.freelancer_profile,  # Must match your Service model's FK
+            price=1500,
+            delivery_time=7 
+        )
+
+        # Orders (made by client for freelancer's service)
+        self.order1 = ServiceOrder.objects.create(
+            client=self.client_profile,
+            freelancer=self.freelancer_profile,
+            service=self.service,
+            status="pending"
+        )
+        self.order_done = ServiceOrder.objects.create(
+            client=self.client_profile,
+            freelancer=self.freelancer_profile,
+            service=self.service,
+            status="completed"
+        )
+
+    def test_list_service_orders_for_freelancer_only(self):
+        # Freelancer authenticates—should see their own service orders, not other's
+        self.client.force_authenticate(self.freelancer_user)
+        url = reverse('serviceorder-list')
+        res = self.client.get(url)
+        ids = [order['id'] for order in res.data['results']]
+        self.assertIn(self.order1.id, ids)
+        self.assertIn(self.order_done.id, ids)
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+
+    def test_client_cannot_list_any_orders(self):
+        # Client authenticates—should see none (not a freelancer)
+        self.client.force_authenticate(self.client_user)
+        url = reverse('serviceorder-list')
+        res = self.client.get(url)
+        self.assertEqual(res.status_code, 403)
+
+    def test_create_service_order_by_client(self):
+        # Client places order on a freelancer's service
+        self.client.force_authenticate(self.client_user)
+        url = reverse('serviceorder-list')
+        data = {
+            "service_id": self.service.id,
+            "message": "Please deliver in 7 days"
+        }
+        res = self.client.post(url, data)
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(res.data['status'], "pending")
+        self.assertEqual(res.data['service']['title'], "Logo Design")
+
+    def test_freelancer_cannot_create_service_order(self):
+        self.client.force_authenticate(self.freelancer_user)
+        url = reverse('serviceorder-list')
+        data = {
+            "service_id": self.service.id,
+            "message": "Should not work"
+        }
+        res = self.client.post(url, data)
+        self.assertEqual(res.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_retrieve_service_order_detail(self):
+        self.client.force_authenticate(self.freelancer_user)
+        url = reverse('serviceorder-detail', args=[self.order1.id])
+        res = self.client.get(url)
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(res.data['id'], self.order1.id)
+
+    def test_partial_update_by_freelancer(self):
+        self.client.force_authenticate(self.freelancer_user)
+        url = reverse('serviceorder-detail', args=[self.order1.id])
+        res = self.client.patch(url, {'status': 'accepted'}, format='json')
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(res.data['status'], 'accepted')
+
+    def test_partial_update_rejected_for_client(self):
+        self.client.force_authenticate(self.client_user)
+        url = reverse('serviceorder-detail', args=[self.order1.id])
+        res = self.client.patch(url, {'status': 'accepted'}, format='json')
+        self.assertEqual(res.status_code, status.HTTP_403_FORBIDDEN)
