@@ -122,8 +122,6 @@ class FreelancerProfileSetupSerializer(serializers.ModelSerializer):
     social_links_output = SocialLinksSerializer(source='user.social_links', read_only=True)
     verification_output = VerificationSerializer(source='user.verification', read_only=True)
 
-
-
     class Meta:
         model = FreelancerProfile
         fields = [
@@ -463,10 +461,10 @@ class FreelancerPublicMinimalSerializer(serializers.ModelSerializer):
         return 0
 
 class FreelancerPublicDetailSerializer(FreelancerPublicMinimalSerializer):
-    educations_output = EducationSerializer(many=True, read_only=True)
-    experiences_output = ExperienceSerializer(many=True, read_only=True)
-    languages_output = LanguageSerializer(many=True, read_only=True)
-    portfolios_output = PortfolioSerializer(many=True, read_only=True)
+    educations_output = EducationSerializer(many=True, read_only=True, source='educations')
+    experiences_output = ExperienceSerializer(many=True, read_only=True, source='experiences')
+    languages_output = LanguageSerializer(many=True, read_only=True, source='languages')
+    portfolios_output = PortfolioSerializer(many=True, read_only=True, source='portfolios')
     social_links_output = SocialLinksSerializer(source='user.social_links', read_only=True)
     verification_output = VerificationSerializer(source='user.verification', read_only=True)
 
@@ -482,7 +480,6 @@ class FreelancerPublicDetailSerializer(FreelancerPublicMinimalSerializer):
             'verification_output',
             'created_at',
             'updated_at',
-            # Add other detailed fields if needed
         ]
 
 class ClientPublicMinimalSerializer(serializers.ModelSerializer):

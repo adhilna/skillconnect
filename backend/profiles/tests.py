@@ -1,7 +1,7 @@
 from rest_framework.test import APITestCase
 from rest_framework import status
 from django.contrib.auth import get_user_model
-from profiles.models import FreelancerProfile, ClientProfile
+from profiles.models import FreelancerProfile, ClientProfile, Education
 
 User = get_user_model()
 
@@ -188,3 +188,55 @@ class ClientProfileSetupTests(APITestCase):
         url = f"/api/v1/profiles/client/profile-setup/{profile.id}/"
         response = self.client.patch(url, {"company_description": "Should fail"}, format='json')
         self.assertIn(response.status_code, [status.HTTP_403_FORBIDDEN, status.HTTP_404_NOT_FOUND])
+
+class BrowseProfilesTests(APITestCase):
+    def setUp(self):
+        self.freelancer_list_url = '/api/v1/profiles/freelancers/browse/'
+        self.client_list_url = '/api/v1/profiles/clients/browse/'
+        u1 = User.objects.create_user(email='john@example.com', password='pw', role="FREELANCER", is_verified=True)
+        u2 = User.objects.create_user(email='mary@example.com', password='pw', role="FREELANCER", is_verified=True)
+        c1 = User.objects.create_user(email='alice@example.com', password='pw', role="CLIENT", is_verified=True)
+        self.freelancer1 = FreelancerProfile.objects.create(user=u1, first_name="John", last_name="Doe", location="Kochi", is_available=True)
+        self.freelancer2 = FreelancerProfile.objects.create(user=u2, first_name="Mary", last_name="Smith", location="Chennai", is_available=False)
+        self.client1 = ClientProfile.objects.create(user=c1, first_name="Alice", last_name="Corp", company_name="Acme", country="India", location="Delhi", account_type="business")
+
+        Education.objects.create(
+            profile=self.freelancer1,
+            degree="BSc Computer Science",
+            college="Kerala University",
+            start_year=2015,
+            end_year=2019
+        )
+
+    def test_freelancer_list(self):
+        res = self.client.get(self.freelancer_list_url)
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        names = [item["name"] for item in res.data["results"]]
+        self.assertIn("John Doe", names)
+        self.assertIn("Mary Smith", names)
+
+    def test_freelancer_detail(self):
+        url = f'{self.freelancer_list_url}{self.freelancer1.id}/'
+        res = self.client.get(url)
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(res.data["name"], "John Doe")
+        self.assertIn("educations_output", res.data)
+        self.assertIn("experiences_output", res.data)
+
+    def test_freelancer_filter(self):
+        res = self.client.get(self.freelancer_list_url, {"location": "Kochi"})
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        names = [item["name"] for item in res.data["results"]]
+        self.assertEqual(names, ["John Doe"])
+
+    def test_client_list(self):
+        res = self.client.get(self.client_list_url)
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertTrue(any(x["company_name"] == "Acme" for x in res.data["results"]))
+
+    def test_client_detail(self):
+        url = f'{self.client_list_url}{self.client1.id}/'
+        res = self.client.get(url)
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(res.data["name"], "Alice Corp")
+        self.assertTrue("project_types" in res.data)
