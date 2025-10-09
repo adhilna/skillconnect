@@ -106,6 +106,7 @@ class ResendOTPView(APIView):
                 return Response({'message': 'New OTP sent to your email.'}, status=status.HTTP_200_OK)
             except Exception as e:
                 return Response({'error': f'Failed to resend OTP: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class ForgotPasswordRequestAPIView(APIView):
     def post(self, request):

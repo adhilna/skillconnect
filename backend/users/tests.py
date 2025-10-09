@@ -166,3 +166,43 @@ class VerifyOTPTests(APITestCase):
         response = self.client.post(self.verify_otp_url, payload)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         # Response could include "already registered" depending on serializer logic
+
+class ResendOTPTests(APITestCase):
+    def setUp(self):
+        self.resend_otp_url = '/api/v1/auth/users/resend-otp/'
+        self.email_unverified = 'unverified@example.com'
+        self.email_verified = 'verified@example.com'
+        self.email_nonexistent = 'noone@example.com'
+
+        # Create users for tests
+        self.unverified_user = User.objects.create_user(
+            email=self.email_unverified,
+            password='testpass123',
+            role='CLIENT',
+            is_verified=False
+        )
+        self.verified_user = User.objects.create_user(
+            email=self.email_verified,
+            password='testpass123',
+            role='CLIENT',
+            is_verified=True
+        )
+
+    def test_resend_otp_success_for_unverified_user(self):
+        payload = {"email": self.email_unverified}
+        response = self.client.post(self.resend_otp_url, payload)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn("message", response.data)
+        self.assertIn("OTP", response.data["message"].upper())
+
+    def test_resend_otp_error_for_verified_user(self):
+        payload = {"email": self.email_verified}
+        response = self.client.post(self.resend_otp_url, payload)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("Email already verified", str(response.data))
+
+    def test_resend_otp_error_for_nonexistent_user(self):
+        payload = {"email": self.email_nonexistent}
+        response = self.client.post(self.resend_otp_url, payload)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("does not exist", str(response.data))
