@@ -9,4 +9,3 @@ ALLOWED_COMPANY_SIZES = [
     'Just me (1)', 'Small team (2-10)', 'Growing business (11-50)',
     'Medium company (51-200)', 'Large enterprise (200+)'
 ]
-

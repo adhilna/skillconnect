@@ -10,8 +10,6 @@ router.register(r'service-orders', ServiceOrderViewSet, basename='serviceorder')
 router.register(r'explore-proposals', ExploreProposalsViewSet, basename='exploreproposals')
 router.register(r'proposal-orders', ProposalOrderViewSet, basename='proposalorder')
 
-
-
 urlpatterns = [
     path('', include(router.urls)),
 ]

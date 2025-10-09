@@ -58,7 +58,7 @@ def parse_json_fields(data, fields):
 class ServiceViewSet(viewsets.ModelViewSet):
     serializer_class = ServiceSerializer
     permission_classes = [permissions.IsAuthenticated]
-    parser_classes = (MultiPartParser, FormParser)
+    parser_classes = (MultiPartParser, FormParser, JSONParser)
 
     def get_queryset(self):
         return Service.objects.filter(freelancer=self.request.user.freelancer_profile)
