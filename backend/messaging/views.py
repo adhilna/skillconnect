@@ -22,7 +22,6 @@ from .pagination import PaymentHistoryPagination
 from .razorpay_client import client
 from django.conf import settings
 
-
 # --- Custom Permission: Only participants can access
 
 logger = logging.getLogger(__name__)

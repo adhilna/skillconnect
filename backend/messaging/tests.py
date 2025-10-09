@@ -1,7 +1,7 @@
 from django.urls import reverse
 from rest_framework.test import APITestCase
 from rest_framework import status
-from messaging.models import Conversation, Message
+from messaging.models import Conversation, Message, Contract
 from gigs.models import ServiceOrder, ProposalOrder
 from profiles.models import ClientProfile, FreelancerProfile
 from django.contrib.auth import get_user_model
@@ -165,3 +165,82 @@ class MessageViewSetTests(APITestCase):
         url = reverse('conversation-messages', args=[self.conversation.id])
         res = self.client.get(url)
         self.assertEqual(res.status_code, status.HTTP_403_FORBIDDEN)
+
+class ContractViewSetTests(APITestCase):
+    def setUp(self):
+        self.client_user = User.objects.create_user(email='client@test.com', password='pw')
+        self.freelancer_user = User.objects.create_user(email='freelancer@test.com', password='pw')
+        self.client_profile = ClientProfile.objects.create(user=self.client_user, first_name="Client", last_name="A")
+        self.freelancer_profile = FreelancerProfile.objects.create(user=self.freelancer_user, first_name="Free", last_name="B")
+        self.service = Service.objects.create(
+            title="Logo Design", price=1000, delivery_time=7, freelancer=self.freelancer_profile
+        )
+        self.service_order = ServiceOrder.objects.create(
+            client=self.client_profile,
+            freelancer=self.freelancer_profile,
+            service=self.service,
+            status="accepted"
+        )
+        self.conversation, _ = Conversation.objects.get_or_create(
+            content_type=ContentType.objects.get_for_model(ServiceOrder),
+            object_id=self.service_order.id,
+            client=self.client_profile,
+            freelancer=self.freelancer_profile
+        )
+        self.contract = Contract.objects.create(
+            service_order=self.service_order,
+            amount=1000,
+            deadline='2025-10-15',
+            status='draft',
+            workflow_status='planning'
+        )
+
+    def test_contract_list(self):
+        self.client.force_authenticate(self.client_user)
+        url = reverse('contract-list')
+        res = self.client.get(url)
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        contracts = res.data if isinstance(res.data, list) else res.data['results']
+        self.assertTrue(any(c['id'] == self.contract.id for c in contracts))
+
+    def test_freelancer_can_create_contract(self):
+        self.client.force_authenticate(self.freelancer_user)
+        url = reverse('contract-list')
+        data = {
+            'amount': 2000,
+            'deadline': '2025-10-20',
+            'terms': 'Delivery in 1 week.',
+            'milestones': '',
+            'order_type': 'service',
+            'order_id': self.service_order.id,
+        }
+        res = self.client.post(url, data)
+        print(res.status_code, res.data)
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(res.data['amount'], '2000.00')
+
+    def test_freelancer_can_update_status(self):
+        self.client.force_authenticate(self.freelancer_user)
+        url = reverse('contract-detail', args=[self.contract.id])
+        patch_data = {'status': 'accepted', 'workflow_status': 'draft'}
+        res = self.client.patch(url, patch_data)
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.contract.refresh_from_db()
+        self.assertEqual(self.contract.status, 'accepted')
+
+    def test_active_contracts_action(self):
+        self.contract.status = 'accepted'
+        self.contract.workflow_status = 'draft'
+        self.contract.save()
+        self.client.force_authenticate(self.client_user)
+        url = reverse('contract-active')
+        res = self.client.get(url)
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertTrue(any(c['id'] == self.contract.id for c in res.data))
+
+    def test_permission_blocks_unrelated_user(self):
+        outsider = User.objects.create_user(email='outsider@test.com', password='pw')
+        self.client.force_authenticate(outsider)
+        url = reverse('contract-detail', args=[self.contract.id])
+        res = self.client.get(url)
+        self.assertEqual(res.status_code, status.HTTP_404_NOT_FOUND)
