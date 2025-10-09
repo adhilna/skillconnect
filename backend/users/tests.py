@@ -275,3 +275,59 @@ class ForgotPasswordTests(APITestCase):
         response = self.client.post(self.forgot_verify_url, payload)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn("OTP has expired", str(response.data))
+
+class ResetPasswordTests(APITestCase):
+    def setUp(self):
+        self.reset_url = '/api/v1/auth/users/forgot-password/reset/'
+        self.email = 'resetme@example.com'
+        self.old_password = 'oldpassword123'
+        self.new_password = 'newpassword456'
+        self.role = 'CLIENT'
+        self.user = User.objects.create_user(
+            email=self.email,
+            password=self.old_password,
+            role=self.role,
+            is_verified=True
+        )
+        # Set valid OTP and timestamp
+        self.user.otp = '654321'
+        self.user.otp_created_at = timezone.now()
+        self.user.save()
+
+    def test_reset_success(self):
+        payload = {
+            "email": self.email,
+            "otp": self.user.otp,
+            "new_password": self.new_password
+        }
+        response = self.client.post(self.reset_url, payload)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn("Password reset successfully", str(response.data))
+        # Confirm password actually changed
+        user = User.objects.get(email=self.email)
+        self.assertTrue(user.check_password(self.new_password))
+        self.assertIsNone(user.otp)
+        self.assertIsNone(user.otp_created_at)
+
+    def test_reset_wrong_otp(self):
+        payload = {
+            "email": self.email,
+            "otp": "000000",
+            "new_password": self.new_password
+        }
+        response = self.client.post(self.reset_url, payload)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("Invalid OTP", str(response.data))
+
+    def test_reset_expired_otp(self):
+        self.user.otp_created_at = timezone.now() - timezone.timedelta(minutes=2)
+        self.user.save()
+        payload = {
+            "email": self.email,
+            "otp": self.user.otp,
+            "new_password": self.new_password
+        }
+        response = self.client.post(self.reset_url, payload)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("OTP has expired", str(response.data))
+
