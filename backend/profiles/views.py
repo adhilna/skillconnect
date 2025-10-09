@@ -359,7 +359,7 @@ class ClientProfileSetupViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
     queryset = ClientProfile.objects.all()
     serializer_class = ClientProfileSetupSerializer
-    parser_classes = [MultiPartParser, FormParser]
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
