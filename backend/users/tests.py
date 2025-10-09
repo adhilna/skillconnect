@@ -4,6 +4,7 @@ from django.contrib.auth import get_user_model
 from rest_framework.test import APITestCase
 from rest_framework import status
 from django.utils import timezone
+from unittest.mock import patch
 
 User = get_user_model()
 
@@ -331,3 +332,42 @@ class ResetPasswordTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn("OTP has expired", str(response.data))
 
+class GoogleAuthTests(APITestCase):
+    def setUp(self):
+        self.google_url = '/api/v1/auth/users/google/'
+        self.email = 'googleuser@example.com'
+
+    @patch('users.views.id_token.verify_oauth2_token')
+    def test_google_auth_new_user(self, mock_verify):
+        mock_verify.return_value = {'email': self.email}
+        payload = {"token": "validtoken", "role": "CLIENT"}
+        response = self.client.post(self.google_url, payload)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn("access", response.data)
+        user = User.objects.get(email=self.email)
+        self.assertTrue(user.is_verified)
+        self.assertEqual(user.role, "CLIENT")
+
+    @patch('users.views.id_token.verify_oauth2_token')
+    def test_google_auth_existing_user(self, mock_verify):
+        User.objects.create_user(email=self.email, password="abc", role="FREELANCER", is_verified=True)
+        mock_verify.return_value = {'email': self.email}
+        payload = {"token": "validtoken", "role": "CLIENT"}
+        response = self.client.post(self.google_url, payload)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        user = User.objects.get(email=self.email)
+        self.assertEqual(user.role, "CLIENT")
+
+    def test_google_auth_missing_token(self):
+        payload = {"role": "CLIENT"}
+        response = self.client.post(self.google_url, payload)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("No token provided", str(response.data))
+
+    @patch('users.views.id_token.verify_oauth2_token')
+    def test_google_auth_invalid_role(self, mock_verify):
+        mock_verify.return_value = {'email': self.email}
+        payload = {"token": "validtoken", "role": "ADMIN"}
+        response = self.client.post(self.google_url, payload)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("Invalid role", str(response.data))
