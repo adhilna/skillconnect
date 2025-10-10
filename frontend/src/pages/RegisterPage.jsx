@@ -60,14 +60,55 @@ export default function Register() {
     const nextStep = () => setFormStep((prev) => prev + 1);
     const prevStep = () => setFormStep((prev) => prev - 1);
 
+    const disposableDomains = [
+        'mailinator.com', '10minutemail.com', 'guerrillamail.com'
+    ];
+    const commonPasswords = [
+        'password', 'admin', '12345678', 'qwerty', 'letmein'
+    ];
+
     const validateForm = () => {
         const newErrors = {};
-        if (!formValues.email) newErrors.email = 'Email is required';
-        if (!formValues.password) newErrors.password = 'Password is required';
-        if (!formValues.agreeTerms) newErrors.agreeTerms = 'You must agree to terms';
+
+        // Email: required, proper format, disposable check
+        if (!formValues.email) {
+            newErrors.email = 'Email is required';
+        } else {
+            const email = formValues.email.trim().toLowerCase();
+            if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
+                newErrors.email = 'Enter a valid email address';
+            else if (disposableDomains.some(domain => email.endsWith('@' + domain)))
+                newErrors.email = 'Disposable emails are not allowed';
+        }
+
+        // Password: super-strong rules
+        if (!formValues.password) {
+            newErrors.password = 'Password is required';
+        } else {
+            const pwd = formValues.password;
+            let unmet = [];
+
+            if (pwd.length < 12) unmet.push('12+ characters');
+            if (/\s/.test(pwd)) unmet.push('No spaces');
+            if (!/[A-Z]/.test(pwd)) unmet.push('1 uppercase');
+            if (!/[a-z]/.test(pwd)) unmet.push('1 lowercase');
+            if (!/[0-9]/.test(pwd)) unmet.push('1 digit');
+            if (!/[!@#$%^&*(),.?":{}|<>]/.test(pwd)) unmet.push('1 special character');
+            if (commonPasswords.includes(pwd.toLowerCase())) unmet.push('Not a common password');
+            if (pwd === pwd.split('').reverse().join('')) unmet.push('Not a palindrome');
+            if (/(.)\1{3,}/.test(pwd)) unmet.push('No repeated characters');
+
+            if (unmet.length > 0)
+                newErrors.password = 'Password must contain: ' + unmet.join(', ');
+        }
+
+        if (!formValues.agreeTerms)
+            newErrors.agreeTerms = 'You must agree to terms';
+
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
     };
+
 
     const validateOtp = () => {
         const newErrors = {};
@@ -195,11 +236,11 @@ export default function Register() {
                 )}
             </div>
             {formStep === 0 && (
-            <div className="text-center mt-6">
-                <p className="text-purple-200">
-                    Aready have an account? <a href="/login" className="text-purple-400 hover:text-white font-medium">Sign in</a>
-                </p>
-            </div>
+                <div className="text-center mt-6">
+                    <p className="text-purple-200">
+                        Aready have an account? <a href="/login" className="text-purple-400 hover:text-white font-medium">Sign in</a>
+                    </p>
+                </div>
             )}
         </div>
     );

@@ -8,6 +8,24 @@ from .models import User
 from .tasks import send_otp_email_task
 from .utils import generate_otp
 from django.core.cache import cache
+import re
+from django.core.validators import validate_email as django_validate_email
+from django.core.exceptions import ValidationError as DjangoValidationError
+
+def is_common_password(value):
+    # Use your own list or import from Django's common password list
+    common = {'password', 'admin', '12345678', 'qwerty', 'letmein'}
+    return value.lower() in common
+
+def advanced_email_check(email):
+    # Optionally use a 3rd party library for full-blown RFC validation
+
+    # Block disposable/temporary email domains
+    disposable_domains = {'mailinator.com', '10minutemail.com', 'guerrillamail.com'}
+    domain = email.split('@')[-1].lower()
+    if domain in disposable_domains:
+        return False
+    return True
 
 class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(
@@ -26,18 +44,58 @@ class RegisterSerializer(serializers.ModelSerializer):
         read_only_fields = ['id']
 
     def validate_password(self, value):
-        """
-        Validate password strength (e.g., minimum length).
-        """
-        if len(value) < 8:
-            raise serializers.ValidationError(_('Password must be at least 8 characters long.'))
+        if len(value) < 12:
+            raise serializers.ValidationError(_('Password must be at least 12 characters long.'))
+
+        if re.search(r'\s', value):
+            raise serializers.ValidationError(_('Password must not contain spaces.'))
+
+        if is_common_password(value):
+            raise serializers.ValidationError(_('Password is too common.'))
+
+        if not re.search(r'[A-Z]', value):
+            raise serializers.ValidationError(_('Password must contain at least one uppercase letter.'))
+
+        if not re.search(r'[a-z]', value):
+            raise serializers.ValidationError(_('Password must contain at least one lowercase letter.'))
+
+        if not re.search(r'[0-9]', value):
+            raise serializers.ValidationError(_('Password must contain at least one digit.'))
+
+        if not re.search(r'[!@#$%^&*(),.?":{}|<>]', value):
+            raise serializers.ValidationError(_('Password must contain at least one special character.'))
+
+        if value == value[::-1]:
+            raise serializers.ValidationError(_('Password cannot be a palindrome.'))
+
+        # Optionally block repeated chars
+        if re.search(r'(.)\1{3,}', value):
+            raise serializers.ValidationError(_('Password contains repeated characters.'))
+
         return value
 
     def validate_email(self, value):
-        if User.objects.filter(email=value).exists():
+        try:
+            django_validate_email(value)
+        except DjangoValidationError:
+            raise serializers.ValidationError(_("Enter a valid email address."))
+
+        value = value.strip().lower()
+
+        email_regex = re.compile(
+            r"(^[-!#$%&'*+/0-9=?A-Z^_`a-z{|}~]+(?:\.[-!#$%&'*+/0-9=?A-Z^_`a-z{|}~]+)*"
+            r'|^"([!#-[\]-~]|(\\[\t -~]))+"@)'
+            r"([A-Z0-9a-z][A-Z0-9a-z-]{0,61}[A-Z0-9a-z]\.)+([A-Za-z]{2,})$"
+        )
+        if not email_regex.match(value):
+            raise serializers.ValidationError(_("Email format is invalid."))
+
+        if not advanced_email_check(value):
+            raise serializers.ValidationError(_("Disposable email addresses are not allowed."))
+
+        if User.objects.filter(email__iexact=value).exists():
             raise serializers.ValidationError(_("This email is already registered."))
         return value
-
 
     def save(self):
         """
