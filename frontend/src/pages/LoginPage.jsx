@@ -33,34 +33,53 @@ export default function LoginPage() {
     return () => clearTimeout(timer);
   }, []);
 
+  const validateLoginInput = (email, password) => {
+    let error = null;
+    if (!email || !password) error = "Email and password required";
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) error = "Enter a valid email address";
+    else if (password.length < 8) error = "Enter your password (at least 8 characters)";
+    return error;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    const inputError = validateLoginInput(email, password);
+    if (inputError) {
+      setError(inputError);
+      return;
+    }
+
     setIsLoading(true);
+    setError("");
     try {
       // Step 1: Call login API
-      const response = await api.post('/api/v1/auth/users/login/', { email, password });
-      const { access, refresh } = response.data;
+      const response = await api.post('/api/v1/auth/users/login/', { email: email.trim(), password });
+      const { access, refresh, user } = response.data;
 
-      // Step 2: Fetch user profile (if not returned by login API)
-      // If your login API returns user data, skip this step
-      const userResponse = await api.get('/api/v1/auth/users/profile/', {
-        headers: { Authorization: `Bearer ${access}` }
-      });
-      const userData = userResponse.data;
+      // Step 2: Fetch user profile only IF NOT returned by login API
+      const userData = user || (
+        await api.get('/api/v1/auth/users/profile/', {
+          headers: { Authorization: `Bearer ${access}` }
+        })
+      ).data;
 
-      // Step 3: Call login in AuthContext
+      // Step 3: Set auth state in context
       login(userData, access, refresh);
 
-      // Step 4: Redirect based on role
-      const dashboardPath = userData.role.toLowerCase() === 'client' ? '/client/dashboard' : '/freelancer/dashboard';
+      // Step 4: Role-based redirect (fallback to dashboard if no role)
+      const role = userData?.role?.toLowerCase();
+      const dashboardPath = role === 'client' ? '/client/dashboard'
+        : role === 'freelancer' ? '/freelancer/dashboard'
+          : '/dashboard';
       navigate(dashboardPath);
 
     } catch (err) {
-      if (err.response?.data?.detail) {
-        setError(err.response?.data?.detail || 'Login failed');
-      } else {
-        setError("Invalid email or password");
-      }
+      // Accept backend detail/non_field_errors
+      const backendError =
+        err.response?.data?.detail ||
+        (Array.isArray(err.response?.data?.non_field_errors) && err.response?.data?.non_field_errors[0]);
+      setError(backendError || "Invalid email or password");
     } finally {
       setIsLoading(false);
     }

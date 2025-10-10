@@ -11,6 +11,7 @@ from django.core.cache import cache
 import re
 from django.core.validators import validate_email as django_validate_email
 from django.core.exceptions import ValidationError as DjangoValidationError
+import logging
 
 def is_common_password(value):
     # Use your own list or import from Django's common password list
@@ -119,26 +120,46 @@ class LoginSerializer(serializers.Serializer):
     password = serializers.CharField(write_only=True, style={'input_type': 'password'})
 
     def validate(self, attrs):
-        email = attrs.get('email')
+        email = attrs.get('email', '').strip().lower()
         password = attrs.get('password')
 
+        # Validate email format
         try:
-            user = User.objects.get(email=email)
-        except User.DoesNotExist:
+            django_validate_email(email)
+        except DjangoValidationError:
             raise AuthenticationFailed("Invalid email or password")
 
-        if not user.check_password(password):
+        # Lookup user
+        try:
+            user = User.objects.get(email__iexact=email)
+        except User.DoesNotExist:
+            logging.warning(f"Failed login for email: {email}")
             raise AuthenticationFailed("Invalid email or password")
+
+        # Password check (constant-time)
+        if not user.check_password(password):
+            logging.warning(f"Failed login for email: {email} (bad password)")
+            raise AuthenticationFailed("Invalid email or password")
+
+        # Block inactive accounts
         if not user.is_active:
             raise AuthenticationFailed("Account disabled")
+        # Optionally block unverified accounts
+        if hasattr(user, 'email_verified') and not user.email_verified:
+            raise AuthenticationFailed("Email not verified. Please verify before login.")
+        # Optionally block suspended/banned users
+        if hasattr(user, 'is_banned') and user.is_banned:
+            raise AuthenticationFailed("Account banned. Contact support.")
 
         refresh = RefreshToken.for_user(user)
+        logging.info(f"Successful login for user ID: {user.id}, email: {email}")
+
         return {
             'refresh': str(refresh),
             'access': str(refresh.access_token),
             'user': {
                 'id': user.id,
-                'email': user.email,
+                'email': user.email.lower(),
                 'role': user.role,
                 'first_login': user.first_login
             }
