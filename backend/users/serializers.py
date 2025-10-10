@@ -232,9 +232,30 @@ class ForgotPasswordRequestSerializer(serializers.Serializer):
     email = serializers.EmailField()
 
     def validate_email(self, value):
-        if not User.objects.filter(email=value).exists():
+        email = value.strip().lower()
+
+        # Validate email format
+        try:
+            django_validate_email(email)
+        except DjangoValidationError:
+            raise serializers.ValidationError("Enter a valid email address.")
+
+        # Check user existence, case-insensitive
+        user = User.objects.filter(email__iexact=email).first()
+        if not user:
+            logging.warning(f"Forgot password attempt: no user found for email {email}")
+            # For security, use generic error:
             raise serializers.ValidationError("No user is registered with this email.")
-        return value
+
+        # Optionally block inactive/banned users (good practice)
+        if hasattr(user, 'is_active') and not user.is_active:
+            raise serializers.ValidationError("Account is disabled. Contact support.")
+        if hasattr(user, 'is_banned') and user.is_banned:
+            raise serializers.ValidationError("Account is banned. Contact support.")
+        if hasattr(user, 'email_verified') and not user.email_verified:
+            raise serializers.ValidationError("Email not verified. Please verify before password reset.")
+
+        return email
 
     def save(self):
         email = self.validated_data['email']
@@ -251,18 +272,25 @@ class ForgotPasswordVerifySerializer(serializers.Serializer):
     otp = serializers.CharField(max_length=6, min_length=6)
 
     def validate(self, attrs):
-        email = attrs.get('email')
+        email = attrs.get('email', '').strip().lower()
         otp = attrs.get('otp')
 
-        try:
-            user = User.objects.get(email=email)
-        except User.DoesNotExist:
-            raise serializers.ValidationError("Invalid email.")
+        user = User.objects.filter(email__iexact=email).first()
+        if not user:
+            raise serializers.ValidationError("Invalid email or OTP.")
 
-        if user.otp != otp:
-            raise serializers.ValidationError("Invalid OTP.")
+        # OTP should be 6 digits
+        if not otp.isdigit() or len(otp) != 6:
+            raise serializers.ValidationError("Invalid email or OTP.")
 
-        if timezone.now() - user.otp_created_at > timezone.timedelta(minutes=1):
+        if str(user.otp) != otp:
+            raise serializers.ValidationError("Invalid email or OTP.")
+
+        otp_max_age = 5  # minutes
+        if (
+            not user.otp_created_at or
+            timezone.now() - user.otp_created_at > timezone.timedelta(minutes=otp_max_age)
+        ):
             raise serializers.ValidationError("OTP has expired.")
 
         return attrs

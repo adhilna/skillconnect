@@ -54,20 +54,34 @@ export default function ForgotPasswordPage() {
 
     const formatTime = (sec) => `${Math.floor(sec / 60)}:${(sec % 60).toString().padStart(2, "0")}`;
 
+    const disposableDomains = [
+        'mailinator.com', '10minutemail.com', 'guerrillamail.com'
+    ];
+
     const handleSendOtp = async () => {
         setErrors({});
-        if (!email || !/\S+@\S+\.\S+/.test(email)) {
-            setErrors({ email: "Enter a valid email address" });
+        setSuccess("");
+
+        const normalizedEmail = email ? email.trim().toLowerCase() : "";
+
+        // Validate email format & block disposable
+        if (
+            !normalizedEmail ||
+            !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail) ||
+            disposableDomains.some(domain => normalizedEmail.endsWith('@' + domain))
+        ) {
+            setErrors({ email: "Enter a valid, non-disposable email address" });
             return;
         }
+
         setLoading(true);
         try {
-            await api.post("/api/v1/auth/users/forgot-password/request/", { email });
+            await api.post("/api/v1/auth/users/forgot-password/request/", { email: normalizedEmail });
             setSuccess("OTP sent to your email!");
             setFormStep(1);
             setOtpTimer(300);
         } catch (err) {
-            setErrors(err.response?.data || { email: "Failed to send OTP." });
+            setErrors({ email: err.response?.data?.email || err.response?.data?.detail || "Failed to send OTP." });
         } finally {
             setLoading(false);
         }
@@ -75,21 +89,33 @@ export default function ForgotPasswordPage() {
 
     const handleVerifyOtp = async () => {
         setErrors({});
-        if (!otp || otp.length !== 6) {
+        setSuccess("");
+
+        // Normalize email
+        const normalizedEmail = email ? email.trim().toLowerCase() : "";
+
+        // OTP: 6 digits only
+        if (!otp || otp.length !== 6 || !/^\d{6}$/.test(otp)) {
             setErrors({ otp: "Enter a valid 6-digit OTP" });
             return;
         }
+
         setLoading(true);
         try {
-            await api.post("/api/v1/auth/users/forgot-password/verify/", { email, otp });
+            await api.post("/api/v1/auth/users/forgot-password/verify/", { email: normalizedEmail, otp });
             setSuccess("OTP verified!");
-            setFormStep(2);
+            setFormStep(2); // Next step
         } catch (err) {
-            setErrors(err.response?.data || { otp: "Invalid or expired OTP." });
+            const backendError =
+                err.response?.data?.otp ||
+                err.response?.data?.detail ||
+                "Invalid or expired OTP.";
+            setErrors({ otp: backendError });
         } finally {
             setLoading(false);
         }
     };
+
 
     const handleResetPassword = async () => {
         setErrors({});
