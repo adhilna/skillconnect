@@ -21,3 +21,70 @@ export function validateOtp(otp) {
   if (!otp || otp.length !== 6) return 'Enter a valid 6-digit OTP';
   return '';
 }
+
+// General string validator for cities or countries
+export function validateNonEmptyString(value, fieldName = 'Field', minLen = 3, maxLen = 100) {
+  if (!value || typeof value !== 'string') {
+    return `${fieldName} is required.`;
+  }
+
+  const trimmed = value.trim();
+
+  // Length validation
+  if (trimmed.length < minLen) {
+    return `${fieldName} must be at least ${minLen} characters long.`;
+  }
+
+  if (trimmed.length > maxLen) {
+    return `${fieldName} must be at most ${maxLen} characters long.`;
+  }
+
+  // Allow only letters and single spaces between words
+  const validPattern = /^[A-Za-z]+(?: [A-Za-z]+)*$/;
+  if (!validPattern.test(trimmed)) {
+    return `${fieldName} must contain only letters and single spaces (no symbols, dots, or numbers).`;
+  }
+
+  return null; // ✅ valid
+}
+
+// Age validator
+export function validateAge(value, min = 16, max = 60) {
+  const age = parseInt(value, 10);
+  if (isNaN(age) || age < min || age > max) return `Age must be between ${min} and ${max}.`;
+  return null;
+}
+
+// ---------------------------
+// City validator
+// ---------------------------
+export function validateCity(value) {
+    if (!value || typeof value !== 'string' || !value.trim()) {
+    return "City is required.";
+  }
+  // Cities: min 2 chars, max 64 chars
+  return validateNonEmptyString(value, 'City', 2, 64);
+}
+
+// ---------------------------
+// Country validator
+// ---------------------------
+export function validateCountry(value, allowedCountries = []) {
+  if (!value || typeof value !== 'string' || !value.trim()) {
+    return "Country is required.";
+  }
+
+  const trimmed = value.trim();
+
+  if (allowedCountries.length > 0 && !allowedCountries.includes(trimmed)) {
+    return "Select a valid country.";
+  }
+
+  // Optional: enforce same letters + single space rules
+  const validPattern = /^[A-Za-z]+(?: [A-Za-z]+)*$/;
+  if (!validPattern.test(trimmed)) {
+    return "Country must contain only letters and single spaces (no symbols, dots, or numbers).";
+  }
+
+  return null;
+}

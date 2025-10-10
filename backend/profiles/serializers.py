@@ -7,6 +7,13 @@ from .models import (
     Skill, ClientProfile
 )
 from .constants import ALLOWED_INDUSTRIES, ALLOWED_COMPANY_SIZES
+from core.validators import (
+    validate_non_empty_string,
+    validate_country as country_validator,
+    validate_location as location_validator,
+    validate_age as age_validator,
+)
+
 
 # Supporting serializers
 class SkillSerializer(serializers.ModelSerializer):
@@ -138,7 +145,6 @@ class FreelancerProfileSetupSerializer(serializers.ModelSerializer):
             'created_at': {'read_only': True},
             'updated_at': {'read_only': True},
         }
-
 
     @transaction.atomic
     def create(self, validated_data):
@@ -350,6 +356,24 @@ class FreelancerProfileSetupSerializer(serializers.ModelSerializer):
 
         print("Final profile object:", instance)
         return instance
+
+    def validate_first_name(self, value):
+        return validate_non_empty_string(value, field_name="first name", min_len=2)
+
+    def validate_last_name(self, value):
+        return validate_non_empty_string(value, field_name="last name", min_len=2)
+
+    def validate_country(self, value):
+        return country_validator(value)
+
+    def validate_location(self, value):
+        return location_validator(value)
+
+    def validate_age(self, value):
+        return age_validator(value)
+
+    def validate_about(self, value):
+        return validate_non_empty_string(value, field_name="about", min_len=10, max_len=2000, allow_special=True)
 
 class ClientProfileSetupSerializer(serializers.ModelSerializer):
 

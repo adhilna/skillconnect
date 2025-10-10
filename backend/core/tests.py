@@ -1,6 +1,13 @@
 from rest_framework.test import APITestCase
 from .models import Category, Skill
 from django.urls import reverse
+from .validators import validate_location, validate_country, validate_age
+from rest_framework import status
+from django.contrib.auth import get_user_model
+from profiles.models import FreelancerProfile
+# from profiles.views import COUNTRIES
+
+User = get_user_model()
 
 class CategoryAPITests(APITestCase):
     def setUp(self):
@@ -20,3 +27,65 @@ class CategoryAPITests(APITestCase):
         res = self.client.get(url)
         self.assertEqual(res.status_code, 200)
         self.assertEqual(res.data['name'], "Design")
+
+class FreelancerProfileAPITests(APITestCase):
+
+    def setUp(self):
+        # Create test users
+        u1 = User.objects.create_user(email='john@example.com', password='pw', role="FREELANCER", is_verified=True)
+        self.freelancer1 = FreelancerProfile.objects.create(
+            user=u1,
+            first_name="John",
+            last_name="Doe",
+            location="New York",
+            country="United States",
+            age=30,
+            about="Experienced software developer"
+        )
+
+        # URL for creating/updating FreelancerProfile
+        self.url = '/api/v1/profiles/freelancer/profile-setup/'
+
+        # Authenticate the test client
+        self.client.force_authenticate(user=u1)
+
+    def test_invalid_profile_submission(self):
+        url = reverse('freelancer-profile-list')  # your DRF view name
+        data = {
+            "first_name": "A",                 # too short
+            "last_name": "B@",                  # invalid char
+            "location": "New York123",          # invalid city
+            "country": "U$A",                   # invalid country
+            "age": 10,                          # too low
+            "about": "short"                    # too short
+        }
+
+        response = self.client.post(url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        # Check that all expected fields returned errors
+        self.assertIn('first_name', response.data)
+        self.assertIn('last_name', response.data)
+        self.assertIn('location', response.data)
+        self.assertIn('country', response.data)
+        self.assertIn('age', response.data)
+        self.assertIn('about', response.data)
+
+    def test_valid_profile_submission(self):
+        """
+        Test that valid data passes validation
+        """
+        valid_data = {
+            "first_name": "Alice",
+            "last_name": "Smith",
+            "location": "London",
+            "country": "United Kingdom",
+            "age": 28,
+            "about": "Skilled frontend developer with 5 years experience"
+        }
+
+        response = self.client.post(self.url, valid_data, format='json')
+
+        self.assertIn(response.status_code, [status.HTTP_200_OK, status.HTTP_201_CREATED])
+        self.assertEqual(response.data['first_name'], "Alice")
+        self.assertEqual(response.data['location'], "London")

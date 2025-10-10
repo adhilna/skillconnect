@@ -116,7 +116,6 @@ export default function ForgotPasswordPage() {
         }
     };
 
-
     const handleResetPassword = async () => {
         setErrors({});
         if (newPassword.length < 8) {

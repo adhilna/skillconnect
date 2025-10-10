@@ -14,6 +14,9 @@ import AvailabilityStep from '../components/freelancerProfileSetup/AvailabilityS
 import CompletionStep from '../components/freelancerProfileSetup/CompletionStep';
 import Stepper from '../components/freelancerProfileSetup/Stepper';
 import NavigationButtons from '../components/freelancerProfileSetup/NavigationButtons';
+import { validateNonEmptyString, validateAge, validateCity, validateCountry } from '../../../utils/validation';
+import { allowedCountriesArray } from '../../../utils/constants';
+
 
 
 
@@ -149,6 +152,7 @@ const FreelancerProfileSetup = () => {
         { value: 'advanced', label: 'Advanced' },
         { value: 'native', label: 'Native' },
     ]);
+
 
     const navigate = useNavigate();
 
@@ -426,7 +430,40 @@ const FreelancerProfileSetup = () => {
     const prevStep = () => setFormStep(prev => Math.max(0, prev - 1));
     const nextStep = () => setFormStep(prev => Math.min(steps.length - 1, prev + 1));
     const isLastStep = formStep === steps.length - 1;
-    const handleNext = isLastStep ? handleSubmit : nextStep;
+
+    const handleNext = () => {
+        let errors = {};
+
+        // Example: Validate current step (assume formStep 0 == basic info)
+        if (formStep === 0) {
+            errors.first_name = validateNonEmptyString(freelancerData.first_name, "First Name", 2);
+            errors.last_name = validateNonEmptyString(freelancerData.last_name, "Last Name", 2);
+            errors.country = validateCountry(freelancerData.country, allowedCountriesArray);
+            errors.location = validateCity(freelancerData.location);
+            errors.age = validateAge(freelancerData.age);
+            errors.about = validateNonEmptyString(freelancerData.about, "About/Bio", 10, 2000);
+        }
+        // else if (formStep === 1) { ...validate fields in step 2... }
+        // add other steps...
+
+        // Remove empty errors
+        Object.keys(errors).forEach(key => {
+            if (!errors[key]) delete errors[key];
+        });
+
+        setFieldErrors(errors);
+
+        // If any error, don't proceed
+        if (Object.keys(errors).length > 0) return;
+
+        // If last step, call handleSubmit. Otherwise, proceed to next step.
+        if (isLastStep) {
+            handleSubmit();
+        } else {
+            nextStep();
+        }
+    };
+
 
     // Step component selector
     const getCurrentStepComponent = () => {

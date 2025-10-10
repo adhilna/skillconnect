@@ -6,7 +6,8 @@ FreelancerProfileSetupViewSet,
 city_autocomplete,
 ClientProfileSetupViewSet,
 FreelancerBrowseViewSet,
-ClientBrowseViewSet
+ClientBrowseViewSet,
+country_autocomplete
 )
 
 router = DefaultRouter()
@@ -18,4 +19,5 @@ router.register(r'clients/browse', ClientBrowseViewSet, basename='client-browse'
 urlpatterns = [
     path('', include(router.urls)),
     path('city-autocomplete/', views.city_autocomplete, name='city-autocomplete'),
+    path('country-autocomplete/', views.country_autocomplete, name='country-autocomplete'),
 ]
