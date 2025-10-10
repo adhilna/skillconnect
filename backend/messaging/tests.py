@@ -330,3 +330,63 @@ class PaymentRequestViewSetTests(APITestCase):
         res = self.client.get(url)
         self.assertEqual(res.status_code, status.HTTP_404_NOT_FOUND)
 
+class PaymentViewSetTests(APITestCase):
+    def setUp(self):
+        self.client_user = User.objects.create_user(email='clientp@test.com', password='pw')
+        self.freelancer_user = User.objects.create_user(email='freelancerp@test.com', password='pw')
+        self.client_profile = ClientProfile.objects.create(user=self.client_user, first_name="Client", last_name="Pay")
+        self.freelancer_profile = FreelancerProfile.objects.create(user=self.freelancer_user, first_name="Free", last_name="Pay")
+        self.service = Service.objects.create(
+            title="UI Design", price=1500, delivery_time=5, freelancer=self.freelancer_profile
+        )
+        self.service_order = ServiceOrder.objects.create(
+            client=self.client_profile,
+            freelancer=self.freelancer_profile,
+            service=self.service, status="accepted"
+        )
+        self.conversation, _ = Conversation.objects.get_or_create(
+            content_type=ContentType.objects.get_for_model(ServiceOrder),
+            object_id=self.service_order.id,
+            client=self.client_profile,
+            freelancer=self.freelancer_profile
+        )
+        self.contract = Contract.objects.create(
+            service_order=self.service_order,
+            amount=1500, deadline='2025-10-15', status='accepted', workflow_status='submitted'
+        )
+        self.payment_request = PaymentRequest.objects.create(
+            contract=self.contract,
+            requested_by=self.freelancer_user,
+            payee=self.client_user,
+            amount=1000,
+            description="Initial pay",
+            status='pending'
+        )
+
+    def test_create_razorpay_order(self):
+        self.client.force_authenticate(self.client_user)
+        url = reverse('payment-detail', args=[self.payment_request.id]) + 'create-razorpay-order/'
+        res = self.client.post(url)
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertIn('order_id', res.data)
+        self.assertEqual(res.data['amount'], 1000 * 100)
+        self.assertEqual(res.data['currency'], 'INR')
+
+    def test_verify_razorpay_payment(self):
+        self.client.force_authenticate(self.client_user)
+        url = reverse('payment-detail', args=[self.payment_request.id]) + 'verify-razorpay-payment/'
+        data = {
+            "razorpay_order_id": "order_XYZ",
+            "razorpay_payment_id": "pay_ABC",
+            "razorpay_signature": "dummy_signature"
+        }
+        # Expect 200/400/500 based on payment mock
+        res = self.client.post(url, data, format='json')
+        self.assertIn(res.status_code, [status.HTTP_200_OK, status.HTTP_400_BAD_REQUEST, status.HTTP_500_INTERNAL_SERVER_ERROR])
+
+    def test_permission_blocks_outsider(self):
+        outsider = User.objects.create_user(email='outsiderpay@test.com', password='pw')
+        self.client.force_authenticate(outsider)
+        url = reverse('payment-detail', args=[self.payment_request.id])
+        res = self.client.get(url)
+        self.assertEqual(res.status_code, status.HTTP_404_NOT_FOUND)

@@ -21,6 +21,7 @@ from .permissions import IsPaymentParticipantPermission
 from .pagination import PaymentHistoryPagination
 from .razorpay_client import client
 from django.conf import settings
+from razorpay.errors import SignatureVerificationError
 
 # --- Custom Permission: Only participants can access
 

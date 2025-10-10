@@ -34,7 +34,6 @@ export default function LoginPage() {
   }, []);
 
   const handleSubmit = async (e) => {
-    console.log("Submit triggered");
     e.preventDefault();
     setIsLoading(true);
     try {
