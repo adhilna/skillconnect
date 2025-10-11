@@ -27,9 +27,8 @@ export default function LanguagesStep({
                     <Plus size={16} className="flex-shrink-0" /> Add Language
                 </button>
             </div>
-
-            {fieldErrors.languages && (
-                <p className="text-red-400 text-sm mb-2">{fieldErrors.languages}</p>
+            {fieldErrors.languages && typeof fieldErrors.languages === "string" && (
+                <p className="text-red-500 text-sm mt-1">{fieldErrors.languages}</p>
             )}
 
             {freelancerData.languages.map((lang, index) => (
@@ -60,6 +59,9 @@ export default function LanguagesStep({
                                     </option>
                                 ))}
                             </select>
+                            {fieldErrors.languages?.[index]?.name && (
+                                <p className="text-red-500 text-sm">{fieldErrors.languages[index].name}</p>
+                            )}
                         </div>
 
                         <div>
@@ -76,12 +78,13 @@ export default function LanguagesStep({
                                     </option>
                                 ))}
                             </select>
+                            {fieldErrors.languages?.[index]?.proficiency && (
+                                <p className="text-red-500 text-sm">{fieldErrors.languages[index].proficiency}</p>
+                            )}
                         </div>
                     </div>
                 </div>
             ))}
-
-            {fieldErrors.languages && <p className="text-red-500 text-sm">{fieldErrors.languages}</p>}
         </div>
     );
 };

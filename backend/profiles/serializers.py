@@ -118,6 +118,23 @@ class LanguageSerializer(serializers.ModelSerializer):
             'proficiency': {'required': False, 'allow_null': True},
         }
 
+    def validate_name(self, value):
+        if not value:
+            raise serializers.ValidationError("Language is required.")
+        # Optional: enforce allowed language choices
+        allowed_languages = ['english', 'malayalam', 'spanish', 'french', 'german', 'chinese', 'hindi']
+        if value.lower() not in allowed_languages:
+            raise serializers.ValidationError("Invalid language selected.")
+        return value.lower()
+
+    def validate_proficiency(self, value):
+        if not value:
+            raise serializers.ValidationError("Proficiency level is required.")
+        allowed_levels = ['beginner', 'intermediate', 'advanced', 'native']
+        if value.lower() not in allowed_levels:
+            raise serializers.ValidationError("Invalid proficiency level.")
+        return value.lower()
+
 class PortfolioSerializer(serializers.ModelSerializer):
     class Meta:
         model = Portfolio
@@ -422,6 +439,11 @@ class FreelancerProfileSetupSerializer(serializers.ModelSerializer):
 
     def validate_skills_input(self, value):
         return skills_validator(self, value)
+
+    def validate_languages_input(self, value):
+        if not value or len(value) == 0:
+            raise serializers.ValidationError("At least one language must be added.")
+        return value
 
 class ClientProfileSetupSerializer(serializers.ModelSerializer):
 

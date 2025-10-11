@@ -21,6 +21,7 @@ import {
     validateCountry,
     validateOptionalDateRange,
     validateOptionalYearRange,
+    validateLanguage,
 } from '../../../utils/validation';
 import { allowedCountriesArray } from '../../../utils/constants';
 
@@ -528,6 +529,22 @@ const FreelancerProfileSetup = () => {
             }).filter(Boolean);
             if (errors.educations.length === 0) delete errors.educations;
         }
+        else if (formStep === 2) {
+            if (freelancerData.languages.length === 0) {
+                errors.languages = "Add at least one language.";
+            } else {
+                // Map through languages and get individual errors
+                errors.languages = freelancerData.languages
+                    .map((lang, index) => {
+                        const langErrors = validateLanguage(lang, index); // pass index if needed
+                        return langErrors ? { ...langErrors } : null;
+                    })
+                    .filter(Boolean); // remove nulls
+            }
+            if (errors.languages.length === 0) delete errors.languages; // remove empty array
+        }
+
+
 
         // Remove empty errors
         Object.keys(errors).forEach(key => {

@@ -136,3 +136,17 @@ export const validateOptionalYearRange = (startYear, endYear) => {
   return null;
 };
 
+export const validateLanguage = (lang) => {
+  const allowedLanguages = ['english', 'malayalam', 'spanish', 'french', 'german', 'chinese', 'hindi'];
+  const allowedLevels = ['beginner', 'intermediate', 'advanced', 'native'];
+
+  let errors = {};
+
+  if (!lang.name) errors.name = "Language is required.";
+  else if (!allowedLanguages.includes(lang.name.toLowerCase())) errors.name = "Invalid language selected.";
+
+  if (!lang.proficiency) errors.proficiency = "Proficiency level is required.";
+  else if (!allowedLevels.includes(lang.proficiency.toLowerCase())) errors.proficiency = "Invalid proficiency level.";
+
+  return Object.keys(errors).length > 0 ? errors : null;
+};

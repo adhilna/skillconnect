@@ -150,3 +150,4 @@ def validate_optional_date_range(start_date, end_date=None, ongoing=False):
             raise serializers.ValidationError("End date cannot be earlier than start date.")
 
     return start_date, end_date
+
