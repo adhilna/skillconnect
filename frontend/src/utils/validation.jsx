@@ -23,7 +23,7 @@ export function validateOtp(otp) {
 }
 
 // General string validator for cities or countries
-export function validateNonEmptyString(value, fieldName = 'Field', minLen = 3, maxLen = 100) {
+export function validateNonEmptyString(value, fieldName = 'Field', minLen = 3, maxLen = 255) {
   if (!value || typeof value !== 'string') {
     return `${fieldName} is required.`;
   }
@@ -40,7 +40,7 @@ export function validateNonEmptyString(value, fieldName = 'Field', minLen = 3, m
   }
 
   // Allow only letters and single spaces between words
-  const validPattern = /^[A-Za-z]+(?: [A-Za-z]+)*$/;
+  const validPattern = /^[A-Za-z0-9]+(?: [A-Za-z0-9]+)*$/;
   if (!validPattern.test(trimmed)) {
     return `${fieldName} must contain only letters and single spaces (no symbols, dots, or numbers).`;
   }
@@ -88,3 +88,51 @@ export function validateCountry(value, allowedCountries = []) {
 
   return null;
 }
+
+export const validateOptionalString = (value, fieldName = "Field", minLen = 1, maxLen = 255, allowSpecial = false) => {
+  if (!value || value.trim() === "") {
+    return null; // optional → valid if empty
+  }
+
+  const v = value.trim();
+
+  if (v.length < minLen) {
+    return `${fieldName} must be at least ${minLen} characters long.`;
+  }
+
+  if (v.length > maxLen) {
+    return `${fieldName} must be at most ${maxLen} characters long.`;
+  }
+
+  if (!allowSpecial && !/^[A-Za-z0-9\s-]+$/.test(v)) {
+    return `${fieldName} must contain only letters, numbers, spaces, or hyphens.`;
+  }
+
+  return null;
+};
+
+export const validateOptionalDateRange = (startDate, endDate, ongoing = false) => {
+  if (!startDate) return "Start date is required.";
+
+  const start = new Date(startDate);
+  const end = endDate ? new Date(endDate) : null;
+
+  if (!ongoing && !endDate) {
+    return "End date is required unless marked as ongoing.";
+  }
+
+  if (end && start > end) {
+    return "End date cannot be earlier than start date.";
+  }
+
+  return null;
+};
+
+export const validateOptionalYearRange = (startYear, endYear) => {
+  if (!startYear && !endYear) return null; // optional
+  if (!startYear) return "Start year is required.";
+  if (!endYear) return "End year is required.";
+  if (Number(startYear) > Number(endYear)) return "End year cannot be earlier than start year.";
+  return null;
+};
+

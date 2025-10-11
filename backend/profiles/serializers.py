@@ -9,9 +9,12 @@ from .models import (
 from .constants import ALLOWED_INDUSTRIES, ALLOWED_COMPANY_SIZES
 from core.validators import (
     validate_non_empty_string,
+    validate_optional_string,
+    validate_optional_date_range,
     validate_country as country_validator,
     validate_location as location_validator,
     validate_age as age_validator,
+    validate_skills_input as skills_validator
 )
 
 
@@ -41,6 +44,30 @@ class EducationSerializer(serializers.ModelSerializer):
             return request.build_absolute_uri(obj.certificate.url) if request else obj.certificate.url
         return None
 
+    def validate_college(self, value):
+        return validate_non_empty_string(value, field_name="college")
+
+    def validate_degree(self, value):
+        return validate_non_empty_string(value, field_name="degree")
+
+    # ✅ Combined year validation
+    def validate(self, attrs):
+        start_year = attrs.get("start_year")
+        end_year = attrs.get("end_year")
+
+        if start_year is None and end_year is None:
+            return attrs  # Both are optional
+
+        if start_year is None:
+            raise serializers.ValidationError({"start_year": "Start year is required if end year is provided."})
+        if end_year is None:
+            raise serializers.ValidationError({"end_year": "End year is required if start year is provided."})
+
+        if start_year > end_year:
+            raise serializers.ValidationError({"end_year": "End year cannot be earlier than start year."})
+
+        return attrs
+
 class ExperienceSerializer(serializers.ModelSerializer):
     certificate = serializers.SerializerMethodField(required=False, allow_null=True)
     class Meta:
@@ -63,6 +90,24 @@ class ExperienceSerializer(serializers.ModelSerializer):
         if obj.certificate and hasattr(obj.certificate, 'url'):
             return request.build_absolute_uri(obj.certificate.url) if request else obj.certificate.url
         return None
+
+    def validate_role(self, value):
+        return validate_non_empty_string(value, field_name="role")
+
+    def validate_company(self, value):
+        return validate_non_empty_string(value, field_name="company")
+
+    def validate_description(self, value):
+        return validate_non_empty_string(value, field_name="description", allow_special=True)
+
+    # ✅ Combined date validation
+    def validate(self, attrs):
+        start_date = attrs.get("start_date")
+        end_date = attrs.get("end_date")
+        ongoing = attrs.get("ongoing", False)
+
+        validate_optional_date_range(start_date, end_date, ongoing)
+        return attrs
 
 class LanguageSerializer(serializers.ModelSerializer):
     class Meta:
@@ -374,6 +419,9 @@ class FreelancerProfileSetupSerializer(serializers.ModelSerializer):
 
     def validate_about(self, value):
         return validate_non_empty_string(value, field_name="about", min_len=10, max_len=2000, allow_special=True)
+
+    def validate_skills_input(self, value):
+        return skills_validator(self, value)
 
 class ClientProfileSetupSerializer(serializers.ModelSerializer):
 

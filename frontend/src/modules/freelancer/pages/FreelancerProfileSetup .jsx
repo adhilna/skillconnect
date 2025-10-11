@@ -14,7 +14,14 @@ import AvailabilityStep from '../components/freelancerProfileSetup/AvailabilityS
 import CompletionStep from '../components/freelancerProfileSetup/CompletionStep';
 import Stepper from '../components/freelancerProfileSetup/Stepper';
 import NavigationButtons from '../components/freelancerProfileSetup/NavigationButtons';
-import { validateNonEmptyString, validateAge, validateCity, validateCountry } from '../../../utils/validation';
+import {
+    validateNonEmptyString,
+    validateAge,
+    validateCity,
+    validateCountry,
+    validateOptionalDateRange,
+    validateOptionalYearRange,
+} from '../../../utils/validation';
 import { allowedCountriesArray } from '../../../utils/constants';
 
 
@@ -127,14 +134,67 @@ const FreelancerProfileSetup = () => {
 
     // Mock data for options
     const [availableSkills] = useState([
-        { id: 1, name: 'JavaScript' },
-        { id: 2, name: 'React' },
-        { id: 3, name: 'Node.js' },
-        { id: 4, name: 'Python' },
-        { id: 5, name: 'UI/UX Design' },
-        { id: 6, name: 'GraphQL' },
-        { id: 7, name: 'TypeScript' },
+        // 1. Web Development
+        { id: 1, name: "HTML & CSS" },
+        { id: 2, name: "JavaScript" },
+
+        // 2. Mobile Development
+        { id: 3, name: "Flutter" },
+        { id: 4, name: "React Native" },
+
+        // 3. Writing & Translation
+        { id: 5, name: "Content Writing" },
+        { id: 6, name: "Technical Translation" },
+
+        // 4. Design & Creative
+        { id: 7, name: "Graphic Design" },
+        { id: 8, name: "Adobe Illustrator" },
+
+        // 5. Digital Marketing
+        { id: 9, name: "SEO Optimization" },
+        { id: 10, name: "Social Media Marketing" },
+
+        // 6. Programming & Tech
+        { id: 11, name: "Python" },
+        { id: 12, name: "Java" },
+
+        // 7. Business
+        { id: 13, name: "Project Management" },
+        { id: 14, name: "Business Analysis" },
+
+        // 8. Lifestyle
+        { id: 15, name: "Fitness Coaching" },
+        { id: 16, name: "Personal Development" },
+
+        // 9. Data Science & AI
+        { id: 17, name: "Machine Learning" },
+        { id: 18, name: "Data Visualization" },
+
+        // 10. Video & Animation
+        { id: 19, name: "Video Editing" },
+        { id: 20, name: "3D Animation" },
+
+        // 11. Music & Audio
+        { id: 21, name: "Audio Mixing" },
+        { id: 22, name: "Music Production" },
+
+        // 12. Finance & Accounting
+        { id: 23, name: "Financial Analysis" },
+        { id: 24, name: "Bookkeeping" },
+
+        // 13. Engineering & Architecture
+        { id: 25, name: "AutoCAD Design" },
+        { id: 26, name: "Structural Engineering" },
+
+        // 14. Education & Training
+        { id: 27, name: "Curriculum Design" },
+        { id: 28, name: "E-Learning Development" },
+
+        // 15. Legal
+        { id: 29, name: "Contract Law" },
+        { id: 30, name: "Legal Research" },
     ]);
+
 
     const [languageOptions] = useState([
         { value: 'english', label: 'English' },
@@ -443,8 +503,31 @@ const FreelancerProfileSetup = () => {
             errors.age = validateAge(freelancerData.age);
             errors.about = validateNonEmptyString(freelancerData.about, "About/Bio", 10, 2000);
         }
-        // else if (formStep === 1) { ...validate fields in step 2... }
-        // add other steps...
+        else if (formStep === 1) {
+            errors.skills = (freelancerData.skills.length === 0) ? "Select at least one skill." : null;
+            errors.experiences = freelancerData.experiences.map((exp, index) => {
+                const expErrors = {
+                    role: validateNonEmptyString(exp.role, `Experience Role #${index + 1}`, 0, 100, true),
+                    company: validateNonEmptyString(exp.company, `Experience Company #${index + 1}`, 0, 100, true),
+                    description: validateNonEmptyString(exp.description, `Experience Description #${index + 1}`, 0, 1000, true),
+                    dates: validateOptionalDateRange(exp.start_date, exp.end_date, exp.ongoing)
+                };
+                // remove null fields
+                Object.keys(expErrors).forEach(k => expErrors[k] === null && delete expErrors[k]);
+                return Object.keys(expErrors).length > 0 ? expErrors : null;
+            }).filter(Boolean); // remove null experiences
+            if (errors.experiences.length === 0) delete errors.experiences;
+            errors.educations = freelancerData.educations.map((edu, index) => {
+                const eduErrors = {
+                    college: validateNonEmptyString(edu.college, `College/University #${index + 1}`, 0, 200, true),
+                    degree: validateNonEmptyString(edu.degree, `Degree #${index + 1}`, 0, 100, true),
+                    years: validateOptionalYearRange(edu.start_year, edu.end_year)
+                };
+                Object.keys(eduErrors).forEach(k => eduErrors[k] === null && delete eduErrors[k]);
+                return Object.keys(eduErrors).length > 0 ? eduErrors : null;
+            }).filter(Boolean);
+            if (errors.educations.length === 0) delete errors.educations;
+        }
 
         // Remove empty errors
         Object.keys(errors).forEach(key => {

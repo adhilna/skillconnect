@@ -1,6 +1,7 @@
 from rest_framework import serializers
 import re
 from profiles.constants import COUNTRIES
+from datetime import datetime
 
 def validate_non_empty_string(value, field_name="Field", min_len=1, max_len=255, allow_special=False):
     """
@@ -87,3 +88,65 @@ def validate_country(value: str):
         )
 
     return cleaned
+
+def validate_skills_input(self, value):
+    """
+    Ensure the user selects at least one skill.
+    """
+    if not value or not isinstance(value, list) or len(value) == 0:
+        raise serializers.ValidationError("Select at least one skill.")
+    return value
+
+def validate_optional_string(value, field_name="Field", min_len=1, max_len=255, allow_special=False):
+    """
+    Validates optional string fields.
+    - Allows empty or None values (treated as not provided).
+    - If a value is given, trims and checks length & format.
+    """
+
+    # Skip validation if not provided
+    if not value or not isinstance(value, str) or not value.strip():
+        return None  # Return None so serializer can treat it as blank
+
+    v = value.strip()
+
+    if len(v) < min_len:
+        raise serializers.ValidationError(f"{field_name.capitalize()} must be at least {min_len} characters long.")
+    if len(v) > max_len:
+        raise serializers.ValidationError(f"{field_name.capitalize()} must be at most {max_len} characters long.")
+
+    if not allow_special:
+        if not re.fullmatch(r"^[A-Za-z]+(?:[-' ][A-Za-z]+)*$", v):
+            raise serializers.ValidationError(
+                f"{field_name.capitalize()} must contain only letters, numbers, spaces, or hyphens."
+            )
+
+    return v
+
+def validate_optional_date_range(start_date, end_date=None, ongoing=False):
+    """
+    Validates optional start/end date fields.
+    - start_date: required
+    - end_date: required unless ongoing=True
+    - Ensures start_date <= end_date
+    """
+    if not start_date:
+        raise serializers.ValidationError("Start date is required.")
+
+    try:
+        start = datetime.strptime(str(start_date), "%Y-%m-%d").date()
+    except ValueError:
+        raise serializers.ValidationError("Start date must be a valid date (YYYY-MM-DD).")
+
+    if not ongoing:
+        if not end_date:
+            raise serializers.ValidationError("End date is required unless marked as ongoing.")
+        try:
+            end = datetime.strptime(str(end_date), "%Y-%m-%d").date()
+        except ValueError:
+            raise serializers.ValidationError("End date must be a valid date (YYYY-MM-DD).")
+
+        if start > end:
+            raise serializers.ValidationError("End date cannot be earlier than start date.")
+
+    return start_date, end_date
