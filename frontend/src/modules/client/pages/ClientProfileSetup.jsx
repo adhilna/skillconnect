@@ -9,6 +9,8 @@ import ProjectNeedsStep from '../components/clientProfileSetup/ProjectNeedsStep'
 import BudgetPaymentStep from '../components/clientProfileSetup/BudgetPaymentStep';
 import CompletionStep from '../components/clientProfileSetup/CompletionStep';
 import NavigationButtons from '../components/clientProfileSetup/NavigationButtons';
+import { validateCity, validateCountry } from '../../../utils/validation';
+import { allowedCountriesArray } from '../../../utils/constants';
 
 // Utility function to map frontend state to backend field names
 function mapClientFrontendToBackend(frontendData) {
@@ -67,16 +69,12 @@ export default function ClientProfileSetup() {
         projectTypes: [],
         budgetRange: '',
         projectFrequency: '',
-        preferredCommunication: [],
         workingHours: '',
         businessGoals: [],
         currentChallenges: [],
-        previousExperiences: '',
 
         // Payment & Budget
         paymentMethod: '',
-        monthlyBudget: '',
-        projectBudget: '',
         paymentTiming: '',
         expectedTimeline: '',
         qualityImportance: '',
@@ -108,8 +106,12 @@ export default function ClientProfileSetup() {
     ];
 
     const budgetRanges = [
-        'Under $500', '$500 - $1,000', '$1,000 - $5,000',
-        '$5,000 - $10,000', '$10,000 - $25,000', '$25,000+'
+        'Under ₹500',
+        '₹500 - ₹1,000',
+        '₹1,000 - ₹5,000',
+        '₹5,000 - ₹10,000',
+        '₹10,000 - ₹25,000',
+        '₹25,000+'
     ];
 
     const businessGoals = [
@@ -122,10 +124,6 @@ export default function ClientProfileSetup() {
         'Limited technical expertise', 'Tight deadlines', 'Budget constraints',
         'Finding reliable freelancers', 'Communication barriers', 'Quality control',
         'Project management', 'Time zone differences', 'Scope creep'
-    ];
-
-    const communicationMethods = [
-        'Email', 'Slack', 'WhatsApp', 'Zoom', 'Skype', 'Microsoft Teams', 'Phone calls'
     ];
 
     const navigate = useNavigate();
@@ -165,6 +163,7 @@ export default function ClientProfileSetup() {
 
     const validateStep = () => {
         const newErrors = {};
+        console.log("Step", formStep, "newErrors:", newErrors);
 
         switch (formStep) {
             case 0:
@@ -185,16 +184,37 @@ export default function ClientProfileSetup() {
                 if (clientData.accountType === 'business' && !clientData.companyName) {
                     newErrors.companyName = 'Company name is required for business accounts';
                 }
-                if (!clientData.location) newErrors.location = 'Location is required';
+                if (!clientData.country) {
+                    newErrors.country = 'Country is required';
+                } else {
+                    const countryError = validateCountry(clientData.country, allowedCountriesArray);
+                    if (countryError) newErrors.country = countryError;
+                }
+
+                // Location validation
+                if (!clientData.location) {
+                    newErrors.location = 'Location is required';
+                } else {
+                    const locationError = validateCity(clientData.location);
+                    if (locationError) newErrors.location = locationError;
+                }
                 if (clientData.website && clientData.website.trim() !== '' && !clientData.website.startsWith('http://') && !clientData.website.startsWith('https://')) {
                     newErrors.website = 'Website must start with http:// or https://';
                 }
-                if (clientData.industry && !industries.includes(clientData.industry)) {
+                if (!clientData.industry) {
+                    newErrors.industry = 'Industry is required';
+                } else if (!industries.includes(clientData.industry)) {
                     newErrors.industry = `Industry must be one of: ${industries.join(', ')}`;
                 }
-                if (clientData.companySize && !companySizes.includes(clientData.companySize)) {
+                if (!clientData.companySize) {
+                    newErrors.companySize = 'Company size is required';
+                } else if (!companySizes.includes(clientData.companySize)) {
                     newErrors.companySize = `Company size must be one of: ${companySizes.join(', ')}`;
                 }
+                if (!clientData.companyDescription) {
+                    newErrors.companyDescription = 'Company description is required';
+                }
+
                 break;
             case 2:
                 if (!clientData.projectTypes || clientData.projectTypes.length === 0)
@@ -203,26 +223,18 @@ export default function ClientProfileSetup() {
                     newErrors.budgetRange = 'Budget range is required.';
                 if (!clientData.projectFrequency)
                     newErrors.projectFrequency = 'Project frequency is required.';
-                if (!clientData.preferredCommunication || clientData.preferredCommunication.length === 0)
-                    newErrors.preferredCommunication = 'Select at least one communication method.';
                 if (!clientData.workingHours)
                     newErrors.workingHours = 'Working hours preference is required.';
+                if (!clientData.businessGoals || clientData.businessGoals.length === 0)
+                    newErrors.businessGoals = 'Please select at least one business goal.';
+                if (!clientData.currentChallenges || clientData.currentChallenges.length === 0)
+                    newErrors.currentChallenges = 'Please select at least one challenge.';
                 break;
             case 3:
                 if (!clientData.paymentMethod) newErrors.paymentMethod = 'Payment method is required';
-                else if (!['credit-card', 'debit-card', 'paypal', 'bank-transfer', 'stripe', ''].includes(clientData.paymentMethod)) {
-                    newErrors.paymentMethod = 'Payment method must be one of: credit-card, debit-card, paypal, bank-transfer, stripe';
-                }
-                if (clientData.monthlyBudget !== undefined && clientData.monthlyBudget !== null && clientData.monthlyBudget < 0) {
-                    newErrors.monthlyBudget = 'Monthly budget must be positive';
-                }
-                if (clientData.projectBudget !== undefined && clientData.projectBudget !== null && clientData.projectBudget < 0) {
-                    newErrors.projectBudget = 'Project budget must be positive';
-                }
                 if (!clientData.paymentTiming) newErrors.paymentTiming = 'Payment timing is required';
-                else if (!['upfront', 'milestone-based', 'upon-completion', 'monthly'].includes(clientData.paymentTiming)) {
-                    newErrors.paymentTiming = 'Payment timing must be one of: upfront, milestone-based, upon-completion, monthly';
-                }
+                if (!clientData.expectedTimeline) newErrors.expectedTimeline = 'Expected timeline is required';
+                if (!clientData.qualityImportance) newErrors.qualityImportance = 'This field is required';
                 break;
             default:
                 break;
@@ -233,6 +245,7 @@ export default function ClientProfileSetup() {
     };
 
     const handleNext = () => {
+        console.log("clientData last step:", clientData);
         if (validateStep()) {
             if (formStep < steps.length - 1) {
                 nextStep();
@@ -352,7 +365,6 @@ export default function ClientProfileSetup() {
                 errors={errors}
                 projectTypes={projectTypes}
                 budgetRanges={budgetRanges}
-                communicationMethods={communicationMethods}
                 businessGoals={businessGoals}
                 challenges={challenges}
                 handleArrayInput={handleArrayInput}

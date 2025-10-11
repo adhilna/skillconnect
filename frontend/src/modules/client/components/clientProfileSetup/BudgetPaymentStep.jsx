@@ -12,42 +12,6 @@ export default function BudgetPaymentStep({
                 <p className="text-white/70">Set up your payment preferences</p>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-                <div>
-                    <label htmlFor="monthlyBudget" className="block text-white/80 text-sm font-medium mb-2">
-                        Monthly Budget (USD)
-                    </label>
-                    <input
-                        id="monthlyBudget"
-                        type="number"
-                        min="0"
-                        name="monthlyBudget"
-                        value={clientData?.monthlyBudget || ''}
-                        onChange={handleInputChange}
-                        className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder:text-white/50 focus:outline-none focus:border-green-400 transition-colors"
-                        placeholder="5000"
-                    />
-                    {errors.monthlyBudget && <p className="text-red-400 text-sm mt-1">{errors.monthlyBudget}</p>}
-                </div>
-
-                <div>
-                    <label htmlFor="projectBudget" className="block text-white/80 text-sm font-medium mb-2">
-                        Per Project Budget (USD)
-                    </label>
-                    <input
-                        id="projectBudget"
-                        type="number"
-                        min="0"
-                        name="projectBudget"
-                        value={clientData?.projectBudget || ''}
-                        onChange={handleInputChange}
-                        className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder:text-white/50 focus:outline-none focus:border-green-400 transition-colors"
-                        placeholder="1000"
-                    />
-                    {errors.projectBudget && <p className="text-red-400 text-sm mt-1">{errors.projectBudget}</p>}
-                </div>
-            </div>
-
             <div>
                 <label htmlFor="paymentMethod" className="block text-white/80 text-sm font-medium mb-2">
                     Preferred Payment Method
@@ -61,7 +25,7 @@ export default function BudgetPaymentStep({
                 >
                     <option value="" className="bg-gray-800">Select payment method</option>
                     <option value="credit-card" className="bg-gray-800">Credit Card</option>
-                    <option value="debit-card" className="bg-gray-800">Debit Card</option>
+                    <option value="debit-card" className="bg-gray-800">RazorPay</option>
                     <option value="paypal" className="bg-gray-800">PayPal</option>
                     <option value="bank-transfer" className="bg-gray-800">Bank Transfer</option>
                     <option value="stripe" className="bg-gray-800">Stripe</option>
@@ -87,26 +51,6 @@ export default function BudgetPaymentStep({
                     <option value="monthly" className="bg-gray-800">Monthly payments</option>
                 </select>
                 {errors.paymentTiming && <p className="text-red-400 text-sm mt-1">{errors.paymentTiming}</p>}
-            </div>
-
-            <div>
-                <label htmlFor="previousExperience" className="block text-white/80 text-sm font-medium mb-2">
-                    Previous Experience with Freelancers
-                </label>
-                <select
-                    id="previousExperience"
-                    name="previousExperience"
-                    value={clientData?.previousExperience || ''}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:border-green-400 transition-colors"
-                >
-                    <option value="" className="bg-gray-800">Select your experience level</option>
-                    <option value="first-time" className="bg-gray-800">This is my first time hiring</option>
-                    <option value="some" className="bg-gray-800">I&#39;ve hired 1-5 freelancers</option>
-                    <option value="experienced" className="bg-gray-800">I&apos;ve hired 6-20 freelancers</option>
-                    <option value="very-experienced" className="bg-gray-800">I&apos;ve hired 20+ freelancers</option>
-                </select>
-                {errors.previousExperience && <p className="text-red-400 text-sm mt-1">{errors.previousExperience}</p>}
             </div>
 
             <div>

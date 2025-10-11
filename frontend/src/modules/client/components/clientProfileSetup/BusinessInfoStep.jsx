@@ -1,6 +1,7 @@
 import React from 'react';
 import { User, Upload } from 'lucide-react';
 import CityAutocomplete from '../../../../components/Shared/CityAutoComplete';
+import CountryAutocomplete from '../../../../components/Shared/CountryAutocomplete';
 
 export default function ProfileInfoStep({
     clientData,
@@ -76,15 +77,12 @@ export default function ProfileInfoStep({
             <div className="grid grid-cols-2 gap-4">
                 <div>
                     <label className="block text-white/80 text-sm font-medium mb-2">Country</label>
-                    <input
-                        type="text"
-                        name="country"
+                    <CountryAutocomplete
                         value={clientData.country}
                         onChange={handleInputChange}
-                        className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder:text-white/50 focus:outline-none focus:border-green-400 transition-colors"
-                        placeholder="Country"
+                        onBlur={() => { }}
+                        errors={errors}
                     />
-                    {errors.country && <p className="text-red-400 text-sm mt-1">{errors.country}</p>}
                 </div>
                 <div>
                     <label className="block text-white/80 text-sm font-medium mb-2">Location</label>
@@ -127,6 +125,7 @@ export default function ProfileInfoStep({
                                     <option key={industry} value={industry} className="bg-gray-800">{industry}</option>
                                 ))}
                             </select>
+                            {errors.industry && <p className="text-red-400 text-sm mt-1">{errors.industry}</p>}
                         </div>
                         <div>
                             <label className="block text-white/80 text-sm font-medium mb-2">Company Size</label>
@@ -141,6 +140,7 @@ export default function ProfileInfoStep({
                                     <option key={size} value={size} className="bg-gray-800">{size}</option>
                                 ))}
                             </select>
+                            {errors.companySize && <p className="text-red-400 text-sm mt-1">{errors.companySize}</p>}
                         </div>
                     </div>
                 </>
@@ -159,6 +159,7 @@ export default function ProfileInfoStep({
                     className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder:text-white/50 focus:outline-none focus:border-green-400 transition-colors"
                     placeholder={isBusiness ? "https://www.company.com" : "https://yourportfolio.com"}
                 />
+                {errors.website && <p className="text-red-400 text-sm mt-1">{errors.website}</p>}
             </div>
 
             {/* Description */}
@@ -177,6 +178,7 @@ export default function ProfileInfoStep({
                         : "Tell us about yourself and your needs..."
                     }
                 />
+                {errors.companyDescription && <p className="text-red-400 text-sm mt-1">{errors.companyDescription}</p>}
             </div>
         </div>
     );

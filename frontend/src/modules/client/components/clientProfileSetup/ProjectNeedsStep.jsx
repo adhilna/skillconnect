@@ -5,7 +5,6 @@ export default function ProjectNeedsStep({
     errors,
     projectTypes,
     budgetRanges,
-    communicationMethods,
     businessGoals,
     challenges,
     handleArrayInput,
@@ -68,24 +67,7 @@ export default function ProjectNeedsStep({
                         <option value="quarterly" className="bg-gray-800">Quarterly</option>
                         <option value="annually" className="bg-gray-800">Annually</option>
                     </select>
-                </div>
-            </div>
-
-            <div>
-                <label className="block text-white/80 text-sm font-medium mb-3">Preferred Communication Methods</label>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                    {communicationMethods.map(method => (
-                        <div
-                            key={method}
-                            onClick={() => handleArrayInput('preferredCommunication', method)}
-                            className={`p-3 rounded-lg border cursor-pointer transition-all text-sm text-center transform hover:scale-105 ${clientData.preferredCommunication.includes(method)
-                                ? 'border-blue-500 bg-blue-500/20 text-blue-300 shadow-lg shadow-blue-500/20'
-                                : 'border-white/20 bg-white/5 text-white hover:bg-white/10'
-                                }`}
-                        >
-                            {method}
-                        </div>
-                    ))}
+                    {errors.projectFrequency && <p className="text-red-400 text-sm mt-1">{errors.projectFrequency}</p>}
                 </div>
             </div>
 
@@ -103,6 +85,7 @@ export default function ProjectNeedsStep({
                     <option value="24-7" className="bg-gray-800">24/7 availability needed</option>
                     <option value="overlap" className="bg-gray-800">Some timezone overlap required</option>
                 </select>
+                {errors.workingHours && <p className="text-red-400 text-sm mt-1">{errors.workingHours}</p>}
             </div>
 
             <div>
@@ -120,6 +103,7 @@ export default function ProjectNeedsStep({
                             {goal}
                         </div>
                     ))}
+                    {errors.businessGoals && <p className="text-red-400 text-sm mt-1">{errors.businessGoals}</p>}
                 </div>
             </div>
 
@@ -138,6 +122,7 @@ export default function ProjectNeedsStep({
                             {challenge}
                         </div>
                     ))}
+                    {errors.currentChallenges && <p className="text-red-400 text-sm mt-1">{errors.currentChallenges}</p>}
                 </div>
             </div>
         </div>

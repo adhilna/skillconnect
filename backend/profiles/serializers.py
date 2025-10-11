@@ -558,11 +558,25 @@ class ClientProfileSetupSerializer(serializers.ModelSerializer):
 
     def validate(self, attrs):
         account_type = attrs.get('account_type')
-        if account_type == 'business':
-            if not attrs.get('company_name'):
-                raise serializers.ValidationError({'company_name': 'Company name is required for business accounts.'})
-        # Add more conditional validation as needed
+        errors = {}
+        if account_type == 'business' and not attrs.get('company_name'):
+            errors['company_name'] = 'Company name is required for business accounts.'
+
+        if errors:
+            raise serializers.ValidationError(errors)
         return attrs
+
+    def validate_first_name(self, value):
+        return validate_non_empty_string(value, field_name="first name", min_len=2)
+
+    def validate_last_name(self, value):
+        return validate_non_empty_string(value, field_name="last name", min_len=2)
+
+    def validate_country(self, value):
+        return country_validator(value)
+
+    def validate_location(self, value):
+        return location_validator(value)
 
 class FreelancerPublicMinimalSerializer(serializers.ModelSerializer):
     skills = SkillSerializer(many=True, read_only=True, default=list)
