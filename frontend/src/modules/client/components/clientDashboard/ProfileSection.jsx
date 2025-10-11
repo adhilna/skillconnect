@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Plus, X, User, Shield, Target, Users, DollarSign, Briefcase, Edit3, Save, Award, CreditCard } from "react-feather";
 
 // EditableField: Handles text, select, and textarea fields
@@ -157,11 +157,17 @@ const ProfileSection = ({
 }) => {
   // Local state for new array values
   const [newProjectType, setNewProjectType] = useState("");
-  const [newCommunicationMethod, setNewCommunicationMethod] = useState("");
+  // const [newCommunicationMethod, setNewCommunicationMethod] = useState("");
   const [newBusinessGoal, setNewBusinessGoal] = useState("");
   const [newChallenge, setNewChallenge] = useState("");
   // State for active tab
   const [activeTab, setActiveTab] = useState('basicInfo');
+  const [profilePictureFile, setProfilePictureFile] = useState(null);
+
+  useEffect(() => {
+    if (!isEditing) setProfilePictureFile(null);
+  }, [isEditing]);
+
 
   // Predefined options
   const accountTypes = ["business", "individual", "enterprise"];
@@ -298,19 +304,54 @@ const ProfileSection = ({
             <div className="lg:col-span-1">
               <div className="bg-white/5 rounded-2xl border border-white/10 p-6">
                 <div className="text-center mb-6">
-                  <div className="w-20 h-20 bg-gradient-to-r from-blue-400 to-cyan-400 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg overflow-hidden">
-                    {profileData?.profile_picture ? (
-                      <img
-                        src={profileData.profile_picture}
-                        alt="Profile"
-                        className="w-full h-full object-cover"
-                        onError={(e) => {
-                          e.target.style.display = 'none';
-                          e.target.nextSibling.style.display = 'flex';
-                        }}
-                      />
-                    ) : null}
-                    <User size={32} className={`${profileData?.profile_picture ? 'hidden' : 'text-white'}`} />
+                  <div className="w-20 h-20 bg-gradient-to-r from-blue-400 to-cyan-400 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg overflow-hidden relative group">
+                    {isEditing ? (
+                      <>
+                        {profilePictureFile ? (
+                          <img
+                            src={URL.createObjectURL(profilePictureFile)}
+                            alt="Profile Preview"
+                            className="w-full h-full object-cover"
+                          />
+                        ) : profileData?.profile_picture ? (
+                          <img
+                            src={profileData.profile_picture}
+                            alt="Profile"
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <User size={32} className="text-white" />
+                        )}
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="absolute inset-0 opacity-0 cursor-pointer"
+                          onChange={e => {
+                            const file = e.target.files[0];
+                            if (file) {
+                              setProfilePictureFile(file);
+                              onInputChange("profile_picture", file);
+                            }
+                          }}
+                          title="Change profile picture"
+                        />
+                        <div className="absolute bottom-1 right-1 bg-blue-600/80 p-1 rounded-full pointer-events-none">
+                          <Edit3 size={14} className="text-white" />
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        {profileData?.profile_picture ? (
+                          <img
+                            src={profileData.profile_picture}
+                            alt="Profile"
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <User size={32} className="text-white" />
+                        )}
+                      </>
+                    )}
                   </div>
 
                   <h4 className="text-xl font-semibold text-white">{profileData.company_name || 'N/A'}</h4>
@@ -469,17 +510,6 @@ const ProfileSection = ({
                     onChange={onInputChange}
                   />
                 </div>
-                <EditableArrayField
-                  label="Preferred Communication"
-                  field="preferred_communications"
-                  items={profileData.preferred_communications}
-                  newValue={newCommunicationMethod}
-                  setNewValue={setNewCommunicationMethod}
-                  isEditing={isEditing}
-                  onArrayAdd={onArrayAdd}
-                  onArrayRemove={onArrayRemove}
-                  placeholder="Add communication method"
-                />
               </div>
             </div>
           </div>
@@ -537,22 +567,6 @@ const ProfileSection = ({
                   value={profileData.payment_method}
                   field="payment_method"
                   options={paymentMethods}
-                  isEditing={isEditing}
-                  onChange={onInputChange}
-                />
-                <EditableField
-                  label="Monthly Budget"
-                  value={profileData.monthly_budget}
-                  field="monthly_budget"
-                  type="number"
-                  isEditing={isEditing}
-                  onChange={onInputChange}
-                />
-                <EditableField
-                  label="Project Budget"
-                  value={profileData.project_budget}
-                  field="project_budget"
-                  type="number"
                   isEditing={isEditing}
                   onChange={onInputChange}
                 />

@@ -283,13 +283,10 @@ export default function ClientProfileSetup() {
             formData.append('expected_timeline', backendData.expected_timeline || '');
             formData.append('quality_importance', backendData.quality_importance || '');
             formData.append('payment_method', backendData.payment_method || '');
-            formData.append('monthly_budget', backendData.monthly_budget || '');
-            formData.append('project_budget', backendData.project_budget || '');
             formData.append('payment_timing', backendData.payment_timing || '');
 
             // 3. Append arrays/multi-selects as JSON strings
             formData.append('project_types', JSON.stringify(backendData.project_types || []));
-            formData.append('preferred_communications', JSON.stringify(backendData.preferred_communications || []));
             formData.append('business_goals', JSON.stringify(backendData.business_goals || []));
             formData.append('current_challenges', JSON.stringify(backendData.current_challenges || []));
 
@@ -401,14 +398,10 @@ export default function ClientProfileSetup() {
                                 projectTypes: [],
                                 budgetRange: '',
                                 projectFrequency: '',
-                                preferredCommunication: [],
                                 workingHours: '',
                                 businessGoals: [],
                                 currentChallenges: [],
-                                previousExperiences: '',
                                 paymentMethod: '',
-                                monthlyBudget: '',
-                                projectBudget: '',
                                 paymentTiming: '',
                                 expectedTimeline: '',
                                 qualityImportance: '',

@@ -237,7 +237,6 @@ const mapBackendToFrontend = (data) => ({
   social_links: data.social_links_output || {}
 });
 
-
 // Main ProfileSection Component
 const ProfileSection = () => {
   const [profileData, setProfileData] = useState(null);

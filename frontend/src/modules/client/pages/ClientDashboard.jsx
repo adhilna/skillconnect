@@ -285,6 +285,7 @@ const ClientDashboard = () => {
         formData.append("account_type", editData.account_type || "");
         formData.append("company_name", editData.company_name || "");
         formData.append("company_description", editData.company_description || "");
+        formData.append("company_size", editData.company_size || "");
         formData.append("country", editData.country || "");
         formData.append("location", editData.location || "");
         formData.append("website", editData.website || "");
