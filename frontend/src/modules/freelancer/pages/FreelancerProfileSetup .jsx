@@ -14,6 +14,7 @@ import AvailabilityStep from '../components/freelancerProfileSetup/AvailabilityS
 import CompletionStep from '../components/freelancerProfileSetup/CompletionStep';
 import Stepper from '../components/freelancerProfileSetup/Stepper';
 import NavigationButtons from '../components/freelancerProfileSetup/NavigationButtons';
+import { useToast } from '../../../hooks/useToast';
 import {
     validateNonEmptyString,
     validateAge,
@@ -105,7 +106,7 @@ const FreelancerProfileSetup = () => {
         country: '',
         location: '',
         age: '',
-        is_available: false,
+        is_available: true,
         profile_picture: null,
         profile_picture_preview: null,
         skills: [],
@@ -121,7 +122,7 @@ const FreelancerProfileSetup = () => {
             instagram_url: '',
         },
         verification: {
-            email_verified: false,
+            email_verified: true,
             phone_verified: false,
             id_verified: false,
             video_verified: false,
@@ -133,6 +134,7 @@ const FreelancerProfileSetup = () => {
     const [ERRORS, setErrors] = useState(null);
     const [fieldErrors, setFieldErrors] = useState({});
     const [isCompleted, setIsCompleted] = useState(false);
+    const { success } = useToast();
 
     // Mock data for options
     const [availableSkills] = useState([
@@ -382,14 +384,12 @@ const FreelancerProfileSetup = () => {
         }));
     };
 
-    const handleVerificationChange = (field, value) => {
-        setFreelancerData(prev => ({
-            ...prev,
-            verification: {
-                ...prev.verification,
-                [field]: value
-            }
-        }));
+    const handleVerificationChange = (field) => {
+        if (field === 'email_verified') {
+        // Already verified, no action needed
+        return;
+    }
+        success('This feature will come soon!');
     };
 
     // Submission logic

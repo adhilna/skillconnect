@@ -85,7 +85,7 @@ class Verification(models.Model):
 
     def __str__(self):
         return f"Verification for {self.user.username}"
-    
+
     class Meta:
         indexes = [
             models.Index(fields=['user']),
