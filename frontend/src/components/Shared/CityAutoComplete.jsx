@@ -12,6 +12,7 @@ function CityAutocomplete({ value, onChange, onBlur, errors }) {
             fetch(`http://localhost:8000/api/v1/profiles/city-autocomplete/?q=${input}`)
                 .then(res => res.json())
                 .then(data => {
+                    data = data.filter(city => city.name !== input);
                     // Sort suggestions alphabetically by city name
                     data.sort((a, b) => a.name.localeCompare(b.name));
                     setSuggestions(data);
@@ -32,6 +33,7 @@ function CityAutocomplete({ value, onChange, onBlur, errors }) {
         setInput(city.name);
         onChange({ target: { name: 'location', value: city.name } });
         setShowSuggestions(false);
+        setSuggestions([]);
     };
 
     const handleChange = (e) => {
@@ -66,11 +68,11 @@ function CityAutocomplete({ value, onChange, onBlur, errors }) {
             />
             {errors && errors.location && <p className="text-red-400 text-sm mt-1">{errors.location}</p>}
             {showSuggestions && suggestions.length > 0 && (
-                <ul className="absolute z-10 w-full mt-1 bg-gray-800 border border-white/20 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                <ul className="absolute z-10 w-full mt-1 bg-black border border-white/20 rounded-lg shadow-lg max-h-60 overflow-y-auto">
                     {suggestions.map((city) => (
                         <li
                             key={city.id}
-                            className="px-4 py-2 hover:bg-gray-700 cursor-pointer text-white"
+                            className="px-4 py-2 hover:bg-gray-900 cursor-pointer text-white"
                             onClick={() => handleSelect(city)}
                         >
                             {city.name}

@@ -584,10 +584,6 @@ const FreelancerProfileSetup = () => {
             }
         }
 
-
-
-
-
         // Remove empty errors
         Object.keys(errors).forEach(key => {
             if (!errors[key]) delete errors[key];

@@ -84,18 +84,23 @@ class RegisterSerializer(serializers.ModelSerializer):
         value = value.strip().lower()
 
         email_regex = re.compile(
-            r"(^[-!#$%&'*+/0-9=?A-Z^_`a-z{|}~]+(?:\.[-!#$%&'*+/0-9=?A-Z^_`a-z{|}~]+)*"
-            r'|^"([!#-[\]-~]|(\\[\t -~]))+"@)'
-            r"([A-Z0-9a-z][A-Z0-9a-z-]{0,61}[A-Z0-9a-z]\.)+([A-Za-z]{2,})$"
+            r"(^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$)"
         )
+
         if not email_regex.match(value):
             raise serializers.ValidationError(_("Email format is invalid."))
 
         if not advanced_email_check(value):
             raise serializers.ValidationError(_("Disposable email addresses are not allowed."))
 
-        if User.objects.filter(email__iexact=value).exists():
-            raise serializers.ValidationError(_("This email is already registered."))
+        # ✅ If verified, block; if not, allow (and optionally delete old)
+        existing_user = User.objects.filter(email__iexact=value).first()
+        if existing_user:
+            if existing_user.is_verified:
+                raise serializers.ValidationError(_("This email is already registered."))
+            else:
+            # Optional cleanup: delete unverified stale accounts
+                existing_user.delete()
         return value
 
     def save(self):
@@ -103,17 +108,24 @@ class RegisterSerializer(serializers.ModelSerializer):
         Save registration data temporarily in cache with OTP.
         """
         data = self.validated_data
-        otp = generate_otp()
-        # Save in cache: key = email, value = dict(password, role, otp)
-        cache.set(f"register:{data['email']}", {
-            "password": data['password'],
-            "role": data['role'],
-            "otp": otp
-        }, timeout=5*60)  # OTP valid 5 mins
+        cache_key = f"register:{data['email']}"
 
-        # Send OTP asynchronously
-        send_otp_email_task.delay(data['email'], otp)
-        return {"email": data['email'], "otp_sent": True}
+        # Check if OTP already sent
+        existing = cache.get(cache_key)
+        if existing:
+            otp = existing["otp"]  # Reuse the same OTP
+        else:
+            otp = generate_otp()
+            cache.set(cache_key, {
+                "password": data["password"],
+                "role": data["role"],
+                "otp": otp
+            }, timeout=5 * 60)  # OTP valid 5 mins
+
+        # Always re-send OTP (useful if user reloads or lost the code)
+        send_otp_email_task.delay(data["email"], otp)
+
+        return {"email": data["email"], "otp_sent": True}
 
 class LoginSerializer(serializers.Serializer):
     email = serializers.EmailField(required=True)

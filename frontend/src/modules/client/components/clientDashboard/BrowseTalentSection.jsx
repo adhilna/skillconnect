@@ -312,4 +312,3 @@ const BrowseTalentSection = ({ preloadedFreelancers = [], loading }) => {
 };
 
 export default BrowseTalentSection;
-

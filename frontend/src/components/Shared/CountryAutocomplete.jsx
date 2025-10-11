@@ -12,6 +12,7 @@ function CountryAutocomplete({ value, onChange, onBlur, errors }) {
                 fetch(`http://localhost:8000/api/v1/profiles/country-autocomplete/?q=${input}`)
                     .then(res => res.json())
                     .then(data => {
+                        data = data.filter(country => country.name !== input);
                         // Sort alphabetically
                         data.sort((a, b) => a.name.localeCompare(b.name));
                         setSuggestions(data);
@@ -31,6 +32,7 @@ function CountryAutocomplete({ value, onChange, onBlur, errors }) {
         setInput(country.name);
         onChange({ target: { name: 'country', value: country.name } });
         setShowSuggestions(false);
+        setSuggestions([]);
     };
 
     const handleChange = (e) => {
@@ -67,11 +69,11 @@ function CountryAutocomplete({ value, onChange, onBlur, errors }) {
                 <p className="text-red-400 text-sm mt-1">{errors.country}</p>
             )}
             {showSuggestions && suggestions.length > 0 && (
-                <ul className="absolute z-10 w-full mt-1 bg-gray-800 border border-white/20 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                <ul className="absolute z-10 w-full mt-1 bg-black border border-white/20 rounded-lg shadow-lg max-h-60 overflow-y-auto">
                     {suggestions.map((country) => (
                         <li
                             key={country.id}
-                            className="px-4 py-2 hover:bg-gray-700 cursor-pointer text-white"
+                            className="px-4 py-2 hover:bg-gray-900 cursor-pointer text-white"
                             onClick={() => handleSelect(country)}
                         >
                             {country.name}

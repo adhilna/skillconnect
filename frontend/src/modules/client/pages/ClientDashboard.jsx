@@ -213,7 +213,11 @@ const ClientDashboard = () => {
             setLoadingFreelancers(true);
             try {
                 const res = await api.get('/api/v1/profiles/freelancers/browse/', {
-                    params: { page: 1, ordering: '-rating' },
+                    params: {
+                        page: 1,
+                        page_size: 100,  // ✅ Request all freelancers (up to max_page_size=100)
+                        ordering: '-rating'
+                    },
                     headers: { Authorization: `Bearer ${token}` }
                 });
 
@@ -231,7 +235,7 @@ const ClientDashboard = () => {
                     verification_output: freelancer.verification_output || {},
                 }));
 
-                setFreelancers(transformed); // ✅ now an array
+                setFreelancers(transformed);
             } catch (err) {
                 console.error('Error fetching freelancers:', err);
                 setFreelancers([]);

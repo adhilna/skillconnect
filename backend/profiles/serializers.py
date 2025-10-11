@@ -477,10 +477,19 @@ class FreelancerProfileSetupSerializer(serializers.ModelSerializer):
 
     def validate_social_links_input(self, value):
         """
-        Validate each social link URL if provided.
+        Validate social links and ensure at least one is provided.
         """
         serializer = SocialLinksSerializer(data=value)
         serializer.is_valid(raise_exception=True)
+
+        # Require at least one non-empty link
+        if not any(value.get(field) for field in [
+            'github_url', 'linkedin_url', 'twitter_url', 'facebook_url', 'instagram_url'
+        ]):
+            raise serializers.ValidationError(
+                {"social_links_input": "At least one social link must be provided."}
+            )
+
         return value
 
 class ClientProfileSetupSerializer(serializers.ModelSerializer):

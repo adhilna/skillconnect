@@ -152,11 +152,22 @@ def validate_optional_date_range(start_date, end_date=None, ongoing=False):
     return start_date, end_date
 
 def validate_url_field(value, field_name="URL"):
+    """
+    Validate optional social link URLs.
+    - Allows empty or null values.
+    - Validates format if provided.
+    """
+    if not value:  # allow empty or None
+        return value
+
     url_regex = re.compile(
         r'^(https?://)?'  # optional http or https
         r'([a-zA-Z0-9.-]+)\.([a-zA-Z]{2,6})'  # domain
-        r'(/[\w\-./?%&=]*)?$'  # path/query
+        r'(/[^\s]*)?$'  # path/query optional
     )
-    if not value or not url_regex.match(value):
+
+    if not url_regex.match(value):
         raise serializers.ValidationError(f"{field_name} must be a valid URL.")
+
     return value
+
