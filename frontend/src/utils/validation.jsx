@@ -150,3 +150,13 @@ export const validateLanguage = (lang) => {
 
   return Object.keys(errors).length > 0 ? errors : null;
 };
+
+export const validateURL = (value, fieldName = "URL") => {
+  if (!value || value.trim() === "") return null; // optional
+  try {
+    new URL(value);
+    return null;
+  } catch {
+    return `${fieldName} must be a valid URL.`;
+  }
+};

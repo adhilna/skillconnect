@@ -22,6 +22,7 @@ import {
     validateOptionalDateRange,
     validateOptionalYearRange,
     validateLanguage,
+    validateURL,
 } from '../../../utils/validation';
 import { allowedCountriesArray } from '../../../utils/constants';
 
@@ -543,6 +544,47 @@ const FreelancerProfileSetup = () => {
             }
             if (errors.languages.length === 0) delete errors.languages; // remove empty array
         }
+        else if (formStep === 3) {
+            if (freelancerData.portfolio.length > 0) {
+                errors.portfolio = freelancerData.portfolio.map((portfolio, index) => {
+                    const portfolioErrors = {
+                        title: validateNonEmptyString(portfolio.title, `Portfolio #${index + 1} Title`, 1, 100),
+                        description: validateNonEmptyString(portfolio.description, `Portfolio #${index + 1} Description`, 1, 1000),
+                        project_link: validateURL(portfolio.project_link, `Portfolio #${index + 1} URL`),
+                    };
+                    Object.keys(portfolioErrors).forEach(k => portfolioErrors[k] === null && delete portfolioErrors[k]);
+                    return Object.keys(portfolioErrors).length > 0 ? portfolioErrors : null;
+                }).filter(Boolean);
+
+                if (errors.portfolio.length === 0) delete errors.portfolio;
+            }
+        }
+        else if (formStep === 4) {
+            // Only validate if any social link is filled
+            const anyLinkFilled = Object.values(freelancerData.social_links).some(link => link && link.trim() !== "");
+
+            if (!anyLinkFilled) {
+                errors.social_links = "Add at least one social link.";
+            } else {
+                const socialErrors = {
+                    github_url: validateURL(freelancerData.social_links.github_url, "GitHub URL"),
+                    linkedin_url: validateURL(freelancerData.social_links.linkedin_url, "LinkedIn URL"),
+                    twitter_url: validateURL(freelancerData.social_links.twitter_url, "Twitter URL"),
+                    facebook_url: validateURL(freelancerData.social_links.facebook_url, "Facebook URL"),
+                    instagram_url: validateURL(freelancerData.social_links.instagram_url, "Instagram URL"),
+                };
+
+                // Remove nulls
+                Object.keys(socialErrors).forEach(k => socialErrors[k] === null && delete socialErrors[k]);
+
+                // Only add to errors if there’s at least one error
+                if (Object.keys(socialErrors).length > 0) {
+                    errors.social_links = socialErrors;
+                }
+            }
+        }
+
+
 
 
 

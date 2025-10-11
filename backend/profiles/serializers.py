@@ -9,12 +9,12 @@ from .models import (
 from .constants import ALLOWED_INDUSTRIES, ALLOWED_COMPANY_SIZES
 from core.validators import (
     validate_non_empty_string,
-    validate_optional_string,
     validate_optional_date_range,
     validate_country as country_validator,
     validate_location as location_validator,
     validate_age as age_validator,
-    validate_skills_input as skills_validator
+    validate_skills_input as skills_validator,
+    validate_url_field
 )
 
 
@@ -145,6 +145,15 @@ class PortfolioSerializer(serializers.ModelSerializer):
             'project_link': {'required': False, 'allow_null': True},
         }
 
+    def validate_title(self, value):
+        return validate_non_empty_string(value, field_name="Portfolio Title", min_len=1, max_len=200)
+
+    def validate_description(self, value):
+        return validate_non_empty_string(value, field_name="Portfolio Description", min_len=1, max_len=1000)
+
+    def validate_project_link(self, value):
+        return validate_url_field(value, field_name="Project Link") 
+
 class SocialLinksSerializer(serializers.ModelSerializer):
     class Meta:
         model = SocialLinks
@@ -159,6 +168,21 @@ class SocialLinksSerializer(serializers.ModelSerializer):
             'facebook_url': {'required': False, 'allow_null': True},
             'instagram_url': {'required': False, 'allow_null': True},
         }
+
+    def validate_github_url(self, value):
+        return validate_url_field(value, "GitHub URL")
+
+    def validate_linkedin_url(self, value):
+        return validate_url_field(value, "LinkedIn URL")
+
+    def validate_twitter_url(self, value):
+        return validate_url_field(value, "Twitter URL")
+
+    def validate_facebook_url(self, value):
+        return validate_url_field(value, "Facebook URL")
+
+    def validate_instagram_url(self, value):
+        return validate_url_field(value, "Instagram URL")
 
 class VerificationSerializer(serializers.ModelSerializer):
     class Meta:
@@ -443,6 +467,20 @@ class FreelancerProfileSetupSerializer(serializers.ModelSerializer):
     def validate_languages_input(self, value):
         if not value or len(value) == 0:
             raise serializers.ValidationError("At least one language must be added.")
+        return value
+
+    def validate_portfolios_input(self, value):
+        for i, portfolio_data in enumerate(value):
+            serializer = PortfolioSerializer(data=portfolio_data)
+            serializer.is_valid(raise_exception=True)  # will raise ValidationError if invalid
+        return value
+
+    def validate_social_links_input(self, value):
+        """
+        Validate each social link URL if provided.
+        """
+        serializer = SocialLinksSerializer(data=value)
+        serializer.is_valid(raise_exception=True)
         return value
 
 class ClientProfileSetupSerializer(serializers.ModelSerializer):
