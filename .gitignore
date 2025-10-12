@@ -1,24 +1,15 @@
-# Python/Django
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-.Python
-env/
-venv/
-*.env
-*.sqlite3
-
-# Node.js/React
-node_modules/
-dist/
-build/
-
-# macOS
-.DS_Store
+# Environment variables
+.env
+.env.local
+.env.production
 
 # Logs
+logs/
 *.log
 
-# Docker
-*.dockerignore
+# Static and Media files
+staticfiles/
+media/
+
+# Database
+*.sqlite3

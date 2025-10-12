@@ -22,7 +22,7 @@ const DashboardOverview = (props) => {
   const latestProjects = Array.isArray(activeProjects)
     ? [...activeProjects]
       .sort((a, b) => b.id - a.id) // higher ID = newer
-      .slice(0, 3)
+      .slice(0, 4)
     : [];
 
   const getDeadlineText = (deadline) => {
