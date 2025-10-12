@@ -12,9 +12,11 @@ export const CTASection = () => (
                         Sign Up For Free
                     </button>
                 </Link>
+                <Link to='/how-it-works'>
                 <button className="px-8 py-3 rounded-lg border border-purple-400 hover:bg-white/10 font-medium transition-all text-lg">
                     Learn How It Works
                 </button>
+                </Link>
             </div>
         </div>
     </div>

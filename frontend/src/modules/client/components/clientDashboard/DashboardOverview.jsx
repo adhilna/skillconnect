@@ -1,12 +1,17 @@
 import React from 'react';
-import { Users, Briefcase, Star, CheckCircle, FileText, Search, Plus, MessageCircle, BarChart3, IndianRupee } from 'lucide-react';
+import { Users, Briefcase, Star, CheckCircle, FileText, Search, Compass, MessageCircle, IndianRupee } from 'lucide-react';
 import StatCard from './StatCard';
 import ProjectItem from './ProjectItem';
 import ActivityItem from './ActivityItem';
 import FreelancerCard from './FreelancerCard';
+import { useOrders } from "../../../../context/client/OrdersContext"
 
 const DashboardOverview = (props) => {
     const { profileData, featuredFreelancers, loading, setActiveSection, summaryMetrics, loadingPayments, activeProjectsCount, loadingActive, hiredFreelancersCount, activeProjects } = props;
+
+    const { orders, loadingOrders, ordersError } = useOrders();
+    const totalOrders = orders?.length || 0;
+
 
     // Helper to get initials from a name string
     const getInitials = (name) => {
@@ -42,7 +47,7 @@ const DashboardOverview = (props) => {
     const latestProjects = Array.isArray(activeProjects)
         ? [...activeProjects]
             .sort((a, b) => b.id - a.id) // higher ID = newer
-            .slice(0, 3)
+            .slice(0, 4)
         : [];
 
 
@@ -53,12 +58,12 @@ const DashboardOverview = (props) => {
                 <div className="flex items-center justify-between">
                     <div>
                         <h3 className="text-2xl font-bold text-white mb-2">Here&apos;s your dashboard {profileData?.first_name} 🌟</h3>
-                        <p className="text-white/80">You have {activeProjectsCount} active projects and 5 new freelancer proposals to review.</p>
+                        <p className="text-white/80">You have {activeProjectsCount} active projects and {totalOrders} are from your proposals.</p>
                     </div>
                     <div className="hidden md:block">
                         <div className="text-right">
                             <p className="text-white/60 text-sm">Success Rate</p>
-                            <p className="text-2xl font-bold text-white">94%</p>
+                            <p className="text-2xl font-bold text-white">₹{summaryMetrics.successRate.toLocaleString()}</p>
                         </div>
                     </div>
                 </div>
@@ -104,7 +109,13 @@ const DashboardOverview = (props) => {
                 />
                 <StatCard
                     title="Avg. Rating Given"
-                    value="4.8"
+                    value={
+                        loadingPayments ? (
+                            <span className="inline-block w-5 h-5 border-2 border-t-transparent border-gray-400 rounded-full animate-spin mx-auto"></span>
+                        ) : (
+                            `${summaryMetrics.avgRatingGiven}`
+                        )
+                    }
                     icon={Star}
                     change="+0.2"
                     trend="up"
@@ -118,49 +129,77 @@ const DashboardOverview = (props) => {
                 <div className="lg:col-span-2 bg-black/20 backdrop-blur-lg rounded-2xl border border-white/10 p-6">
                     <div className="flex items-center justify-between mb-6">
                         <h3 className="text-xl font-semibold text-white">Active Projects</h3>
-                        <button className="text-blue-400 hover:text-blue-300 text-sm font-medium">View All</button>
+                        {latestProjects.length > 0 && (
+                            <button
+                                onClick={() => setActiveSection('analytics')}
+                                className="text-blue-400 hover:text-blue-300 text-sm font-medium">View All</button>
+                        )}
                     </div>
                     <div className="space-y-4">
-                        {latestProjects.map((project) => (
-                            <ProjectItem
-                                key={project.id}
-                                title={project.category || "Untitled Category"}
-                                freelancer={project.freelancer || "Unknown Freelancer"}
-                                status={project.status}
-                                budget={`₹${project.amount?.toLocaleString("en-IN") || 0}`}
-                                deadline={getDeadlineText(project.deadline)}
-                                progress={project.progress || 0}
-                            />
-                        ))}
+                        {latestProjects.length > 0 ? (
+                            latestProjects.map((project) => (
+                                <ProjectItem
+                                    key={project.id}
+                                    title={project.category || "Untitled Category"}
+                                    freelancer={project.freelancer || "Unknown Freelancer"}
+                                    status={project.status}
+                                    budget={`₹${project.amount?.toLocaleString("en-IN") || 0}`}
+                                    deadline={getDeadlineText(project.deadline)}
+                                    progress={project.progress || 0}
+                                />
+                            ))
+                        ) : (
+                            <div className="text-center py-12">
+                                <p className="text-gray-400 text-lg">No active projects yet</p>
+                                <p className="text-gray-500 text-sm mt-2">Your projects will appear here once you get started</p>
+                            </div>
+                        )}
                     </div>
                 </div>
-
                 {/* Right Sidebar */}
                 <div className="space-y-6">
                     {/* Recent Activity */}
-                    <div className="bg-black/20 backdrop-blur-lg rounded-2xl border border-white/10 p-6">
-                        <h3 className="text-lg font-semibold text-white mb-4">Recent Activity</h3>
+                    <div className="bg-black/20 backdrop-blur-lg rounded-2xl border border-white/10 p-6 mt-6">
+                        <h3 className="text-lg font-semibold text-white mb-4">Recent Orders</h3>
+
+                        {loadingOrders && <p className="text-white">Loading...</p>}
+                        {ordersError && <p className="text-red-500">{ordersError}</p>}
+
                         <div className="space-y-4">
-                            <ActivityItem
-                                icon={MessageCircle}
-                                text="New message from Alex Rodriguez"
-                                time="2 min ago"
-                            />
-                            <ActivityItem
-                                icon={CheckCircle}
-                                text="Logo design project completed"
-                                time="1 hour ago"
-                            />
-                            <ActivityItem
-                                icon={Users}
-                                text="Sarah Kim accepted your project"
-                                time="3 hours ago"
-                            />
-                            <ActivityItem
-                                icon={FileText}
-                                text="New proposal received"
-                                time="5 hours ago"
-                            />
+                            {!loadingOrders && !ordersError && orders.length > 0 ? (
+                                orders.slice(0, 4).map((order) => (
+                                    <ActivityItem
+                                        key={order.id}
+                                        icon={CheckCircle}
+                                        text={
+                                            <div className="flex flex-col">
+                                                <span className="text-sm text-gray-300">
+                                                    <span className="font-semibold text-white">
+                                                        {order.freelancer?.name || "Unknown Freelancer"}
+                                                    </span>{" "}
+                                                    completed
+                                                </span>
+                                                <span className="text-xs bg-white/10 px-2 py-1 rounded-md w-fit text-purple-300 mt-1">
+                                                    {order.proposal?.title || "Untitled Project"}
+                                                </span>
+                                            </div>
+                                        }
+                                        time={new Date(order.created_at).toLocaleString("en-US", {
+                                            hour: "2-digit",
+                                            minute: "2-digit",
+                                            month: "short",
+                                            day: "numeric",
+                                        })}
+                                    />
+                                ))
+                            ) : (
+                                !loadingOrders && !ordersError && (
+                                    <div className="text-center py-8">
+                                        <p className="text-gray-400 text-base">No recent orders</p>
+                                        <p className="text-gray-500 text-sm mt-2">Your order history will appear here</p>
+                                    </div>
+                                )
+                            )}
                         </div>
                     </div>
 
@@ -168,15 +207,21 @@ const DashboardOverview = (props) => {
                     <div className="bg-black/20 backdrop-blur-lg rounded-2xl border border-white/10 p-6">
                         <h3 className="text-lg font-semibold text-white mb-4">Quick Actions</h3>
                         <div className="space-y-3">
-                            <button className="w-full bg-white/10 hover:bg-white/20 text-white px-4 py-3 rounded-lg transition-colors text-sm font-medium text-left flex items-center space-x-2">
-                                <Plus size={16} />
-                                <span>Post New Project</span>
+                            <button
+                                onClick={() => setActiveSection('explore')}
+                                className="w-full bg-white/10 hover:bg-white/20 text-white px-4 py-3 rounded-lg transition-colors text-sm font-medium text-left flex items-center space-x-2">
+                                <Compass size={16} />
+                                <span>Explore Services</span>
                             </button>
-                            <button className="w-full bg-white/10 hover:bg-white/20 text-white px-4 py-3 rounded-lg transition-colors text-sm font-medium text-left flex items-center space-x-2">
+                            <button
+                                onClick={() => setActiveSection('browse')}
+                                className="w-full bg-white/10 hover:bg-white/20 text-white px-4 py-3 rounded-lg transition-colors text-sm font-medium text-left flex items-center space-x-2">
                                 <Search size={16} />
                                 <span>Browse Freelancers</span>
                             </button>
-                            <button className="w-full bg-white/10 hover:bg-white/20 text-white px-4 py-3 rounded-lg transition-colors text-sm font-medium text-left flex items-center space-x-2">
+                            <button
+                                onClick={() => setActiveSection('messages')}
+                                className="w-full bg-white/10 hover:bg-white/20 text-white px-4 py-3 rounded-lg transition-colors text-sm font-medium text-left flex items-center space-x-2">
                                 <MessageCircle size={16} />
                                 <span>Check Messages</span>
                             </button>

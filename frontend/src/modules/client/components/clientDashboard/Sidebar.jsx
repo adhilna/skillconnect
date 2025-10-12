@@ -42,7 +42,9 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen, navigationItems, activeSection, 
                 })}
             </nav>
             <div className="mt-8 pt-6 border-t border-white/10">
-                <button className="w-full bg-gradient-to-r from-blue-500 to-cyan-500 text-white px-4 py-3 rounded-xl font-medium hover:from-blue-600 hover:to-cyan-600 transition-all duration-200 flex items-center justify-center space-x-2 shadow-lg">
+                <button
+                onClick={() => setActiveSection('proposals')}
+                className="w-full bg-gradient-to-r from-blue-500 to-cyan-500 text-white px-4 py-3 rounded-xl font-medium hover:from-blue-600 hover:to-cyan-600 transition-all duration-200 flex items-center justify-center space-x-2 shadow-lg">
                     <Plus size={18} />
                     <span>Post New Project</span>
                 </button>

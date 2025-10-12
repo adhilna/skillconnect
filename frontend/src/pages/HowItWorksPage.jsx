@@ -27,6 +27,7 @@ import {
     Rocket
 } from 'lucide-react';
 import { Navbar } from '../components/Landing/Navbar';
+import { useNavigate } from "react-router-dom";
 
 const BackgroundBlobs = () => (
     <div className="absolute inset-0 overflow-hidden">
@@ -78,6 +79,8 @@ const HowItWorksPage = () => {
     const [activeTab, setActiveTab] = useState('client');
     const [activeStep, setActiveStep] = useState(0);
     const [hoveredFeature, setHoveredFeature] = useState(null);
+
+    const navigate = useNavigate()
 
     useEffect(() => {
         const interval = setInterval(() => {
@@ -276,8 +279,8 @@ const HowItWorksPage = () => {
                                     <button
                                         onClick={() => setActiveTab('client')}
                                         className={`px-10 py-4 rounded-2xl font-semibold transition-all duration-500 flex items-center gap-3 ${activeTab === 'client'
-                                                ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-2xl transform scale-105'
-                                                : 'text-purple-200 hover:text-white hover:bg-white/10'
+                                            ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-2xl transform scale-105'
+                                            : 'text-purple-200 hover:text-white hover:bg-white/10'
                                             }`}
                                     >
                                         <Target size={20} />
@@ -286,8 +289,8 @@ const HowItWorksPage = () => {
                                     <button
                                         onClick={() => setActiveTab('freelancer')}
                                         className={`px-10 py-4 rounded-2xl font-semibold transition-all duration-500 flex items-center gap-3 ${activeTab === 'freelancer'
-                                                ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-2xl transform scale-105'
-                                                : 'text-purple-200 hover:text-white hover:bg-white/10'
+                                            ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-2xl transform scale-105'
+                                            : 'text-purple-200 hover:text-white hover:bg-white/10'
                                             }`}
                                     >
                                         <Rocket size={20} />
@@ -549,12 +552,16 @@ const HowItWorksPage = () => {
                                     </p>
 
                                     <div className="flex flex-col sm:flex-row gap-6 justify-center items-center">
-                                        <button className="group px-10 py-5 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-2xl font-bold hover:from-blue-600 hover:to-purple-700 transition-all duration-300 transform hover:scale-105 shadow-2xl hover:shadow-purple-500/25 flex items-center gap-3">
+                                        <button
+                                            onClick={() => navigate("/register")}
+                                            className="group px-10 py-5 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-2xl font-bold hover:from-blue-600 hover:to-purple-700 transition-all duration-300 transform hover:scale-105 shadow-2xl hover:shadow-purple-500/25 flex items-center gap-3">
                                             <Target size={20} />
                                             Get Started as Client
                                             <ArrowRight size={20} className="transform group-hover:translate-x-1 transition-transform duration-300" />
                                         </button>
-                                        <button className="group px-10 py-5 bg-white/10 text-white rounded-2xl font-bold border-2 border-white/20 hover:bg-white/20 hover:border-white/40 transition-all duration-300 transform hover:scale-105 backdrop-blur-lg flex items-center gap-3">
+                                        <button
+                                            onClick={() => navigate("/register")}
+                                            className="group px-10 py-5 bg-white/10 text-white rounded-2xl font-bold border-2 border-white/20 hover:bg-white/20 hover:border-white/40 transition-all duration-300 transform hover:scale-105 backdrop-blur-lg flex items-center gap-3">
                                             <Rocket size={20} />
                                             Join as Freelancer
                                             <TrendingUp size={20} className="transform group-hover:translate-x-1 transition-transform duration-300" />
