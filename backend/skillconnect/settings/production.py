@@ -18,7 +18,7 @@ SECURE_HSTS_PRELOAD = True
 CORS_ALLOWED_ORIGINS = env.list('CORS_ALLOWED_ORIGINS', default=[])
 CORS_ALLOW_CREDENTIALS = True
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', '3.107.105.91', '3.107.105.91:8000']
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', '3.107.105.91', '3.107.105.91:8000','*']
 
 SECURE_CROSS_ORIGIN_OPENER_POLICY = 'same-origin-allow-popups'
 
