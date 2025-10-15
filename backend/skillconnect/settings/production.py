@@ -26,10 +26,11 @@ SECURE_CROSS_ORIGIN_OPENER_POLICY = 'same-origin-allow-popups'
 REST_FRAMEWORK['DEFAULT_RENDERER_CLASSES'] = [
     'rest_framework.renderers.JSONRenderer',
 ]
+# production.py - TEMPLATES section
 TEMPLATES[0] = {
     'BACKEND': 'django.template.backends.django.DjangoTemplates',
     'DIRS': [os.path.join(BASE_DIR, 'templates')],
-    'APP_DIRS': False,  # Important! Do NOT set True if using loaders
+    # Remove 'APP_DIRS': False completely - don't include this key at all
     'OPTIONS': {
         'context_processors': [
             'django.template.context_processors.debug',
@@ -45,6 +46,7 @@ TEMPLATES[0] = {
         ],
     },
 }
+
 # Logging Configuration for production
 LOGGING = {
     'version': 1,
