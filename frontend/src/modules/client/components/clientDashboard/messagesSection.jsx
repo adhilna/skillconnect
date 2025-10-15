@@ -553,7 +553,7 @@ const AttachmentMenu = ({ isVisible, onClose, onFileSelect, onVoiceRecord }) => 
     );
 };
 
-const ClientChatDashboard = ({ conversationId, onOpenPaymentFlow, selectedPayment, setSelectedPayment }) => {
+const MessagesSection = ({ conversationId, onOpenPaymentFlow, selectedPayment, setSelectedPayment }) => {
     const [chatListData, setChatListData] = useState([]);
     const [messages, setMessages] = useState([]);
     const [selectedChat, setSelectedChat] = useState(null);
@@ -1343,4 +1343,4 @@ const ClientChatDashboard = ({ conversationId, onOpenPaymentFlow, selectedPaymen
     );
 };
 
-export default ClientChatDashboard;
+export default MessagesSection;
