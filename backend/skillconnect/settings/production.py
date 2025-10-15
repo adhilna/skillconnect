@@ -26,15 +26,8 @@ SECURE_CROSS_ORIGIN_OPENER_POLICY = 'same-origin-allow-popups'
 REST_FRAMEWORK['DEFAULT_RENDERER_CLASSES'] = [
     'rest_framework.renderers.JSONRenderer',
 ]
-TEMPLATES[0]['APP_DIRS'] = False
-# Template loader optimization
-TEMPLATES[0]["OPTIONS"]["loaders"] = [
-    ('django.template.loaders.cached.Loader', [
-        'django.template.loaders.filesystem.Loader',
-        'django.template.loaders.app_directories.Loader',
-    ]),
-]
-
+TEMPLATES[0]['APP_DIRS'] = True
+TEMPLATES[0]['OPTIONS'].pop('loaders', None)
 
 # Logging Configuration for production
 LOGGING = {
