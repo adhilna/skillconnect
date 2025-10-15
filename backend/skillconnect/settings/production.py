@@ -18,20 +18,23 @@ SECURE_HSTS_PRELOAD = True
 CORS_ALLOWED_ORIGINS = env.list('CORS_ALLOWED_ORIGINS', default=[])
 CORS_ALLOW_CREDENTIALS = True
 
+ALLOWED_HOSTS = ['localhost', '127.0.0.1']
+
 SECURE_CROSS_ORIGIN_OPENER_POLICY = 'same-origin-allow-popups'
 
 # REST Framework production settings
 REST_FRAMEWORK['DEFAULT_RENDERER_CLASSES'] = [
     'rest_framework.renderers.JSONRenderer',
 ]
-
+TEMPLATES[0]['APP_DIRS'] = False
 # Template loader optimization
-TEMPLATES[0]['OPTIONS']['loaders'] = [
+TEMPLATES[0]["OPTIONS"]["loaders"] = [
     ('django.template.loaders.cached.Loader', [
         'django.template.loaders.filesystem.Loader',
         'django.template.loaders.app_directories.Loader',
     ]),
 ]
+
 
 # Logging Configuration for production
 LOGGING = {
@@ -87,6 +90,9 @@ MANAGERS = ADMINS
 
 # Session security
 SESSION_COOKIE_HTTPONLY = True
-SESSION_COOKIE_SAMESITE = 'Strict'
+SESSION_COOKIE_SAMESITE = 'Lax'
 CSRF_COOKIE_HTTPONLY = True
-CSRF_COOKIE_SAMESITE = 'Strict'
+CSRF_COOKIE_SAMESITE = 'Lax'
+
+# Never fail silently in production
+EMAIL_FAIL_SILENTLY = False

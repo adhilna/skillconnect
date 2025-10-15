@@ -177,13 +177,31 @@ export default function ClientProfileSetup() {
                 else if (!/^[a-zA-Z]+$/.test(clientData.firstName)) {
                     newErrors.firstName = 'First name must contain only letters';
                 }
+
                 if (!clientData.lastName) newErrors.lastName = 'Last name is required';
                 else if (!/^[a-zA-Z]+$/.test(clientData.lastName)) {
                     newErrors.lastName = 'Last name must contain only letters';
                 }
-                if (clientData.accountType === 'business' && !clientData.companyName) {
-                    newErrors.companyName = 'Company name is required for business accounts';
+
+                if (clientData.accountType === 'business') {
+                    if (!clientData.companyName) {
+                        newErrors.companyName = 'Company name is required for business accounts';
+                    }
+                    if (!clientData.industry) {
+                        newErrors.industry = 'Industry is required';
+                    } else if (!industries.includes(clientData.industry)) {
+                        newErrors.industry = `Industry must be one of: ${industries.join(', ')}`;
+                    }
+                    if (!clientData.companySize) {
+                        newErrors.companySize = 'Company size is required';
+                    } else if (!companySizes.includes(clientData.companySize)) {
+                        newErrors.companySize = `Company size must be one of: ${companySizes.join(', ')}`;
+                    }
+                    if (!clientData.companyDescription) {
+                        newErrors.companyDescription = 'Company description is required';
+                    }
                 }
+
                 if (!clientData.country) {
                     newErrors.country = 'Country is required';
                 } else {
@@ -198,24 +216,13 @@ export default function ClientProfileSetup() {
                     const locationError = validateCity(clientData.location);
                     if (locationError) newErrors.location = locationError;
                 }
+
                 if (clientData.website && clientData.website.trim() !== '' && !clientData.website.startsWith('http://') && !clientData.website.startsWith('https://')) {
                     newErrors.website = 'Website must start with http:// or https://';
                 }
-                if (!clientData.industry) {
-                    newErrors.industry = 'Industry is required';
-                } else if (!industries.includes(clientData.industry)) {
-                    newErrors.industry = `Industry must be one of: ${industries.join(', ')}`;
-                }
-                if (!clientData.companySize) {
-                    newErrors.companySize = 'Company size is required';
-                } else if (!companySizes.includes(clientData.companySize)) {
-                    newErrors.companySize = `Company size must be one of: ${companySizes.join(', ')}`;
-                }
-                if (!clientData.companyDescription) {
-                    newErrors.companyDescription = 'Company description is required';
-                }
 
                 break;
+
             case 2:
                 if (!clientData.projectTypes || clientData.projectTypes.length === 0)
                     newErrors.projectTypes = 'Please select at least one project type.';

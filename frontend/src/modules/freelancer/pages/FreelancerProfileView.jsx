@@ -96,8 +96,7 @@ const FreelancerProfileView = () => {
     };
 
     useEffect(() => {
-        const hasValidData = profile && profile.id;
-        if (hasValidData) return;
+        if (!id || !token) return;
 
         if (!token) {
             setError('Authentication required');
@@ -107,7 +106,7 @@ const FreelancerProfileView = () => {
 
         const fetchProfile = async () => {
             setLoading(true);
-            setError('');
+            setError(null);
             try {
                 const response = await api.get(`/api/v1/profiles/freelancers/browse/${id}/`, {
                     headers: { Authorization: `Bearer ${token}` },
@@ -123,7 +122,7 @@ const FreelancerProfileView = () => {
 
         fetchProfile();
 
-    }, [id, profile, token]);
+    }, [id, token]);
 
 
     if (loading) {
@@ -172,8 +171,7 @@ const FreelancerProfileView = () => {
     }
 
     const {
-        first_name,
-        last_name,
+        name,
         profile_picture,
         about,
         location: loc,
@@ -215,14 +213,21 @@ const FreelancerProfileView = () => {
                     <div className="flex flex-col lg:flex-row gap-6 items-start">
                         {/* Profile Image */}
                         <div className="relative flex-shrink-0">
-                            <div className="w-32 h-32 lg:w-40 lg:h-40 rounded-xl overflow-hidden border-2 border-white/20">
-                                <img
-                                    src={profile_picture}
-                                    alt={`${first_name} ${last_name} Profile`}
-                                    className="w-full h-full object-cover"
-                                    loading="lazy"
-                                />
+                            <div className="w-32 h-32 lg:w-40 lg:h-40 rounded-xl overflow-hidden border-2 border-white/20 flex items-center justify-center bg-gradient-to-br from-blue-500 via-purple-500 to-cyan-500">
+                                {profile_picture ? (
+                                    <img
+                                        src={profile_picture}
+                                        alt={`${name} Profile`}
+                                        className="w-full h-full object-cover"
+                                        loading="lazy"
+                                    />
+                                ) : (
+                                    <span className="text-white font-bold text-2xl lg:text-3xl">
+                                        {`${name?.[0] || ''}`}
+                                    </span>
+                                )}
                             </div>
+
                             {/* Status Indicator */}
                             <div
                                 className={`absolute -bottom-1 -right-1 w-8 h-8 rounded-full border-2 border-white flex items-center justify-center ${is_available ? 'bg-green-500' : 'bg-red-500'
@@ -241,7 +246,7 @@ const FreelancerProfileView = () => {
                             <div className="space-y-3">
                                 <div className="flex flex-col sm:flex-row sm:items-center gap-3">
                                     <h1 className="text-2xl lg:text-3xl font-bold text-white">
-                                        {first_name} {last_name}
+                                        {name}
                                     </h1>
                                     {verification_output?.email_verified && (
                                         <div className="flex items-center gap-1 px-3 py-1 rounded-full bg-green-500/20 border border-green-400/40">

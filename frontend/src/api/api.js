@@ -1,8 +1,13 @@
 import axios from 'axios';
+import config from '../config/environment';
 
-const baseURL = 'http://localhost:8000';
+// const baseURL = 'http://localhost:8000';
 
-const api = axios.create({ baseURL });
+const api = axios.create({
+    baseURL: config.apiUrl,
+    timeout: 10000,
+    withCredentials: true,
+});
 
 api.interceptors.request.use((config) => {
     const token = localStorage.getItem('access');
@@ -44,7 +49,7 @@ api.interceptors.response.use(
             isRefreshing = true;
             try {
                 const refreshToken = localStorage.getItem('refresh');
-                const res = await axios.post(`${baseURL}/api/v1/auth/token/refresh/`, {
+                const res = await axios.post(`${config.apiUrl}/api/v1/auth/token/refresh/`, {
                     refresh: refreshToken,
                 });
 

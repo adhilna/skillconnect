@@ -36,27 +36,7 @@ import {
   Legend
 } from 'recharts';
 
-// Chart Data
-// const monthlyEarningsData = [
-//   { month: 'Jan', earnings: 85000, projects: 3 },
-//   { month: 'Feb', earnings: 125000, projects: 5 },
-//   { month: 'Mar', earnings: 98000, projects: 4 },
-//   { month: 'Apr', earnings: 156000, projects: 6 },
-//   { month: 'May', earnings: 112000, projects: 4 },
-//   { month: 'Jun', earnings: 189000, projects: 7 },
-//   { month: 'Jul', earnings: 145000, projects: 5 },
-//   { month: 'Aug', earnings: 168000, projects: 6 },
-//   { month: 'Sep', earnings: 142000, projects: 5 }
-// ];
-
 const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-
-
-// const projectStatusData = [
-//   { name: 'Completed', value: 65, count: 13, color: '#10B981' },
-//   { name: 'In Progress', value: 25, count: 5, color: '#F59E0B' },
-//   { name: 'Canceled', value: 10, count: 2, color: '#EF4444' }
-// ];
 
 const paymentMethodData = [
   { name: 'Stripe', value: 45, color: '#8B5CF6' },
@@ -96,20 +76,21 @@ const AnalyticsSection = ({ paymentHistory, totalPages, setTotalPages, loadingPa
   const projectItemsPerPage = 5;
 
   const filteredTransactions = useMemo(() => {
-    let filtered = paymentHistory.filter(transaction => {
-      const freelancer = String(transaction.freelancer_name ?? "").toLowerCase();
-      const service = String(transaction.description ?? "").toLowerCase();
-      const id = String(transaction.id ?? "").toLowerCase();
+    let filtered = Array.isArray(paymentHistory)
+      ? paymentHistory.filter(transaction => {
+        const freelancer = String(transaction.freelancer_name ?? "").toLowerCase();
+        const service = String(transaction.description ?? "").toLowerCase();
+        const id = String(transaction.id ?? "").toLowerCase();
 
-      const lowerSearch = searchTerm.toLowerCase();
+        const lowerSearch = searchTerm.toLowerCase();
 
-      const matchesSearch =
-        freelancer.includes(lowerSearch) ||
-        service.includes(lowerSearch) ||
-        id.includes(lowerSearch);
-      const matchesStatus = statusFilter === 'all' || transaction.status?.toLowerCase() === statusFilter.toLowerCase();
-      return matchesSearch && matchesStatus;
-    });
+        const matchesSearch =
+          freelancer.includes(lowerSearch) ||
+          service.includes(lowerSearch) ||
+          id.includes(lowerSearch);
+        const matchesStatus = statusFilter === 'all' || transaction.status?.toLowerCase() === statusFilter.toLowerCase();
+        return matchesSearch && matchesStatus;
+      }) : [];;
     console.log("filtering paymentHistory:", paymentHistory);
     console.log("filtered by search/status:", filtered.length);
 
@@ -152,18 +133,21 @@ const AnalyticsSection = ({ paymentHistory, totalPages, setTotalPages, loadingPa
   };
 
   const filteredProjects = useMemo(() => {
-    return activeProjects.filter((project) => {
-      const matchesSearch =
-        project.title.toLowerCase().includes(projectSearch.toLowerCase()) ||
-        project.client.toLowerCase().includes(projectSearch.toLowerCase()) ||
-        project.category.toLowerCase().includes(projectSearch.toLowerCase());
+    return Array.isArray(activeProjects)
+      ? activeProjects.filter((project) => {
+        const matchesSearch =
+          project.title.toLowerCase().includes(projectSearch.toLowerCase()) ||
+          project.client.toLowerCase().includes(projectSearch.toLowerCase()) ||
+          project.category.toLowerCase().includes(projectSearch.toLowerCase());
 
-      const matchesStatus =
-        projectStatusFilter === "all" ? true : project.status === projectStatusFilter;
+        const matchesStatus =
+          projectStatusFilter === "all" ? true : project.status === projectStatusFilter;
 
-      return matchesSearch && matchesStatus;
-    });
+        return matchesSearch && matchesStatus;
+      })
+      : [];
   }, [activeProjects, projectSearch, projectStatusFilter]);
+
 
   const monthlyEarningsData = useMemo(() => {
     if (!Array.isArray(paymentHistory) || paymentHistory.length === 0) return [];
@@ -307,7 +291,9 @@ const AnalyticsSection = ({ paymentHistory, totalPages, setTotalPages, loadingPa
       (p) => p.status?.toLowerCase() === "pending"
     );
 
-    const inProgressProjects = activeProjects.filter(p => p.status === 'in-progress');
+    const inProgressProjects = Array.isArray(activeProjects)
+      ? activeProjects.filter(p => p.status === 'in-progress')
+      : [];
 
     const totalAmount = successfulPayments.reduce(
       (sum, t) => sum + Number(t.amount),
@@ -415,7 +401,7 @@ const AnalyticsSection = ({ paymentHistory, totalPages, setTotalPages, loadingPa
 
   const PaymentDashboardSkeleton = () => {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-grey-900 via-blue-900 to-blue-900 p-4 lg:p-8">
+      <div className="min-h-screen bg-gradient-to-br from-grey-900 via-purple-900 to-purple-900 p-4 lg:p-8">
         <div className="max-w-7xl mx-auto space-y-8">
           {/* Header Skeleton */}
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">

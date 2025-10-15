@@ -4,6 +4,7 @@ import {
     ChevronDown, ChevronLeft, ChevronRight, X, Eye
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import api from '../../../../api/api';
 
 const FreelancerCard = ({ freelancer, onViewProfile }) => {
     const getInitials = (name) =>
@@ -162,13 +163,15 @@ const BrowseTalentSection = ({ preloadedFreelancers = [], loading }) => {
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
-    const handleViewProfile = (freelancer) => {
-        navigate(`/freelancers/${freelancer.id}/view`, {
-            state: {
-                freelancerProfileData: freelancer,
-                from: 'browse'
-            }
-        });
+    const handleViewProfile = async (freelancer) => {
+        try {
+            const response = await api.get(`/api/v1/profiles/freelancers/browse/${freelancer.id}/`);
+            navigate(`/freelancers/${freelancer.id}/view`, {
+                state: { freelancerProfileData: response.data, from: 'browse' }
+            });
+        } catch (err) {
+            console.error('Failed to fetch full freelancer profile:', err);
+        }
     };
 
     return (

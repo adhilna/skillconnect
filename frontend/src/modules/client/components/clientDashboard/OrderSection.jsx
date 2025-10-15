@@ -160,14 +160,14 @@ const ClientProposalOrdersSection = ({ selectedOrderId, onSelectOrder, onStartCh
     ];
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-6 px-4 sm:px-0">
             {/* Header and Filter */}
-            <div className="flex items-center justify-between">
-                <h3 className="text-2xl font-bold text-white">Proposal Orders</h3>
+            <div className="flex items-center justify-between gap-2">
+                <h3 className="text-xl sm:text-2xl font-bold text-white">Proposal Orders</h3>
                 <div className="relative">
                     <button
                         onClick={() => setActiveFilter(activeFilter === 'all' ? 'pending' : 'all')}
-                        className="bg-white/10 text-white px-4 py-2 rounded-lg font-medium hover:bg-white/20 transition-colors"
+                        className="bg-white/10 text-white px-3 sm:px-4 py-2 rounded-lg text-sm sm:text-base font-medium hover:bg-white/20 transition-colors whitespace-nowrap"
                     >
                         Filter: {activeFilter.charAt(0).toUpperCase() + activeFilter.slice(1)}
                     </button>
@@ -175,12 +175,12 @@ const ClientProposalOrdersSection = ({ selectedOrderId, onSelectOrder, onStartCh
             </div>
 
             {/* Filter Buttons */}
-            <div className="flex space-x-2">
+            <div className="flex space-x-2 overflow-x-auto pb-2 scrollbar-hide">
                 {filterOptions.map(({ value, label, count }) => (
                     <button
                         key={value}
                         onClick={() => setActiveFilter(value)}
-                        className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${activeFilter === value ? 'bg-blue-600 text-white' : 'bg-white/10 text-white hover:bg-white/20'
+                        className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${activeFilter === value ? 'bg-blue-600 text-white' : 'bg-white/10 text-white hover:bg-white/20'
                             }`}
                     >
                         {label} ({count})
@@ -199,7 +199,7 @@ const ClientProposalOrdersSection = ({ selectedOrderId, onSelectOrder, onStartCh
                         <div
                             key={order.id}
                             ref={el => orderRefs.current[order.id] = el}
-                            className={`${order.id === selectedOrderId ? 'ring-2 ring-blue-500 rounded-lg' : ''}`} // example highlight
+                            className={`${order.id === selectedOrderId ? 'ring-2 ring-blue-500 rounded-lg' : ''}`}
                             onClick={() => onSelectOrder && onSelectOrder(order.id)}
                         >
                             <OrderItem
@@ -209,7 +209,7 @@ const ClientProposalOrdersSection = ({ selectedOrderId, onSelectOrder, onStartCh
                                 status={order.status}
                                 amountRange={
                                     order.proposal
-                                        ? `$${order.proposal.budget_min} - $${order.proposal.budget_max}`
+                                        ? `${order.proposal.budget_min} - ${order.proposal.budget_max}`
                                         : 'N/A'
                                 }
                                 timelineDays={order.proposal?.timeline_days ?? 'N/A'}
@@ -275,8 +275,6 @@ const ClientProposalOrdersSection = ({ selectedOrderId, onSelectOrder, onStartCh
                     </button>
                 </div>
             )}
-
-
         </div>
     );
 };

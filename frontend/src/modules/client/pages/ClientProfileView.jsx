@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import api from '../../../api/api';
 import { AuthContext } from '../../../context/AuthContext';
 import {
@@ -66,11 +66,21 @@ const InfoGridItem = ({ icon: Icon, label, value, variant = 'default' }) => {
 const ClientProfileView = () => {
     const { id } = useParams();
     const navigate = useNavigate();
+    const locate = useLocation();
+    const from = locate.state?.from || 'explore';
     const { token } = useContext(AuthContext);
 
     const [client, setClient] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+
+    const handleBack = () => {
+        if (from === "browse") {
+            navigate("/freelancer/dashboard", { state: { section: "browse" } });
+        } else {
+            navigate("/freelancer/dashboard", { state: { section: "explore" } });
+        }
+    };
 
     useEffect(() => {
         if (!id || !token) return;
@@ -168,11 +178,15 @@ const ClientProfileView = () => {
                 {/* Header */}
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <button
-                        onClick={() => navigate(-1)}
+                        onClick={handleBack}
                         className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/10 backdrop-blur-xl border border-white/20 text-white/90 hover:bg-white/20 transition-colors"
                     >
                         <ArrowLeft className="w-4 h-4" />
-                        <span className="font-medium">Back to Explore Clients</span>
+                        <span className="font-medium">
+                            {from === 'browse' ? "Back to Browse Clients" :
+                                from === 'explore' ? "Back to Explore Clients" :
+                                    "Back"}
+                        </span>
                     </button>
 
                     <div className="flex items-center gap-2 text-white/60">

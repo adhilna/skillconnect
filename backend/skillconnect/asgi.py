@@ -2,7 +2,7 @@ import os
 from django.core.asgi import get_asgi_application
 
 # Use development settings for local, override in production
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'skillconnect.settings.development')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'skillconnect.settings.production')
 
 # Initialize Django ASGI application early to ensure the AppRegistry
 # is populated before importing code that may import ORM models

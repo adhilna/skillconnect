@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import api from '../../../../api/api';
 import { AuthContext } from '../../../../context/AuthContext';
+import { useToast } from '../../../../hooks/useToast';
 
 const ServiceCard = ({ service, onViewProfile, onApplyService }) => {
     return (
@@ -147,6 +148,7 @@ const ExploreServicesSection = () => {
     const [totalPages, setTotalPages] = useState(1);
     const [categories, setCategories] = useState([]);
     const [categoriesLoading, setCategoriesLoading] = useState(false);
+    const { success, error, warning } = useToast();
 
     const [applyModalVisible, setApplyModalVisible] = useState(false);
     const [selectedService, setSelectedService] = useState(null);
@@ -299,7 +301,6 @@ const ExploreServicesSection = () => {
         });
     };
 
-
     const handleApplyService = (service) => {
         setSelectedService(service);
         setApplyModalVisible(true);
@@ -311,7 +312,6 @@ const ExploreServicesSection = () => {
     };
 
     const handleSendApply = async (message) => {
-        console.log('Applying for service:', selectedService, 'with message:', message);
         if (!selectedService || !token) return;
 
         try {
@@ -326,19 +326,19 @@ const ExploreServicesSection = () => {
                 }
             );
             console.log('Apply response:', response);
-            alert('Applied successfully!');
+            success('Applied successfully!');
             setSelectedService(null);
             setApplyModalVisible(false);
-        } catch (error) {
-            console.error('Full error response data:', error.response?.data);
+        } catch (err) {
+            console.err('Full error response data:', err.response?.data);
             const detail =
-                error?.response?.data?.detail ||
-                error?.response?.data?.non_field_errors?.[0];
+                err?.response?.data?.detail ||
+                err?.response?.data?.non_field_errors?.[0];
 
             if (detail && detail.toLowerCase().includes('already have an active order')) {
-                alert('You already have an active order for this service.');
+                warning('You already have an active order for this service.');
             } else {
-                alert('Failed to apply. Please try again.');
+                error('Failed to apply. Please try again.');
             }
         }
 

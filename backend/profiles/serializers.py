@@ -555,11 +555,22 @@ class ClientProfileSetupSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
         account_type = attrs.get('account_type')
         errors = {}
-        if account_type == 'business' and not attrs.get('company_name'):
-            errors['company_name'] = 'Company name is required for business accounts.'
+
+        if account_type == 'business':
+            if not attrs.get('company_name'):
+                errors['company_name'] = 'Company name is required for business accounts.'
+            if not attrs.get('industry'):
+                errors['industry'] = 'Industry is required for business accounts.'
+            if not attrs.get('company_size'):
+                errors['company_size'] = 'Company size is required for business accounts.'
+            if not attrs.get('company_description'):
+                errors['company_description'] = 'Company description is required for business accounts.'
+
+        # Optionally, you can add more general validations here
 
         if errors:
             raise serializers.ValidationError(errors)
+
         return attrs
 
     def validate_first_name(self, value):

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext, useCallback } from 'react';
-// import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import ApplyProposalModal from './ApplyProposalModal'
 import {
     Search, Filter, Star, Clock, DollarSign, ChevronDown, Grid, List,
@@ -10,9 +10,7 @@ import { AuthContext } from '../../../../context/AuthContext';
 import { Link } from 'react-router-dom';
 import { useToast } from '../../../../hooks/useToast';
 
-// ProposalCard mirrors ServiceCard but adapted fields for proposal
-// ProposalCard component updated to match your API payload structure
-const ProposalCard = ({ proposal, onApplyProposal }) => {
+const ProposalCard = ({ proposal, onApplyProposal, onViewProfile }) => {
     return (
         <div className="group bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 overflow-hidden hover:bg-white/10 hover:border-blue-400/30 hover:shadow-xl hover:shadow-blue-500/10 transition-all duration-300 hover:-translate-y-2 relative">
             {proposal.is_featured && (
@@ -48,13 +46,13 @@ const ProposalCard = ({ proposal, onApplyProposal }) => {
                             <ExternalLink size={16} />
                             <span>Apply Now</span>
                         </button>
-                        <Link
-                            to={`/freelancer/clients/${proposal.client.id}`}
+                        <button
+                            onClick={() => onViewProfile(proposal)}
                             className="bg-white/10 backdrop-blur-sm text-white px-4 py-3 rounded-xl font-medium hover:bg-white/20 transition-all duration-200 shadow-lg hover:shadow-xl flex items-center justify-center space-x-2 text-sm border border-white/20 hover:border-white/40 hover:scale-105 min-w-[120px]"
                         >
                             <Eye size={16} />
                             <span>View Profile</span>
-                        </Link>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -190,7 +188,8 @@ const ExploreProposalsSection = () => {
         skills: ''
     });
 
-    // const navigate = useNavigate();
+    const navigate = useNavigate();
+
 
     useEffect(() => {
         if (!token) {
@@ -290,6 +289,14 @@ const ExploreProposalsSection = () => {
     const handleFilterChange = (key, value) => {
         setFilters(prev => ({ ...prev, [key]: value }));
         setCurrentPage(1);
+    };
+
+    const handleViewProfile = (proposal) => {
+        navigate(`/freelancer/clients/${proposal.client.id}`, {
+            state: {
+                from: 'explore'
+            }
+        });
     };
 
     const handleSearchChange = (value) => {
@@ -542,6 +549,7 @@ const ExploreProposalsSection = () => {
                             key={proposal.id}
                             proposal={proposal}
                             onApplyProposal={handleApplyProposal}
+                            onViewProfile={handleViewProfile}
                         />
                     ))}
                 </div>
