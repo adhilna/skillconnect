@@ -48,6 +48,32 @@ export function validateNonEmptyString(value, fieldName = 'Field', minLen = 3, m
   return null; // ✅ valid
 }
 
+export function validateDescription(value, fieldName = 'Field', minLen = 3, maxLen = 255) {
+  if (!value || typeof value !== 'string') {
+    return `${fieldName} is required.`;
+  }
+
+  const trimmed = value.trim();
+
+  // Length validation
+  if (trimmed.length < minLen) {
+    return `${fieldName} must be at least ${minLen} characters long.`;
+  }
+
+  if (trimmed.length > maxLen) {
+    return `${fieldName} must be at most ${maxLen} characters long.`;
+  }
+
+  // Allow letters, numbers, spaces, and common punctuation
+  const validPattern = /^[A-Za-z0-9 .,;:'"\-!?()]+$/;
+  if (!validPattern.test(trimmed)) {
+    return `${fieldName} may only contain letters, numbers, spaces, and common punctuation.`;
+  }
+
+  return null; // ✅ valid
+}
+
+
 // Age validator
 export function validateAge(value, min = 16, max = 60) {
   const age = parseInt(value, 10);

@@ -24,6 +24,7 @@ import {
     validateOptionalYearRange,
     validateLanguage,
     validateURL,
+    validateDescription
 } from '../../../utils/validation';
 import { allowedCountriesArray } from '../../../utils/constants';
 
@@ -503,7 +504,7 @@ const FreelancerProfileSetup = () => {
             errors.country = validateCountry(freelancerData.country, allowedCountriesArray);
             errors.location = validateCity(freelancerData.location);
             errors.age = validateAge(freelancerData.age);
-            errors.about = validateNonEmptyString(freelancerData.about, "About/Bio", 10, 2000);
+            errors.about = validateDescription(freelancerData.about, "About/Bio", 10, 2000);
         }
         else if (formStep === 1) {
             errors.skills = (freelancerData.skills.length === 0) ? "Select at least one skill." : null;
@@ -511,7 +512,7 @@ const FreelancerProfileSetup = () => {
                 const expErrors = {
                     role: validateNonEmptyString(exp.role, `Experience Role #${index + 1}`, 0, 100, true),
                     company: validateNonEmptyString(exp.company, `Experience Company #${index + 1}`, 0, 100, true),
-                    description: validateNonEmptyString(exp.description, `Experience Description #${index + 1}`, 0, 1000, true),
+                    description: validateDescription(exp.description, `Experience Description #${index + 1}`, 0, 1000, true),
                     dates: validateOptionalDateRange(exp.start_date, exp.end_date, exp.ongoing)
                 };
                 // remove null fields
