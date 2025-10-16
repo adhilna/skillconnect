@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import api from '../../api/api';
 
 function CountryAutocomplete({ value, onChange, onBlur, errors }) {
     const [input, setInput] = useState(value || '');
@@ -8,22 +9,22 @@ function CountryAutocomplete({ value, onChange, onBlur, errors }) {
 
     useEffect(() => {
         const timer = setTimeout(() => {
-            if (input.length > 1) {
-                fetch(`http://localhost:8000/api/v1/profiles/country-autocomplete/?q=${input}`)
-                    .then(res => res.json())
-                    .then(data => {
-                        data = data.filter(country => country.name !== input);
-                        // Sort alphabetically
-                        data.sort((a, b) => a.name.localeCompare(b.name));
-                        setSuggestions(data);
-                        setShowSuggestions(true);
-                    })
-                    .catch(() => setSuggestions([]));
-            } else {
-                setSuggestions([]);
-                setShowSuggestions(false);
-            }
-        }, 300);
+    if (input.length > 1) {
+        api.get(`/api/v1/profiles/country-autocomplete/?q=${input}`)
+            .then(res => {
+                let data = res.data.filter(city => city.name !== input);
+                // Sort suggestions alphabetically by city name
+                data.sort((a, b) => a.name.localeCompare(b.name));
+                setSuggestions(data);
+                setShowSuggestions(true);
+            })
+            .catch(() => setSuggestions([]));
+    } else {
+        setSuggestions([]);
+        setShowSuggestions(false);
+    }
+}, 300);
+
 
         return () => clearTimeout(timer);
     }, [input]);

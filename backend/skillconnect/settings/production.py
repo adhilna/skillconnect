@@ -25,7 +25,6 @@ CSRF_TRUSTED_ORIGINS = [
     'http://3.107.105.91:5000',
 ]
 
-
 ALLOWED_HOSTS = ['localhost', '127.0.0.1', '3.107.105.91']
 
 
