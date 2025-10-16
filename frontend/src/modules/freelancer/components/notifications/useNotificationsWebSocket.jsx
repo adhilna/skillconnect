@@ -1,5 +1,7 @@
 import { useState, useEffect, useContext } from 'react';
 import { AuthContext } from '../../../../context/AuthContext';
+import config from '../../../../config/environment';
+
 const useNotificationsWebSocket = () => {
   const { token } = useContext(AuthContext);
   const [notifications, setNotifications] = useState([]);
@@ -7,9 +9,9 @@ const useNotificationsWebSocket = () => {
   useEffect(() => {
     if (!token) return;
 
-    const backendHost = 'localhost:8000';
-    const wsScheme = window.location.protocol === 'https:' ? 'wss' : 'ws';
-    const wsUrl = `${wsScheme}://${backendHost}/ws/notifications/?token=${token}`;
+    // const backendHost = 'localhost:8000';
+    // const wsScheme = window.location.protocol === 'https:' ? 'wss' : 'ws';
+    const wsUrl = `${config.wsUrl}/ws/notifications/?token=${token}`;
     const socket = new WebSocket(wsUrl);
 
     socket.onopen = () => {
