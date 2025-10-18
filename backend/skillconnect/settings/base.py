@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     'gigs.apps.GigsConfig',
     'core',
     'messaging',
+    'storages',
 ]
 
 MIDDLEWARE = [
