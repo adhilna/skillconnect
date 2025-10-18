@@ -8,6 +8,7 @@ import ChatMessages from './messagesSection/ChatMessages';
 import ChatInput from './messagesSection/ChatInput';
 import ProjectContext from './messagesSection/ProjectContext';
 import ChatHeader from './messagesSection/ChatHeader';
+import config from '../../../../config/environment';
 
 const FreelancerChatDashboard = ({ conversationId }) => {
   const { user, token } = useContext(AuthContext);
@@ -210,9 +211,9 @@ const FreelancerChatDashboard = ({ conversationId }) => {
 
     let isMounted = true;
 
-    const backendHost = 'localhost:8000';
-    const wsProtocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
-    const wsUrl = `${wsProtocol}://${backendHost}/ws/messaging/chat/${selectedChat.id}/?token=${token}`;
+    // const backendHost = 'localhost:8000';
+    // const wsProtocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
+    const wsUrl = `${config.wsUrl}/ws/messaging/chat/${selectedChat.id}/?token=${token}`;
     socketRef.current = new WebSocket(wsUrl);
 
     const socket = socketRef.current;

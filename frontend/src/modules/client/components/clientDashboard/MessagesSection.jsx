@@ -28,6 +28,7 @@ import {
 } from 'lucide-react';
 import ProjectContext from './messagesSection/ProjectContext';
 import ChatHeader from './messagesSection/ChatHeader';
+import config from '../../../../config/environment';
 
 // Reaction picker component
 const ReactionPicker = ({ isVisible, onReact, onClose }) => {
@@ -755,9 +756,9 @@ const MessagesSection = ({ conversationId, onOpenPaymentFlow, selectedPayment, s
         if (!selectedChat || !token) return;
 
         let isMounted = true;
-        const backendHost = 'localhost:8000';
-        const wsProtocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
-        const wsUrl = `${wsProtocol}://${backendHost}/ws/messaging/chat/${selectedChat.id}/?token=${token}`;
+        // const backendHost = 'localhost:8000';
+        // const wsProtocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
+        const wsUrl = `${config.wsUrl}/ws/messaging/chat/${selectedChat.id}/?token=${token}`;
         const socket = new WebSocket(wsUrl);
 
         socket.onopen = () => {

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Briefcase, Plus, Edit, Eye, Clock, RefreshCw, DollarSign, X, Upload, Star, AlertCircle } from 'lucide-react';
+import api from '../../../../api/api';
 
 const ServicesSection = () => {
   const [services, setServices] = useState([]);
@@ -22,12 +23,7 @@ const ServicesSection = () => {
     is_featured: false
   });
 
-  const API_BASE_URL = "http://localhost:8000/api/v1/gigs/services/";
-
-  // Utility functions
-  const getAuthToken = () => {
-    return localStorage.getItem('access') || sessionStorage.getItem('authtoken');
-  };
+  // const API_BASE_URL = "http://localhost:8000/api/v1/gigs/services/";
 
   const availableSkills = [
     "React", "JavaScript", "Python", "Node.js", "CSS", "HTML", "PHP", "WordPress",
@@ -39,13 +35,7 @@ const ServicesSection = () => {
   // Fetch services from backend
   const fetchServices = async () => {
     try {
-      const token = getAuthToken();
-      const response = await fetch(API_BASE_URL, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
+      const response = await api.get('/api/v1/gigs/services/');
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -62,41 +52,11 @@ const ServicesSection = () => {
   // Fetch categories from backend
   const fetchCategories = async () => {
     try {
-      const token = getAuthToken();
-      const response = await fetch('http://localhost:8000/api/v1/core/categories/', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        // Fallback to predefined categories if API fails
-        setCategories([
-          { id: 1, name: "Web Development" },
-          { id: 2, name: "Mobile Development" },
-          { id: 3, name: "Writing & Translation" },
-          { id: 4, name: "Design & Creative" },
-          { id: 5, name: "Digital Marketing" },
-          { id: 6, name: "Programming & Tech" },
-          { id: 7, name: "Business" },
-          { id: 8, name: "Lifestyle" },
-          { id: 9, name: "Data Science & AI" },
-          { id: 10, name: "Video & Animation" },
-          { id: 11, name: "Music & Audio" },
-          { id: 12, name: "Finance & Accounting" },
-          { id: 13, name: "Engineering & Architecture" },
-          { id: 14, name: "Education & Training" },
-          { id: 15, name: "Legal" }
-        ]);
-        return;
-      }
-
-      const data = await response.json();
-      setCategories(data.results || data || []);
+      const response = await api.get('/api/v1/core/categories/');
+      setCategories(response.data.results || response.data || []);
     } catch (err) {
       console.error('Error fetching categories:', err);
-      // Fallback categories
+      // Fallback to static list on failure
       setCategories([
         { id: 1, name: "Web Development" },
         { id: 2, name: "Mobile Development" },
@@ -117,6 +77,7 @@ const ServicesSection = () => {
     }
   };
 
+
   // Initial data load
   useEffect(() => {
     const loadData = async () => {
@@ -126,7 +87,7 @@ const ServicesSection = () => {
     };
 
     loadData();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleCreateNew = () => {
@@ -173,7 +134,6 @@ const ServicesSection = () => {
     setError(null);
 
     try {
-      const token = getAuthToken();
 
       const submitData = new FormData();
 
@@ -194,20 +154,13 @@ const ServicesSection = () => {
         submitData.append('image', formData.image);
       }
 
-      const url = editingService
-        ? `${API_BASE_URL}${editingService.id}/`
-        : API_BASE_URL;
+      const endpoint = editingService
+        ? `/api/v1/gigs/services/${editingService.id}/`
+        : `/api/v1/gigs/services/`;
 
       const method = editingService ? 'PATCH' : 'POST';
 
-      const response = await fetch(url, {
-        method,
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          // Don't set Content-Type for FormData, let browser set it
-        },
-        body: submitData,
-      });
+      const response = await api[method](endpoint, submitData);
 
       if (!response.ok) {
         const errorData = await response.json();
