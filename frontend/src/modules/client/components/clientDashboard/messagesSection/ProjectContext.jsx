@@ -9,6 +9,7 @@ import {
     ChevronDown,
     ChevronUp,
 } from 'lucide-react';
+import config from '../../../../../config/environment';
 
 const ProjectContext = ({
     orderType,
@@ -74,9 +75,9 @@ const ProjectContext = ({
         if (!orderType || !orderId || !token) return;
 
         let isMounted = true;
-        const backendHost = 'localhost:8000'; // Change to your prod host
-        const wsProtocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
-        const wsUrl = `${wsProtocol}://${backendHost}/ws/messaging/contracts/${orderType}/${orderId}/?token=${token}`;
+        // const backendHost = 'localhost:8000'; // Change to your prod host
+        // const wsProtocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
+        const wsUrl = `${config.wsUrl}/ws/messaging/contracts/${orderType}/${orderId}/?token=${token}`;
 
         const ws = new WebSocket(wsUrl);
 

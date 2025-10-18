@@ -411,9 +411,9 @@ const FreelancerChatDashboard = ({ conversationId }) => {
     if (!selectedChat?.orderType || !selectedChat?.orderId || !token) return;
 
     let isMounted = true;
-    const backendHost = 'localhost:8000';
-    const wsProtocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
-    const wsUrl = `${wsProtocol}://${backendHost}/ws/messaging/contracts/${selectedChat.orderType}/${selectedChat.orderId}/?token=${token}`;
+    // const backendHost = 'localhost:8000';
+    // const wsProtocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
+    const wsUrl = `${config.wsUrl}/ws/messaging/contracts/${selectedChat.orderType}/${selectedChat.orderId}/?token=${token}`;
     const ws = new WebSocket(wsUrl);
 
     ws.onopen = () => {
