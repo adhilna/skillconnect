@@ -31,7 +31,6 @@ CSRF_TRUSTED_ORIGINS = [
 
 ALLOWED_HOSTS = ['localhost', '127.0.0.1', '3.107.105.91', 'skillconnect.buzz', 'www.skillconnect.buzz']
 
-
 SECURE_CROSS_ORIGIN_OPENER_POLICY = 'same-origin-allow-popups'
 
 # REST Framework production settings
