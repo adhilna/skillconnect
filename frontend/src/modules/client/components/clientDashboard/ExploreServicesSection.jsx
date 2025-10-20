@@ -315,7 +315,7 @@ const ExploreServicesSection = () => {
         if (!selectedService || !token) return;
 
         try {
-            const response = await api.post(
+            await api.post(
                 '/api/v1/gigs/service-orders/',
                 {
                     service_id: selectedService.id,
@@ -325,7 +325,7 @@ const ExploreServicesSection = () => {
                     headers: { Authorization: `Bearer ${token}` },
                 }
             );
-            console.log('Apply response:', response);
+            // console.log('Apply response:', response);
             success('Applied successfully!');
             setSelectedService(null);
             setApplyModalVisible(false);

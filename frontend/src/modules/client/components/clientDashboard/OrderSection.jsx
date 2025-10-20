@@ -49,9 +49,9 @@ const ClientProposalOrdersSection = ({ selectedOrderId, onSelectOrder, onStartCh
                         page: currentPage,
                     },
                 });
-                console.log('API response data:', response.data);
-                console.log('orders state:', orders);
-                console.log('filteredOrders:', filteredOrders);
+                // console.log('API response data:', response.data);
+                // console.log('orders state:', orders);
+                // console.log('filteredOrders:', filteredOrders);
                 setOrders(response.data.results || []);
                 setTotalOrdersCount(response.data.count || 0);
             } catch (err) {

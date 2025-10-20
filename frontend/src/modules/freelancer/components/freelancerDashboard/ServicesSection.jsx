@@ -32,22 +32,20 @@ const ServicesSection = () => {
     "Django", "Flask", "MongoDB", "PostgreSQL", "MySQL", "AWS", "Docker"
   ];
 
-  // Fetch services from backend
   const fetchServices = async () => {
     try {
       const response = await api.get('/api/v1/gigs/services/');
+      const data = response.data;
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
-      setServices(data.results || data || []);
+      // Handle null or empty
+      setServices(data?.results || data || []);
     } catch (err) {
       console.error('Error fetching services:', err);
       setError('Failed to load services');
+      setServices([]); // fallback
     }
   };
+
 
   // Fetch categories from backend
   const fetchCategories = async () => {

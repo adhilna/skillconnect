@@ -86,43 +86,52 @@ export default function LoginPage() {
   };
 
   const handleGoogleSuccess = async (googleToken) => {
-    setError('');
+    setError("");
     setGoogleLoading(true);
+
     try {
-      const response = await api.post('/api/v1/auth/users/google/', { token: googleToken });
+      const response = await api.post("/api/v1/auth/users/google/", { token: googleToken });
+
       if (response.data.access) {
-        // Save JWT, redirect, etc.
-        localStorage.setItem("access", response.data.access);
-        localStorage.setItem("refresh", response.data.refresh);
-        navigate('/welcome');
+        // Save user + tokens to context + localStorage
+        login(response.data.user, response.data.access, response.data.refresh);
+
+        // Redirect based on role
+        if (response.data.user.role === "CLIENT") navigate("/client/dashboard");
+        else if (response.data.user.role === "FREELANCER") navigate("/freelancer/dashboard");
+        else navigate("/welcome");
       } else if (response.data.need_role) {
         setGoogleToken(googleToken);
         setShowRoleSelection(true);
       }
-    } catch (error) {
-      setError(error.response?.data?.detail || "Google login failed.");
+    } catch (err) {
+      setError(err.response?.data?.detail || "Google login failed.");
     }
+
     setGoogleLoading(false);
   };
 
-
+  // Role selection continue button
   const handleRoleContinue = async () => {
     setGoogleLoading(true);
-    setError('');
+    setError("");
+
     try {
-      const response = await api.post('/api/v1/auth/users/google/', {
+      const response = await api.post("/api/v1/auth/users/google/", {
         token: googleToken,
         role: selectedRole,
       });
+
       if (response.data.access) {
-        localStorage.setItem("access", response.data.access);
-        localStorage.setItem("refresh", response.data.refresh);
-        setShowRoleSelection(false);
-        navigate('/welcome');
+        login(response.data.user, response.data.access, response.data.refresh);
+
+        if (selectedRole === "CLIENT") navigate("/client/dashboard");
+        else navigate("/freelancer/dashboard");
       }
-    } catch (error) {
-      setError(error.response?.data?.detail || "Role selection failed.");
+    } catch (err) {
+      setError(err.response?.data?.detail || "Role selection failed.");
     }
+
     setGoogleLoading(false);
   };
 

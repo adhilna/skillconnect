@@ -243,7 +243,7 @@ const FreelancerChatDashboard = ({ conversationId }) => {
         if (!isMounted) return;
 
         const data = JSON.parse(event.data);
-        console.log("WS message received:", data);
+        // console.log("WS message received:", data);
 
         // Handle different incoming event types:
         if (data.type === 'chat_message' || (!data.type && data.id)) {
@@ -421,7 +421,7 @@ const FreelancerChatDashboard = ({ conversationId }) => {
         ws.close();
         return;
       }
-      console.log('Contract WebSocket connected');
+      // console.log('Contract WebSocket connected');
     };
 
     ws.onerror = (err) => {
@@ -438,7 +438,7 @@ const FreelancerChatDashboard = ({ conversationId }) => {
       if (!isMounted) return;
       try {
         const data = JSON.parse(event.data);
-        console.log('Contract update received', data);
+        // console.log('Contract update received', data);
         setContract(data);
         setCurrentWorkflowStatus(data.workflow_status || 'planning');
         setContractForm({
@@ -557,8 +557,8 @@ const FreelancerChatDashboard = ({ conversationId }) => {
         formData.append('message_type', 'text');
         formData.append('content', newMessage.trim());
       }
-      console.log("Attached before send:", attachedFiles);
-      console.log("FormData entries:", [...formData.entries()]);
+      // console.log("Attached before send:", attachedFiles);
+      // console.log("FormData entries:", [...formData.entries()]);
 
 
       setIsUploading(true);

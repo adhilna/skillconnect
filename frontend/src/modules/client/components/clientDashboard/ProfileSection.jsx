@@ -231,16 +231,16 @@ const ProfileSection = ({
 
             <div className="flex-1">
               <h1 className="text-2xl sm:text-3xl font-bold text-white mb-2">
-                {profileData.company_name || 'Company Profile'}
+                {profileData?.company_name || 'Company Profile'}
               </h1>
               <div className="flex flex-wrap items-center gap-2 mb-3">
                 <div className="flex items-center gap-0.5 text-white/70">
                   <Users size={14} />
-                  <span className="text-xs sm:text-sm capitalize">{profileData.account_type || 'N/A'} Account</span>
+                  <span className="text-xs sm:text-sm capitalize">{profileData?.account_type || 'N/A'} Account</span>
                 </div>
                 <div className="flex items-center gap-0.5 text-white/70">
                   <Target size={14} />
-                  <span className="text-xs sm:text-sm">{profileData.industry || 'N/A'}</span>
+                  <span className="text-xs sm:text-sm">{profileData?.industry || 'N/A'}</span>
                 </div>
                 <div className="flex items-center gap-1 px-2 py-1 bg-green-500/20 rounded-full">
                   <Shield size={12} className="text-green-400" />
@@ -354,8 +354,8 @@ const ProfileSection = ({
                     )}
                   </div>
 
-                  <h4 className="text-xl font-semibold text-white">{profileData.company_name || 'N/A'}</h4>
-                  <p className="text-white/70 text-sm capitalize">{profileData.account_type || 'N/A'} Account</p>
+                  <h4 className="text-xl font-semibold text-white">{profileData?.company_name || 'N/A'}</h4>
+                  <p className="text-white/70 text-sm capitalize">{profileData?.account_type || 'N/A'} Account</p>
                   <div className="flex items-center justify-center space-x-1 mt-2">
                     <Shield size={14} className="text-green-400" />
                     <span className="text-green-400 text-xs">Verified</span>
@@ -365,20 +365,20 @@ const ProfileSection = ({
                   <div className="flex items-center space-x-2">
                     <User size={16} className="text-white/50" />
                     <span className="text-white text-sm">
-                      {profileData.first_name || 'N/A'} {profileData.last_name || ''}
+                      {profileData?.first_name || 'N/A'} {profileData?.last_name || ''}
                     </span>
                   </div>
                   <div className="flex items-center space-x-2">
                     <Target size={16} className="text-white/50" />
-                    <span className="text-white text-sm">{profileData.industry || 'N/A'}</span>
+                    <span className="text-white text-sm">{profileData?.industry || 'N/A'}</span>
                   </div>
                   <div className="flex items-center space-x-2">
                     <Users size={16} className="text-white/50" />
-                    <span className="text-white text-sm">{profileData.company_size || 'N/A'}</span>
+                    <span className="text-white text-sm">{profileData?.company_size || 'N/A'}</span>
                   </div>
                   <div className="flex items-center space-x-2">
                     <DollarSign size={16} className="text-white/50" />
-                    <span className="text-white text-sm">{profileData.budget_range || 'N/A'}</span>
+                    <span className="text-white text-sm">{profileData?.budget_range || 'N/A'}</span>
                   </div>
                 </div>
               </div>
@@ -392,28 +392,28 @@ const ProfileSection = ({
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <EditableField
                     label="First Name"
-                    value={profileData.first_name}
+                    value={profileData?.first_name}
                     field="first_name"
                     isEditing={isEditing}
                     onChange={onInputChange}
                   />
                   <EditableField
                     label="Last Name"
-                    value={profileData.last_name}
+                    value={profileData?.last_name}
                     field="last_name"
                     isEditing={isEditing}
                     onChange={onInputChange}
                   />
                   <EditableField
                     label="Company Name"
-                    value={profileData.company_name}
+                    value={profileData?.company_name}
                     field="company_name"
                     isEditing={isEditing}
                     onChange={onInputChange}
                   />
                   <EditableField
                     label="Account Type"
-                    value={profileData.account_type}
+                    value={profileData?.account_type}
                     field="account_type"
                     options={accountTypes}
                     isEditing={isEditing}
@@ -421,7 +421,7 @@ const ProfileSection = ({
                   />
                   <EditableField
                     label="Industry"
-                    value={profileData.industry}
+                    value={profileData?.industry}
                     field="industry"
                     options={industries}
                     isEditing={isEditing}
@@ -429,7 +429,7 @@ const ProfileSection = ({
                   />
                   <EditableField
                     label="Company Size"
-                    value={profileData.company_size}
+                    value={profileData?.company_size}
                     field="company_size"
                     options={companySizes}
                     isEditing={isEditing}
@@ -437,14 +437,14 @@ const ProfileSection = ({
                   />
                   <EditableField
                     label="Location"
-                    value={profileData.location}
+                    value={profileData?.location}
                     field="location"
                     isEditing={isEditing}
                     onChange={onInputChange}
                   />
                   <EditableField
                     label="Website"
-                    value={profileData.website}
+                    value={profileData?.website}
                     field="website"
                     type="url"
                     isEditing={isEditing}
@@ -453,7 +453,7 @@ const ProfileSection = ({
                   <div className="md:col-span-2">
                     <EditableField
                       label="Company Description"
-                      value={profileData.company_description}
+                      value={profileData?.company_description}
                       field="company_description"
                       isTextarea={true}
                       isEditing={isEditing}
@@ -477,7 +477,7 @@ const ProfileSection = ({
                 <EditableArrayField
                   label="Project Types"
                   field="project_types"
-                  items={profileData.project_types}
+                  items={profileData?.project_types}
                   newValue={newProjectType}
                   setNewValue={setNewProjectType}
                   isEditing={isEditing}
@@ -488,7 +488,7 @@ const ProfileSection = ({
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <EditableField
                     label="Budget Range"
-                    value={profileData.budget_range}
+                    value={profileData?.budget_range}
                     field="budget_range"
                     options={budgetRanges}
                     isEditing={isEditing}
@@ -496,7 +496,7 @@ const ProfileSection = ({
                   />
                   <EditableField
                     label="Project Frequency"
-                    value={profileData.project_frequency}
+                    value={profileData?.project_frequency}
                     field="project_frequency"
                     options={projectFrequencies}
                     isEditing={isEditing}
@@ -504,7 +504,7 @@ const ProfileSection = ({
                   />
                   <EditableField
                     label="Working Hours"
-                    value={profileData.working_hours}
+                    value={profileData?.working_hours}
                     field="working_hours"
                     isEditing={isEditing}
                     onChange={onInputChange}

@@ -380,7 +380,7 @@ const FreelancerDashboard = () => {
                     {activeSection === 'dashboard' ? 'Dashboard Overview' : activeSection.replace(/([A-Z])/g, ' $1')}
                   </h2>
                   <p className="text-white/60 text-sm">
-                    Welcome back, {freelancers.length > 0 ? `${freelancers[0].first_name} ` : 'John Doe'}!
+                    Welcome back, {freelancers.length > 0 ? `${freelancers[0].first_name} ` : ' '}!
                   </p>
                 </div>
               </div>

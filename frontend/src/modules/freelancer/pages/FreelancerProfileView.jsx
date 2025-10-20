@@ -177,15 +177,26 @@ const FreelancerProfileView = () => {
         location: loc,
         age,
         country,
-        educations_output = [],
-        experiences_output = [],
-        skills_output = [],
-        languages_output = [],
-        portfolios_output = [],
-        social_links_output = {},
-        verification_output = {},
+        educations_output: raw_educations_output,
+        experiences_output: raw_experiences_output,
+        skills: raw_skills,
+        languages_output: raw_languages_output,
+        portfolios_output: raw_portfolios_output,
+        social_links_output: raw_social_links_output,
+        verification_output: raw_verification_output,
         is_available,
     } = profile;
+
+    // Convert null to empty array / object
+    const educations_output = raw_educations_output || [];
+    const experiences_output = raw_experiences_output || [];
+    const skills = raw_skills || [];
+    const languages_output = raw_languages_output || [];
+    const portfolios_output = raw_portfolios_output || [];
+    const social_links_output = raw_social_links_output || {};
+    const verification_output = raw_verification_output || {};
+
+// console.log("skills:", skills);
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900">
@@ -333,9 +344,9 @@ const FreelancerProfileView = () => {
                                 <Code className="w-5 h-5 text-white/60" />
                                 <h2 className="text-xl font-semibold text-white">Skills</h2>
                             </div>
-                            {skills_output?.length ? (
+                            {skills?.length ? (
                                 <div className="flex flex-wrap gap-2">
-                                    {skills_output.map(skill => (
+                                    {skills.map(skill => (
                                         <SkillTag key={skill.id} skill={skill.name} variant="blue" />
                                     ))}
                                 </div>

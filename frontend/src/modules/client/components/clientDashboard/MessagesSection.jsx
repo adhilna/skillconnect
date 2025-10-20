@@ -610,7 +610,7 @@ const MessagesSection = ({ conversationId, onOpenPaymentFlow, selectedPayment, s
                 const res = await api.get('/api/v1/messaging/conversations/', {
                     headers: { Authorization: `Bearer ${token}` },
                 });
-                console.log('Fetched conversations:', res.data);
+                // console.log('Fetched conversations:', res.data);
 
                 const chats = res.data.map(convo => {
                     const name = convo.freelancer_name || `Freelancer ${convo.freelancer_id || ''}`;

@@ -54,7 +54,7 @@ const ProjectContext = ({
                 headers: { Authorization: `Bearer ${token}` },
             })
             .then((res) => {
-                console.log("Contract API response:", res.data);
+                // console.log("Contract API response:", res.data);
                 if (res.data.length > 0) {
                     const c = res.data[0];
                     setContract(c);

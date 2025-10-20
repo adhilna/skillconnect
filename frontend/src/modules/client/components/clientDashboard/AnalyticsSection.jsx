@@ -31,10 +31,10 @@ const AnalyticsSection = ({paymentHistory, totalPages, setTotalPages, loadingPay
     const [sortDirection, setSortDirection] = useState('desc');
     const itemsPerPage = 5;
 
-    useEffect(() => {
-        console.log("paymentHistory updated:", paymentHistory);
-        console.log(paymentHistory.map(t => t.status));
-    }, [paymentHistory]);
+    // useEffect(() => {
+    //     console.log("paymentHistory updated:", paymentHistory);
+    //     console.log(paymentHistory.map(t => t.status));
+    // }, [paymentHistory]);
 
     const monthlyData = useMemo(() => {
         if (!paymentHistory || paymentHistory.length === 0) return [];
@@ -64,7 +64,7 @@ const AnalyticsSection = ({paymentHistory, totalPages, setTotalPages, loadingPay
 
     // Calculate summary metrics
     const summaryMetrics = useMemo(() => {
-        console.log(paymentHistory.map(t => t.status));
+        // console.log(paymentHistory.map(t => t.status));
         const successfulPayments = paymentHistory.filter(
             (t) => t.status?.toLowerCase() === "completed"
         );
@@ -108,8 +108,8 @@ const AnalyticsSection = ({paymentHistory, totalPages, setTotalPages, loadingPay
             const matchesStatus = statusFilter === 'all' || transaction.status?.toLowerCase() === statusFilter.toLowerCase();
             return matchesSearch && matchesStatus;
         });
-        console.log("filtering paymentHistory:", paymentHistory);
-        console.log("filtered by search/status:", filtered.length);
+        // console.log("filtering paymentHistory:", paymentHistory);
+        // console.log("filtered by search/status:", filtered.length);
 
 
         // Sort

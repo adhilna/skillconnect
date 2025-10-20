@@ -140,6 +140,7 @@ class GoogleAuthView(APIView):
 
         if not token:
             return Response({'detail': 'No token provided'}, status=status.HTTP_400_BAD_REQUEST)
+
         try:
             idinfo = id_token.verify_oauth2_token(
                 token,
@@ -147,6 +148,7 @@ class GoogleAuthView(APIView):
                 "177280873690-gfuk3olcl1ue5ue3c693jdd7850tk9uf.apps.googleusercontent.com"
             )
             email = idinfo.get('email')
+            google_id = idinfo.get('sub')
 
             if not email:
                 return Response({'detail': 'Email not found in token'}, status=status.HTTP_400_BAD_REQUEST)
@@ -155,18 +157,22 @@ class GoogleAuthView(APIView):
             user, created = User.objects.get_or_create(email=email)
 
             if created:
+                # New user → ask for role if not provided
                 if not role:
                     return Response({'need_role': True}, status=200)
                 if role not in ['CLIENT', 'FREELANCER']:
                     return Response({'detail': 'Invalid role.'}, status=400)
                 user.role = role
                 user.is_verified = True
+                user.google_id = google_id  # optional field
                 user.save()
             else:
-                # Always update the role to the selected value
-                if role in ['CLIENT', 'FREELANCER']:
-                    user.role = role
-                    user.save()
+                # Existing user → do NOT overwrite password
+                if not user.is_verified:
+                    user.is_verified = True
+                if not getattr(user, 'google_id', None):
+                    user.google_id = google_id  # store Google ID if not already
+                user.save()
 
             refresh = RefreshToken.for_user(user)
             return Response({

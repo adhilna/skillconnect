@@ -33,7 +33,7 @@ const OrderSection = ({ selectedOrderId, onSelectOrder, onStartChat }) => {
             ordering: '-created_at',
           },
         });
-        console.log('Fetched Orders:', response.data);
+        // console.log('Fetched Orders:', response.data);
         setOrders(
           Array.isArray(response.data)
             ? response.data

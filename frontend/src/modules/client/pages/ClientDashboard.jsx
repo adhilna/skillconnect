@@ -22,7 +22,7 @@ import OrderSection from '../components/clientDashboard/OrderSection';
 import { OrdersProvider } from "../../../context/client/OrdersContext";
 
 const ClientDashboard = () => {
-    const { token } = useContext(AuthContext);
+    const { token, user, setUser } = useContext(AuthContext);
     const location = useLocation();
     const [activeSection, setActiveSection] = useState('dashboard');
     const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -189,28 +189,38 @@ const ClientDashboard = () => {
     };
 
     useEffect(() => {
-        if (!token) return;
-        api.get('/api/v1/profiles/client/profile-setup/', {
-            headers: { Authorization: `Bearer ${token}` }
+        if (!token || user?.role !== "CLIENT") return;
+
+        // If user already has profileData in context, use it
+        if (user.profileData) {
+            setProfileData(user.profileData);
+            setProfileId(user.profileData.id);
+            return;
+        }
+
+        // Otherwise fetch profile from API
+        api.get("/api/v1/profiles/client/profile-setup/me/", {
+            headers: { Authorization: `Bearer ${token}` },
         })
-            .then(res => {
-                // Handle both array and object responses
+            .then((res) => {
                 const profile = Array.isArray(res.data) ? res.data[0] : res.data;
                 if (profile) {
                     setProfileData(profile);
                     setProfileId(profile.id);
+
+                    // Save fetched profile to context so next navigation has it immediately
+                    setUser({ ...user, profileData: profile });
                 } else {
-                    // No profile exists for this user
                     setProfileData(null);
                     setProfileId(null);
                 }
             })
-            .catch(err => {
-                console.error('Error fetching profile:', err);
+            .catch((err) => {
+                console.error("Error fetching client profile:", err.response?.data || err.message);
                 setProfileData(null);
                 setProfileId(null);
             });
-    }, [token]);
+    }, [token, user, setUser]);
 
     useEffect(() => {
         const fetchFreelancers = async () => {

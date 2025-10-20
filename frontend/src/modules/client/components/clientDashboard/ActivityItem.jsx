@@ -7,10 +7,11 @@ const ActivityItem = ({ icon: Icon, text, time }) => (
             <Icon size={16} className="text-white/70" />
         </div>
         <div className="flex-1">
-            <p className="text-white text-sm">{text}</p>
+            <div className="text-white text-sm">{text}</div>
             <p className="text-white/50 text-xs">{time}</p>
         </div>
     </div>
+
 );
 
 export default ActivityItem;

@@ -32,7 +32,7 @@ const PaymentDashboard = ({
   selectedPayment,
   setSelectedPayment,
 }) => {
-  console.log("📄 PaymentSection mounted with selectedPayment:", selectedPayment);
+  // console.log("📄 PaymentSection mounted with selectedPayment:", selectedPayment);
   const [selectedMethod, setSelectedMethod] = useState('razorpay');
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
