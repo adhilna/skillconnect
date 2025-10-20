@@ -17,3 +17,6 @@ backend/media/
 venv/
 *.pyc
 __pycache__/
+
+github-actions-key
+github-actions-key.pub
