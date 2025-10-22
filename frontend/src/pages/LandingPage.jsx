@@ -18,7 +18,7 @@ export default function LandingPage() {
             <HeroSection category={category} setCategory={setCategory} />
             <FeaturesSection />
             <CategoriesSection category={category} setCategory={setCategory} />
-            <TestimonialsSection />
+            {/* <TestimonialsSection /> */}
             <CTASection />
             <FooterSection />
         </div>

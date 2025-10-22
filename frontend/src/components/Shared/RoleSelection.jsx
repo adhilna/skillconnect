@@ -1,7 +1,7 @@
 import React from "react";
 import PropTypes from "prop-types";
 
-export default function RoleSelection({ selectedRole, onSelect, onContinue, loading }) {
+export default function RoleSelection({ selectedRole, onSelect, onContinue, loading, onDemoLogin, errors }) {
   return (
     <div>
       <h2 className="text-xl font-bold text-white mb-6">Choose your account type</h2>
@@ -38,16 +38,33 @@ export default function RoleSelection({ selectedRole, onSelect, onContinue, load
           </div>
         ))}
       </div>
-      <div className="flex justify-end">
+      <div className="flex justify-between items-center mt-2">
+        <div className="flex flex-col items-start relative">
+          <button
+            type="button"
+            onClick={onDemoLogin}
+            className="bg-white/20 text-purple-700 font-semibold px-6 py-3 rounded-xl flex items-center transition-all hover:bg-purple-100 hover:text-purple-900 hover:scale-105"
+          >
+            Demo Login
+          </button>
+          {errors && errors.role && (
+            <div className="absolute top-full mt-2 text-red-400 text-sm text-left whitespace-nowrap">
+              {errors.role}
+            </div>
+          )}
+        </div>
+
+        {/* Right Side: Continue */}
         <button
           onClick={onContinue}
           disabled={!selectedRole || loading}
-          className={`bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-6 py-3 rounded-xl flex items-center font-medium transition-all transform hover:scale-105 ${!selectedRole || loading ? "opacity-50 cursor-not-allowed" : ""
-            }`}
+          className={`bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-6 py-3 rounded-xl flex items-center font-medium transition-all transform hover:scale-105 ${!selectedRole || loading ? "opacity-50 cursor-not-allowed" : ""}`}
         >
           {loading ? "Processing..." : "Continue"}
         </button>
       </div>
+
+
     </div>
   );
 }
@@ -57,4 +74,5 @@ RoleSelection.propTypes = {
   onSelect: PropTypes.func.isRequired,
   onContinue: PropTypes.func.isRequired,
   loading: PropTypes.bool,
+  errors: PropTypes.object,
 };

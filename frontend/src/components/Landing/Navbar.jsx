@@ -11,7 +11,6 @@ export const Navbar = () => (
         <div className="hidden md:flex space-x-6">
             <a href="/explore" className="hover:text-purple-300 transition-colors text-white">Explore</a>
             <a href="/how-it-works" className="hover:text-purple-300 transition-colors text-white">How it Works</a>
-            <a href="/enterprise" className="hover:text-purple-300 transition-colors text-white">Enterprise</a>
         </div>
         <div className="space-x-4">
             <Link to="/login">
@@ -20,7 +19,7 @@ export const Navbar = () => (
                 </button>
             </Link>
             <Link to="/register">
-                <button className="px-4 py-2 rounded-lg bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 font-medium transition-all transform hover:scale-105">
+                <button className="px-4 py-2 rounded-lg bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 font-medium transition-all transform hover:scale-105 ">
                     Join Now
                 </button>
             </Link>

@@ -1,11 +1,16 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import {
+  Sparkles, HelpCircle,
+  X,
+  Lightbulb,
+  AlertCircle,
   DollarSign,
   Briefcase,
   CreditCard,
   TrendingUp,
   Clock,
   Star,
+  CheckCircle,
   Calendar,
   Filter,
   Download,
@@ -36,30 +41,91 @@ import {
   Legend
 } from 'recharts';
 
+const generateSmartInsights = ({
+  monthlyEarningsData,
+  activeProjects,
+  paymentMethodData
+}) => {
+  const insights = [];
+
+  // Earnings trend: recent 3-month vs previous 3-month average.
+  const recentMonths = monthlyEarningsData.slice(-3);
+  const avgRecent = recentMonths.reduce((sum, m) => sum + m.earnings, 0) / 3;
+  const prevMonths = monthlyEarningsData.slice(-6, -3);
+  const avgPrev = prevMonths.reduce((sum, m) => sum + m.earnings, 0) / 3;
+
+  if (avgPrev > 0) {
+    if (avgRecent > avgPrev * 1.15) {
+      insights.push({
+        type: 'success',
+        icon: '🎉',
+        title: 'Earnings Growth',
+        message: `Great! Your earnings increased ${(((avgRecent - avgPrev) / avgPrev) * 100).toFixed(0)}% recently`
+      });
+    } else if (avgRecent < avgPrev * 0.85) {
+      insights.push({
+        type: 'warning',
+        icon: '⚠️',
+        title: 'Earnings Decline',
+        message: `Earnings dropped ${(((avgPrev - avgRecent) / avgPrev) * 100).toFixed(0)}%. Check pending projects.`
+      });
+    }
+  }
+
+  // Urgent deadlines: less than 50% progress, deadline within next 7 days
+  const inAWeek = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+  const behindSchedule = activeProjects.filter(p =>
+    (typeof p.progress === 'number' && p.progress < 50) &&
+    new Date(p.deadline) < inAWeek
+  );
+  if (behindSchedule.length > 0) {
+    insights.push({
+      type: 'urgent',
+      icon: '🚨',
+      title: 'Urgent Deadlines',
+      message: `${behindSchedule.length} project(s) due within 7 days need attention`
+    });
+  }
+
+  // Payment method insight
+  if (paymentMethodData && paymentMethodData.length) {
+    const mostUsedMethod = paymentMethodData.slice().sort((a, b) => b.value - a.value)[0];
+    insights.push({
+      type: 'info',
+      icon: '💡',
+      title: 'Payment Preference',
+      message: `${mostUsedMethod.value} payments via ${mostUsedMethod.name}`
+    });
+  }
+  return insights.slice(0, 3); // Show top 3
+};
+
+
 const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
-const paymentMethodData = [
-  { name: 'Stripe', value: 45, color: '#8B5CF6' },
-  { name: 'PayPal', value: 35, color: '#06B6D4' },
-  { name: 'Razorpay', value: 20, color: '#10B981' }
-];
+// const paymentMethodData = [
+//   { name: 'Stripe', value: 45, color: '#8B5CF6' },
+//   { name: 'PayPal', value: 35, color: '#06B6D4' },
+//   { name: 'Razorpay', value: 20, color: '#10B981' }
+// ];
 
-const ratingsOverTimeData = [
-  { month: 'Jan', rating: 4.2 },
-  { month: 'Feb', rating: 4.5 },
-  { month: 'Mar', rating: 4.3 },
-  { month: 'Apr', rating: 4.7 },
-  { month: 'May', rating: 4.6 },
-  { month: 'Jun', rating: 4.8 },
-  { month: 'Jul', rating: 4.9 },
-  { month: 'Aug', rating: 4.8 },
-  { month: 'Sep', rating: 4.9 },
-  { month: 'Oct', rating: 4.9 },
-];
+// const ratingsOverTimeData = [
+//   { month: 'Jan', rating: 4.2 },
+//   { month: 'Feb', rating: 4.5 },
+//   { month: 'Mar', rating: 4.3 },
+//   { month: 'Apr', rating: 4.7 },
+//   { month: 'May', rating: 4.6 },
+//   { month: 'Jun', rating: 4.8 },
+//   { month: 'Jul', rating: 4.9 },
+//   { month: 'Aug', rating: 4.8 },
+//   { month: 'Sep', rating: 4.9 },
+//   { month: 'Oct', rating: 4.9 },
+// ];
 
 const AnalyticsSection = ({ paymentHistory, totalPages, setTotalPages, loadingPayments, activeProjects }) => {
-  const [timeRange, setTimeRange] = useState('3months');
+  // const [timeRange, setTimeRange] = useState('3months');
   const [selectedMetric, setSelectedMetric] = useState('earnings');
+  const [showGuide, setShowGuide] = useState(false);
 
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -92,7 +158,7 @@ const AnalyticsSection = ({ paymentHistory, totalPages, setTotalPages, loadingPa
         return matchesSearch && matchesStatus;
       }) : [];;
     console.log("filtering paymentHistory:", paymentHistory);
-    console.log("filtered by search/status:", filtered.length);
+    // console.log("filtered by search/status:", filtered.length);
 
     // Sort
     filtered.sort((a, b) => {
@@ -177,6 +243,43 @@ const AnalyticsSection = ({ paymentHistory, totalPages, setTotalPages, loadingPa
       projects: monthlyTotals[m].projects,
     }));
   }, [paymentHistory]);
+
+  const paymentMethodData = useMemo(() => {
+    if (!Array.isArray(paymentHistory) || paymentHistory.length === 0) return [];
+    const counts = paymentHistory.reduce((acc, curr) => {
+      const method = (curr.payment_method || "Other").toLowerCase();
+      acc[method] = (acc[method] || 0) + 1;
+      return acc;
+    }, {});
+    const colors = { razorpay: "#10B981", upi: "#06B6D4", stripe: "#8B5CF6", paypal: "#3B82F6", other: "#6366F1" };
+    return Object.entries(counts).map(([name, value]) => ({
+      name: name.charAt(0).toUpperCase() + name.slice(1),
+      value,
+      color: colors[name] || "#6366F1",
+    }));
+  }, [paymentHistory]);
+
+
+  const avgProgressByDeadlineMonth = useMemo(() => {
+    if (!Array.isArray(activeProjects) || activeProjects.length === 0) return [];
+    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const progressByMonth = {};
+    activeProjects.forEach(project => {
+      if (!project.deadline || typeof project.progress !== 'number') return;
+      const monthIdx = new Date(project.deadline).getMonth();
+      const monthStr = months[monthIdx];
+      if (!progressByMonth[monthStr]) progressByMonth[monthStr] = [];
+      progressByMonth[monthStr].push(project.progress);
+    });
+    return months.map(month => ({
+      month,
+      progress: progressByMonth[month] && progressByMonth[month].length > 0
+        ? progressByMonth[month].reduce((a, b) => a + b, 0) / progressByMonth[month].length
+        : null
+    }));
+  }, [activeProjects]);
+  console.log("avgProgressByDeadlineMonth:", avgProgressByDeadlineMonth);
+
 
   const handleProjectSort = (field) => {
     if (projectSortField === field) {
@@ -486,29 +589,76 @@ const AnalyticsSection = ({ paymentHistory, totalPages, setTotalPages, loadingPa
     <div className="min-h-screen bg-gradient-to-br from-purple-1000 via-purple-900 to-purple-900 p-4 lg:p-8">
       <div className="max-w-7xl mx-auto space-y-8">
 
-        {/* Header Section */}
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+        {/* --- HEADER --- */}
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6">
           <div>
             <h1 className="text-3xl lg:text-4xl font-bold text-white">Performance Analytics</h1>
             <p className="text-white/60 mt-2">Track your freelancing journey and optimize your earnings</p>
           </div>
-          <div className="flex flex-col sm:flex-row gap-3">
-            <select
-              value={timeRange}
-              onChange={(e) => setTimeRange(e.target.value)}
-              className="bg-white/10 border border-white/20 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-purple-500/50"
-            >
-              <option value="1month" className="bg-gray-900">Last Month</option>
-              <option value="3months" className="bg-gray-900">Last 3 Months</option>
-              <option value="6months" className="bg-gray-900">Last 6 Months</option>
-              <option value="1year" className="bg-gray-900">Last Year</option>
-            </select>
-            <button className="bg-purple-600/80 text-white px-4 py-2 rounded-lg font-medium hover:bg-purple-700/80 transition-colors flex items-center space-x-2">
-              <Download size={16} />
-              <span>Export Report</span>
-            </button>
-          </div>
+          <button
+            onClick={() => setShowGuide(!showGuide)}
+            className="bg-purple-500/20 text-purple-300 px-4 py-2 rounded-lg hover:bg-purple-500/30 transition-colors flex items-center gap-2"
+          >
+            <HelpCircle size={16} />
+            Dashboard Guide
+          </button>
         </div>
+
+        {/* --- COLLAPSIBLE GUIDE --- */}
+        {showGuide && (
+          <div className="mb-6 bg-black/40 backdrop-blur-2xl rounded-2xl border border-purple-500/30 p-6 animate-in slide-in-from-top">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                <Target className="text-purple-400" size={20} />
+                Quick Guide
+              </h3>
+              <button
+                onClick={() => setShowGuide(false)}
+                className="text-white/60 hover:text-white"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <div className="grid md:grid-cols-2 gap-4">
+              <div className="bg-purple-500/10 rounded-xl p-4 border border-purple-500/20">
+                <h4 className="text-purple-300 font-semibold mb-2 flex items-center gap-2">
+                  <TrendingUp size={16} />
+                  Monthly Earnings
+                </h4>
+                <p className="text-white/70 text-sm">
+                  Track monthly patterns to identify peak seasons and optimize project scheduling.
+                </p>
+              </div>
+              <div className="bg-orange-500/10 rounded-xl p-4 border border-orange-500/20">
+                <h4 className="text-orange-300 font-semibold mb-2 flex items-center gap-2">
+                  <Activity size={16} />
+                  Project Status
+                </h4>
+                <p className="text-white/70 text-sm">
+                  Move projects from &quot;in-progress&quot; to &quot;completed&quot; to unlock payments faster.
+                </p>
+              </div>
+              <div className="bg-blue-500/10 rounded-xl p-4 border border-blue-500/20">
+                <h4 className="text-blue-300 font-semibold mb-2 flex items-center gap-2">
+                  <CreditCard size={16} />
+                  Payment Methods
+                </h4>
+                <p className="text-white/70 text-sm">
+                  Optimize checkout by promoting your clients&apos; preferred payment option.
+                </p>
+              </div>
+              <div className="bg-cyan-500/10 rounded-xl p-4 border border-cyan-500/20">
+                <h4 className="text-cyan-300 font-semibold mb-2 flex items-center gap-2">
+                  <Clock size={16} />
+                  Progress Tracking
+                </h4>
+                <p className="text-white/70 text-sm">
+                  Low progress this month? Prioritize projects with upcoming deadlines.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Key Metrics Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 lg:gap-6">
@@ -606,6 +756,33 @@ const AnalyticsSection = ({ paymentHistory, totalPages, setTotalPages, loadingPa
             </div>
           </div>
         </div>
+
+        <div className="bg-gradient-to-r from-purple-500/10 via-blue-500/10 to-cyan-500/10 backdrop-blur-lg rounded-2xl border border-purple-500/30 p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-xl font-bold text-white flex items-center gap-2">
+              <Sparkles className="text-purple-400" size={24} />
+              Smart Insights
+            </h3>
+            <span className="text-xs text-white/60">Updated now</span>
+          </div>
+          <div className="grid md:grid-cols-3 gap-4">
+            {generateSmartInsights({ monthlyEarningsData, activeProjects, paymentMethodData }).map((insight, idx) => (
+              <div
+                key={idx}
+                className={`p-4 rounded-xl border ${insight.type === 'success' ? 'bg-green-500/10 border-green-500/30' :
+                  insight.type === 'warning' ? 'bg-yellow-500/10 border-yellow-500/30' :
+                    insight.type === 'urgent' ? 'bg-red-500/10 border-red-500/30' :
+                      'bg-blue-500/10 border-blue-500/30'
+                  }`}
+              >
+                <div className="text-2xl mb-2">{insight.icon}</div>
+                <h4 className="text-white font-semibold mb-1">{insight.title}</h4>
+                <p className="text-white/70 text-sm mb-3">{insight.message}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
 
         {/* Charts Section */}
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
@@ -740,25 +917,27 @@ const AnalyticsSection = ({ paymentHistory, totalPages, setTotalPages, loadingPa
 
           {/* Client Ratings Over Time */}
           <div className="bg-black/20 backdrop-blur-lg rounded-2xl border border-white/10 p-6">
-            <h3 className="text-xl font-bold text-white mb-6">Client Ratings Trend</h3>
+            <h3 className="text-xl font-bold text-white mb-6">Average Progress by Deadline Month</h3>
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={ratingsOverTimeData}>
+                <LineChart data={avgProgressByDeadlineMonth}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#ffffff20" />
                   <XAxis dataKey="month" stroke="#ffffff60" />
-                  <YAxis domain={[4, 5]} stroke="#ffffff60" />
-                  <Tooltip content={<CustomTooltip />} />
+                  <YAxis domain={[0, 100]} stroke="#ffffff60" />
+                  <Tooltip content={<CustomTooltip selectedMetric="progress" />} />
                   <Line
                     type="monotone"
-                    dataKey="rating"
-                    stroke="#F59E0B"
+                    dataKey="progress"
+                    stroke="#3B82F6"
                     strokeWidth={3}
-                    dot={{ fill: '#F59E0B', strokeWidth: 2, r: 6 }}
+                    dot={{ fill: '#3B82F6', strokeWidth: 2, r: 6 }}
+                    connectNulls={true}
                   />
                 </LineChart>
               </ResponsiveContainer>
             </div>
           </div>
+
         </div>
 
         {/* Tables Section */}
@@ -973,63 +1152,29 @@ const AnalyticsSection = ({ paymentHistory, totalPages, setTotalPages, loadingPa
         </div>
         {/* Performance Insights */}
         <div className="bg-black/20 backdrop-blur-lg rounded-2xl border border-white/10 p-6">
-          <h3 className="text-xl font-bold text-white mb-6">Performance Insights</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <div className="text-center">
-              <div className="bg-green-500/20 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-3">
-                <Award className="text-green-400" size={24} />
-              </div>
-              <h4 className="text-white font-medium mb-2">Top Performer</h4>
-              <p className="text-white/60 text-sm">You&apos;re in the top 15% of freelancers this month!</p>
-            </div>
-            <div className="text-center">
-              <div className="bg-blue-500/20 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-3">
-                <Target className="text-blue-400" size={24} />
-              </div>
-              <h4 className="text-white font-medium mb-2">Goal Progress</h4>
-              <p className="text-white/60 text-sm">85% towards your monthly ₹2L target</p>
-            </div>
-            <div className="text-center">
-              <div className="bg-purple-500/20 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-3">
-                <Users className="text-purple-400" size={24} />
-              </div>
-              <h4 className="text-white font-medium mb-2">Client Retention</h4>
-              <p className="text-white/60 text-sm">78% of clients return for more projects</p>
-            </div>
-            <div className="text-center">
-              <div className="bg-cyan-500/20 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-3">
-                <Activity className="text-cyan-400" size={24} />
-              </div>
-              <h4 className="text-white font-medium mb-2">Productivity</h4>
-              <p className="text-white/60 text-sm">Average 2.5 projects completed per month</p>
-            </div>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-bold text-white flex items-center gap-2">
+              <Lightbulb className="text-yellow-400" size={20} />
+              Pro Tips
+            </h3>
           </div>
-
-          {/* Quick Action Cards */}
-          <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="bg-gradient-to-r from-purple-600/20 to-blue-600/20 rounded-xl p-4 border border-purple-500/30">
-              <h4 className="text-white font-medium mb-2">💡 Optimization Tip</h4>
-              <p className="text-white/80 text-sm mb-3">Your highest-rated projects are in Web Development. Consider focusing more on this category to maximize earnings.</p>
-              <button className="text-purple-400 hover:text-purple-300 text-sm font-medium">
-                View Category Analysis →
-              </button>
+          <div className="grid md:grid-cols-2 gap-3 text-sm">
+            <div className="flex items-start gap-3 p-3 bg-white/5 rounded-lg">
+              <CheckCircle className="text-green-400 flex-shrink-0 mt-0.5" size={16} />
+              <p className="text-white/80">
+                <span className="text-green-400 font-semibold">Boost earnings:</span> Focus on high-value projects and consistent delivery.
+              </p>
             </div>
-            <div className="bg-gradient-to-r from-green-600/20 to-cyan-600/20 rounded-xl p-4 border border-green-500/30">
-              <h4 className="text-white font-medium mb-2">🎯 Action Required</h4>
-              <p className="text-white/80 text-sm mb-3">You have 2 pending invoices totaling ₹66,500. Follow up with clients for faster payments.</p>
-              <button className="text-green-400 hover:text-green-300 text-sm font-medium">
-                Manage Invoices →
-              </button>
-            </div>
-            <div className="bg-gradient-to-r from-orange-600/20 to-yellow-600/20 rounded-xl p-4 border border-orange-500/30">
-              <h4 className="text-white font-medium mb-2">⭐ Achievement</h4>
-              <p className="text-white/80 text-sm mb-3">Congratulations! You&apos;ve maintained a 4.9+ rating for 3 consecutive months.</p>
-              <button className="text-orange-400 hover:text-orange-300 text-sm font-medium">
-                Share Achievement →
-              </button>
+            <div className="flex items-start gap-3 p-3 bg-white/5 rounded-lg">
+              <AlertCircle className="text-yellow-400 flex-shrink-0 mt-0.5" size={16} />
+              <p className="text-white/80">
+                <span className="text-yellow-400 font-semibold">Avoid delays:</span> Monitor progress weekly and update clients regularly.
+              </p>
             </div>
           </div>
         </div>
+
+
       </div>
     </div>
   );

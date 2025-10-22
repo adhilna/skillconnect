@@ -340,12 +340,12 @@ const FreelancerDashboard = () => {
                   >
                     <Icon size={20} className="group-hover:scale-110 transition-transform" />
                     <span className="font-medium">{item.label}</span>
-                    {item.id === 'messages' && (
+                    {/* {item.id === 'messages' && (
                       <span className="ml-auto bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">3</span>
                     )}
                     {item.id === 'orders' && (
                       <span className="ml-auto bg-green-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">2</span>
-                    )}
+                    )} */}
                   </button>
                 );
               })}

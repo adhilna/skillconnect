@@ -186,6 +186,54 @@ export default function Register() {
         setFormValues((prev) => ({ ...prev, role }));
     };
 
+    const handleDemoLogin = async () => {
+        // Validation: Require role selection before demo login
+        if (!formValues.role) {
+            setErrors({ role: 'Please select a role' });
+            return;
+        }
+
+        setLoading(true);
+        setErrors({});
+        try {
+            let demoEmail, demoPassword;
+            // Choose credentials based on role
+            if (formValues.role === "CLIENT") {
+                demoEmail = "wwwazimadhi123@gmail.com";   // Demo client email
+                demoPassword = "Password123!";
+            } else {
+                demoEmail = "wwwadhiladhi123@gmail.com";  // Demo freelancer email
+                demoPassword = "Password123!";
+            }
+
+            const response = await api.post('/api/v1/auth/users/login/', {
+                email: demoEmail,
+                password: demoPassword,
+            });
+            const { access, refresh, user } = response.data;
+            localStorage.setItem('access', access);
+            localStorage.setItem('refresh', refresh);
+            await login({ email: user.email, role: user.role }, access, refresh);
+
+            // Redirect based on role
+            const role = user.role?.toLowerCase();
+            const dashboardPath = role === 'client'
+                ? '/client/dashboard'
+                : role === 'freelancer'
+                    ? '/freelancer/dashboard'
+                    : '/login'; // fallback
+            navigate(dashboardPath);
+        } catch (error) {
+            console.error('Demo login error:', error);
+            setErrors({ demo: "Demo login failed. Please try again." });
+        } finally {
+            setLoading(false);
+        }
+    };
+
+
+
+
     return (
         <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-r from-blue-900 via-purple-900 to-indigo-900 px-4 py-12">
             <div className="bg-white/10 backdrop-blur-sm p-8 rounded-xl w-full max-w-md shadow-2xl">
@@ -202,6 +250,9 @@ export default function Register() {
                                 nextStep();
                             }
                         }}
+                        onDemoLogin={handleDemoLogin}
+                        loading={loading}
+                        errors={errors} 
                     />
                 )}
 

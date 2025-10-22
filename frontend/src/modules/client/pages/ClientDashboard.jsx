@@ -156,14 +156,14 @@ const ClientDashboard = () => {
 
     const openPaymentFlow = async (messagePaymentData) => {
         try {
-            console.log("🟢 Parent openPaymentFlow received message payment:", messagePaymentData);
+            // console.log("🟢 Parent openPaymentFlow received message payment:", messagePaymentData);
 
             // 1️⃣ Fetch real payment object from backend using message data
             // Assuming you have an endpoint like `/payments/?message_id=224` or something similar
             const res = await api.get(`/api/v1/messaging/payment-requests/${messagePaymentData.id}/`);
             // Or use messagePaymentData.payment_id if available
 
-            console.log("✅ Real payment data fetched:", res.data);
+            // console.log("✅ Real payment data fetched:", res.data);
 
             // 2️⃣ Set it to parent state
             setPaymentSelectedPayment(res.data);
