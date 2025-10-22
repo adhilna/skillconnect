@@ -100,7 +100,7 @@ class FreelancerProfileSetupViewSet(viewsets.ModelViewSet):
         print("==== [DEBUG] RAW FILES RECEIVED ====")
         pprint.pprint(dict(request.FILES))
 
-        data = request.data.copy()
+        data = request.data 
         json_fields = [
             'skills_input', 'educations_input', 'experiences_input', 'languages_input',
             'portfolios_input', 'social_links_input', 'verification_input'
@@ -173,7 +173,7 @@ class FreelancerProfileSetupViewSet(viewsets.ModelViewSet):
         print("==== [DEBUG] RAW FILES RECEIVED ====")
         pprint.pprint(dict(request.FILES))
 
-        data = request.data.copy()
+        data = request.data 
         json_fields = [
             'skills_input', 'educations_input', 'experiences_input', 'languages_input',
             'portfolios_input', 'social_links_input', 'verification_input'

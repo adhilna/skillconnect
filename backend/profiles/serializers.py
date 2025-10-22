@@ -16,6 +16,8 @@ from core.validators import (
     validate_skills_input as skills_validator,
     validate_url_field
 )
+from django.core.validators import URLValidator
+from django.core.exceptions import ValidationError
 
 
 # Supporting serializers
@@ -146,13 +148,20 @@ class PortfolioSerializer(serializers.ModelSerializer):
         }
 
     def validate_title(self, value):
+        if not value:
+            return value  # DRF will handle required check, you only validate non-empty
         return validate_non_empty_string(value, field_name="Portfolio Title", min_len=1, max_len=200)
 
     def validate_description(self, value):
+        if not value:
+            return value
         return validate_non_empty_string(value, field_name="Portfolio Description", min_len=1, max_len=1000)
 
     def validate_project_link(self, value):
-        return validate_url_field(value, field_name="Project Link") 
+        if not value:
+            return value
+        return validate_url_field(value, field_name="Project Link")
+
 
 class SocialLinksSerializer(serializers.ModelSerializer):
     class Meta:

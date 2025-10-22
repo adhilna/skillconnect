@@ -2,6 +2,8 @@ from rest_framework import serializers
 import re
 from profiles.constants import COUNTRIES
 from datetime import datetime
+from django.core.validators import URLValidator
+from django.core.exceptions import ValidationError
 
 def validate_non_empty_string(value, field_name="Field", min_len=1, max_len=255, allow_special=False):
     """
@@ -152,22 +154,12 @@ def validate_optional_date_range(start_date, end_date=None, ongoing=False):
     return start_date, end_date
 
 def validate_url_field(value, field_name="URL"):
-    """
-    Validate optional social link URLs.
-    - Allows empty or null values.
-    - Validates format if provided.
-    """
     if not value:  # allow empty or None
         return value
-
-    url_regex = re.compile(
-        r'^(https?://)?'  # optional http or https
-        r'([a-zA-Z0-9.-]+)\.([a-zA-Z]{2,6})'  # domain
-        r'(/[^\s]*)?$'  # path/query optional
-    )
-
-    if not url_regex.match(value):
+    validator = URLValidator()
+    try:
+        validator(value)
+    except ValidationError:
         raise serializers.ValidationError(f"{field_name} must be a valid URL.")
-
     return value
 
