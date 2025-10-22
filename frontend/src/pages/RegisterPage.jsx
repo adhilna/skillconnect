@@ -199,10 +199,10 @@ export default function Register() {
             let demoEmail, demoPassword;
             // Choose credentials based on role
             if (formValues.role === "CLIENT") {
-                demoEmail = "wwwazimadhi123@gmail.com";   // Demo client email
+                demoEmail = "wwwadhiladhi123@gmail.com";   // Demo client email
                 demoPassword = "Password123!";
             } else {
-                demoEmail = "wwwadhiladhi123@gmail.com";  // Demo freelancer email
+                demoEmail = "wwwazimadhi123@gmail.com";  // Demo freelancer email
                 demoPassword = "Password123!";
             }
 

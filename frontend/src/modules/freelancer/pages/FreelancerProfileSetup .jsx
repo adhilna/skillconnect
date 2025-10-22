@@ -114,7 +114,7 @@ const FreelancerProfileSetup = () => {
         educations: [],
         experiences: [],
         languages: [],
-        portfolio: [],
+        portfolios: [],
         social_links: {
             github_url: '',
             linkedin_url: '',
@@ -387,9 +387,9 @@ const FreelancerProfileSetup = () => {
 
     const handleVerificationChange = (field) => {
         if (field === 'email_verified') {
-        // Already verified, no action needed
-        return;
-    }
+            // Already verified, no action needed
+            return;
+        }
         success('This feature will come soon!');
     };
 
