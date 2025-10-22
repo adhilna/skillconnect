@@ -366,24 +366,25 @@ const FreelancerProfileSetup = () => {
     const addPortfolioItem = () => {
         setFreelancerData(prev => ({
             ...prev,
-            portfolio: [...prev.portfolio, { title: '', description: '', project_link: '' }],
+            portfolios: [...(prev.portfolios || []), { title: '', description: '', project_link: '' }],
         }));
     };
 
     const updatePortfolioItem = (index, field, value) => {
         setFreelancerData(prev => {
-            const newPortfolio = [...prev.portfolio];
-            newPortfolio[index][field] = value;
-            return { ...prev, portfolio: newPortfolio };
+            const newPortfolios = [...(prev.portfolios || [])];
+            newPortfolios[index][field] = value;
+            return { ...prev, portfolios: newPortfolios };
         });
     };
 
     const removePortfolioItem = (index) => {
         setFreelancerData(prev => ({
             ...prev,
-            portfolio: prev.portfolio.filter((_, i) => i !== index),
+            portfolios: (prev.portfolios || []).filter((_, i) => i !== index),
         }));
     };
+
 
     const handleVerificationChange = (field) => {
         if (field === 'email_verified') {
@@ -546,8 +547,8 @@ const FreelancerProfileSetup = () => {
             if (errors.languages.length === 0) delete errors.languages; // remove empty array
         }
         else if (formStep === 3) {
-            if (freelancerData.portfolio.length > 0) {
-                errors.portfolio = freelancerData.portfolio.map((portfolio, index) => {
+            if (freelancerData.portfolios.length > 0) {
+                errors.portfolios = freelancerData.portfolios.map((portfolio, index) => {
                     const portfolioErrors = {
                         title: validateNonEmptyString(portfolio.title, `Portfolio #${index + 1} Title`, 1, 100),
                         description: validateNonEmptyString(portfolio.description, `Portfolio #${index + 1} Description`, 1, 1000),
@@ -557,7 +558,7 @@ const FreelancerProfileSetup = () => {
                     return Object.keys(portfolioErrors).length > 0 ? portfolioErrors : null;
                 }).filter(Boolean);
 
-                if (errors.portfolio.length === 0) delete errors.portfolio;
+                if (errors.portfolios.length === 0) delete errors.portfolios;
             }
         }
         else if (formStep === 4) {

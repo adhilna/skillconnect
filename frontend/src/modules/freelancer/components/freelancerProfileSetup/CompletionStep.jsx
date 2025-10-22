@@ -27,7 +27,7 @@ export default function CompletionStep({ freelancerData, onDashboard }) {
                     <p><span className="text-white">Location:</span> {freelancerData.location}</p>
                     <p><span className="text-white">Skills:</span> {freelancerData.skills.slice(0, 3).join(', ')}{freelancerData.skills.length > 3 ? ` +${freelancerData.skills.length - 3} more` : ''}</p>
                     <p><span className="text-white">Languages:</span> {freelancerData.languages.length}</p>
-                    <p><span className="text-white">Portfolio Items:</span> {freelancerData.portfolio.length}</p>
+                    <p><span className="text-white">Portfolio Items:</span> {freelancerData.portfolios.length}</p>
                     <p><span className="text-white">Available:</span> {freelancerData.isAvailable ? 'Yes' : 'No'}</p>
                 </div>
             </div>
