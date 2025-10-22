@@ -637,7 +637,7 @@ const FreelancerProfileSetup = () => {
                 fieldErrors={fieldErrors}
             />;
             case 3: return <PortfolioStep
-                portfolio={freelancerData.portfolio}
+                portfolio={freelancerData.portfolios}
                 addPortfolioItem={addPortfolioItem}
                 updatePortfolioItem={updatePortfolioItem}
                 removePortfolioItem={removePortfolioItem}
