@@ -10,7 +10,7 @@ cd /home/ubuntu/skillconnect
 git pull origin main
 
 cd /home/ubuntu/skillconnect/backend
-/home/ubuntu/skillconnect/backend/venv/bin/python manage.py migrate
+/home/ubuntu/skillconnect/backend/venv/bin/python3 manage.py migrate
 
 
 sudo systemctl restart daphne
