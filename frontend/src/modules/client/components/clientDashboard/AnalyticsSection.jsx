@@ -17,13 +17,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, PieCha
 
 const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
-const paymentMethodData = [
-    { name: 'Stripe', value: 45, color: '#8B5CF6' },
-    { name: 'PayPal', value: 30, color: '#06B6D4' },
-    { name: 'Razorpay', value: 25, color: '#10B981' }
-];
-
-const AnalyticsSection = ({paymentHistory, totalPages, setTotalPages, loadingPayments }) => {
+const AnalyticsSection = ({ paymentHistory, totalPages, setTotalPages, loadingPayments }) => {
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
     const [currentPage, setCurrentPage] = useState(1);
@@ -131,6 +125,21 @@ const AnalyticsSection = ({paymentHistory, totalPages, setTotalPages, loadingPay
 
         return filtered;
     }, [searchTerm, statusFilter, sortField, sortDirection, paymentHistory]);
+
+    const paymentMethodData = useMemo(() => {
+        if (!Array.isArray(paymentHistory) || paymentHistory.length === 0) return [];
+        const counts = paymentHistory.reduce((acc, curr) => {
+            const method = (curr.payment_method || "Other").toLowerCase();
+            acc[method] = (acc[method] || 0) + 1;
+            return acc;
+        }, {});
+        const colors = { razorpay: "#10B981", upi: "#06B6D4", stripe: "#8B5CF6", paypal: "#3B82F6", other: "#6366F1" };
+        return Object.entries(counts).map(([name, value]) => ({
+            name: name.charAt(0).toUpperCase() + name.slice(1),
+            value,
+            color: colors[name] || "#6366F1",
+        }));
+    }, [paymentHistory]);
 
     // Pagination
     useEffect(() => {
@@ -307,16 +316,6 @@ const AnalyticsSection = ({paymentHistory, totalPages, setTotalPages, loadingPay
                     <div>
                         <h1 className="text-3xl lg:text-4xl font-bold text-white">Payment Analytics</h1>
                         <p className="text-white/60 mt-2">Track and analyze client payments and commissions</p>
-                    </div>
-                    <div className="flex flex-col sm:flex-row gap-3">
-                        <button className="bg-white/10 text-white px-4 py-2 rounded-lg font-medium hover:bg-white/20 transition-colors flex items-center space-x-2 backdrop-blur-lg border border-white/10">
-                            <Calendar size={16} />
-                            <span>Date Range</span>
-                        </button>
-                        <button className="bg-blue-600/80 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700/80 transition-colors flex items-center space-x-2 backdrop-blur-lg">
-                            <Download size={16} />
-                            <span>Export</span>
-                        </button>
                     </div>
                 </div>
 

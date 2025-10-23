@@ -40,6 +40,7 @@ import {
   Tooltip,
   Legend
 } from 'recharts';
+import { FaSpinner } from 'react-icons/fa';
 
 const generateSmartInsights = ({
   monthlyEarningsData,
@@ -763,7 +764,9 @@ const AnalyticsSection = ({ paymentHistory, totalPages, setTotalPages, loadingPa
               <Sparkles className="text-purple-400" size={24} />
               Smart Insights
             </h3>
-            <span className="text-xs text-white/60">Updated now</span>
+            <span className="text-xs text-white/60 flex items-center gap-1">
+              <FaSpinner className="animate-spin h-3 w-3 mr-1" />
+            </span>
           </div>
           <div className="grid md:grid-cols-3 gap-4">
             {generateSmartInsights({ monthlyEarningsData, activeProjects, paymentMethodData }).map((insight, idx) => (

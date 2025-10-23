@@ -41,11 +41,11 @@ export const AvatarGrid = ({ freelancers, loading, InitialsAvatar }) => {
                         {/* Optional: Short bio */}
                         {/* <div className="text-purple-300 text-xs line-clamp-2">{user.bio}</div> */}
                     </div>
-                    <div className="absolute inset-0 bg-gradient-to-t from-purple-600 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl flex items-end justify-center pb-3">
+                    {/* <div className="absolute inset-0 bg-gradient-to-t from-purple-600 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl flex items-end justify-center pb-3">
                         <button className="text-white text-xs font-semibold bg-white/20 backdrop-blur-sm px-3 py-1.5 rounded-full border border-white/30">
                             View Profile
                         </button>
-                    </div>
+                    </div> */}
                 </div>
             ))}
         </div>

@@ -184,6 +184,7 @@ export default function Register() {
 
     const handleRoleSelect = (role) => {
         setFormValues((prev) => ({ ...prev, role }));
+        setErrors(prev => ({ ...prev, role: undefined }));
     };
 
     const handleDemoLogin = async () => {
@@ -199,10 +200,10 @@ export default function Register() {
             let demoEmail, demoPassword;
             // Choose credentials based on role
             if (formValues.role === "CLIENT") {
-                demoEmail = "wwwadhiladhi123@gmail.com";   // Demo client email
+                demoEmail = "wwwazimadhi123@gmail.com";   // Demo client email
                 demoPassword = "Password123!";
             } else {
-                demoEmail = "wwwazimadhi123@gmail.com";  // Demo freelancer email
+                demoEmail = "wwwadhiladhi123@gmail.com";  // Demo freelancer email
                 demoPassword = "Password123!";
             }
 
@@ -231,9 +232,6 @@ export default function Register() {
         }
     };
 
-
-
-
     return (
         <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-r from-blue-900 via-purple-900 to-indigo-900 px-4 py-12">
             <div className="bg-white/10 backdrop-blur-sm p-8 rounded-xl w-full max-w-md shadow-2xl">
@@ -252,7 +250,7 @@ export default function Register() {
                         }}
                         onDemoLogin={handleDemoLogin}
                         loading={loading}
-                        errors={errors} 
+                        errors={errors}
                     />
                 )}
 

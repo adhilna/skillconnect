@@ -236,12 +236,12 @@ const HowItWorksPage = () => {
         }
     ];
 
-    const stats = [
-        { number: 50000, suffix: "+", label: "Active Freelancers", icon: <Users size={24} /> },
-        { number: 100000, suffix: "+", label: "Projects Completed", icon: <CheckCircle size={24} /> },
-        { number: 95, suffix: "%", label: "Client Satisfaction", icon: <Star size={24} /> },
-        { number: 24, suffix: "/7", label: "Support Available", icon: <Clock size={24} /> }
-    ];
+    // const stats = [
+    //     { number: 50000, suffix: "+", label: "Active Freelancers", icon: <Users size={24} /> },
+    //     { number: 100000, suffix: "+", label: "Projects Completed", icon: <CheckCircle size={24} /> },
+    //     { number: 95, suffix: "%", label: "Client Satisfaction", icon: <Star size={24} /> },
+    //     { number: 24, suffix: "/7", label: "Support Available", icon: <Clock size={24} /> }
+    // ];
 
     const currentSteps = activeTab === 'client' ? clientSteps : freelancerSteps;
 
@@ -439,7 +439,7 @@ const HowItWorksPage = () => {
                         </div>
                     </FloatingCard>
 
-                    {/* Enhanced Stats Section */}
+                    {/* Enhanced Stats Section
                     <FloatingCard delay={800}>
                         <div className="mb-24">
                             <div className="bg-gradient-to-r from-purple-500/20 via-blue-500/20 to-indigo-500/20 backdrop-blur-xl rounded-4xl p-12 border border-purple-400/30 shadow-2xl">
@@ -468,7 +468,7 @@ const HowItWorksPage = () => {
                                 </div>
                             </div>
                         </div>
-                    </FloatingCard>
+                    </FloatingCard> */}
 
                     {/* Enhanced Process Flow */}
                     <FloatingCard delay={1000}>

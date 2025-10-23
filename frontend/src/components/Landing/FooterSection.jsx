@@ -43,7 +43,7 @@ export const FooterSection = () => {
                     </div>
                 </div>
                 <p className="text-center text-purple-300 text-sm">
-                    &copy; {new Date().getFullYear()} FreelanceHub. All rights reserved.
+                    &copy; {new Date().getFullYear()} SkillConnect. All rights reserved.
                 </p>
             </div>
         </footer>

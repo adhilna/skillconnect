@@ -60,11 +60,11 @@ export const HeroSection = () => {
         }
     ];
 
-    const testimonials = [
-        { user: "Sarah Chen", text: "Found my dream client in just 2 days!", role: "UI/UX Designer" },
-        { user: "Marcus Johnson", text: "Tripled my income working here", role: "Web Developer" },
-        { user: "Emily Rodriguez", text: "Best platform for creative professionals", role: "Content Writer" }
-    ];
+    // const testimonials = [
+    //     { user: "Sarah Chen", text: "Found my dream client in just 2 days!", role: "UI/UX Designer" },
+    //     { user: "Marcus Johnson", text: "Tripled my income working here", role: "Web Developer" },
+    //     { user: "Emily Rodriguez", text: "Best platform for creative professionals", role: "Content Writer" }
+    // ];
 
     useEffect(() => {
         const timer = setTimeout(() => {
@@ -251,7 +251,7 @@ export const HeroSection = () => {
                     <AvatarGrid freelancers={clients} loading={loadingClients} InitialsAvatar={InitialsAvatar} />
 
                     {/* Rotating Testimonial */}
-                    <div className="mt-12 text-center">
+                    {/* <div className="mt-12 text-center">
                         <div className="inline-block bg-white/10 backdrop-blur-md px-8 py-4 rounded-2xl border border-white/20 max-w-2xl">
                             <div className="flex items-center justify-center gap-1 mb-2">
                                 {[...Array(5)].map((_, i) => (
@@ -265,7 +265,7 @@ export const HeroSection = () => {
                                 — {testimonials[heroIndex % testimonials.length].user}, {testimonials[heroIndex % testimonials.length].role}
                             </p>
                         </div>
-                    </div>
+                    </div> */}
                 </div>
             </div>
 
