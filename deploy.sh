@@ -10,8 +10,8 @@ cd /home/ubuntu/skillconnect
 git pull origin main
 
 cd /home/ubuntu/skillconnect/backend
-source venv/bin/activate
-python manage.py migrate
+/home/ubuntu/skillconnect/backend/venv/bin/python manage.py migrate
+
 
 sudo systemctl restart daphne
 sudo systemctl restart celery
