@@ -8,6 +8,7 @@ const ServicesSection = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showModal, setShowModal] = useState(false);
+  const [modalError, setModalError] = useState(null);
   const [editingService, setEditingService] = useState(null);
   const [submitLoading, setSubmitLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -22,8 +23,6 @@ const ServicesSection = () => {
     is_active: true,
     is_featured: false
   });
-
-  // const API_BASE_URL = "http://localhost:8000/api/v1/gigs/services/";
 
   const availableSkills = [
     "React", "JavaScript", "Python", "Node.js", "CSS", "HTML", "PHP", "WordPress",
@@ -103,6 +102,8 @@ const ServicesSection = () => {
       is_featured: false
     });
     setShowModal(true);
+    setError(null);
+    setModalError(null);
   };
 
   const handleEdit = (service) => {
@@ -120,34 +121,35 @@ const ServicesSection = () => {
       is_featured: service.is_featured ?? false
     });
     setShowModal(true);
+    setError(null);
+    setModalError(null);
   };
 
   const handleSubmit = async () => {
+    // validation shown to user in modal
     if (!formData.title || !formData.description || !formData.category_id || !formData.price || !formData.delivery_time) {
-      setError('Please fill in all required fields');
+      setModalError('Please fill in all required fields');
       return;
     }
 
     setSubmitLoading(true);
+    // clear any previous submit errors
+    setModalError(null);
     setError(null);
 
     try {
-
       const submitData = new FormData();
+      // strings are safest for FormData fields
+      submitData.append('title', String(formData.title));
+      submitData.append('description', String(formData.description));
+      submitData.append('category_id', String(formData.category_id));
+      submitData.append('price', String(parseFloat(formData.price)));
+      submitData.append('delivery_time', String(parseInt(formData.delivery_time, 10)));
+      submitData.append('revisions', String(parseInt(formData.revisions, 10)));
+      submitData.append('is_active', formData.is_active ? 'true' : 'false');
+      submitData.append('is_featured', formData.is_featured ? 'true' : 'false');
+      submitData.append('skills_input', JSON.stringify(formData.skills_input || []));
 
-      // Add text fields
-      submitData.append('title', formData.title);
-      submitData.append('description', formData.description);
-      submitData.append('category_id', formData.category_id);
-      submitData.append('price', parseFloat(formData.price));
-      submitData.append('delivery_time', parseInt(formData.delivery_time));
-      submitData.append('revisions', parseInt(formData.revisions));
-      submitData.append('is_active', formData.is_active);
-      submitData.append('is_featured', formData.is_featured);
-      submitData.append('skills_input', JSON.stringify(formData.skills_input));
-
-
-      // Add image if present
       if (formData.image) {
         submitData.append('image', formData.image);
       }
@@ -156,32 +158,30 @@ const ServicesSection = () => {
         ? `/api/v1/gigs/services/${editingService.id}/`
         : `/api/v1/gigs/services/`;
 
-      const method = editingService ? 'PATCH' : 'POST';
+      // <-- IMPORTANT: use axios methods explicitly
+      const res = editingService
+        ? await api.patch(endpoint, submitData)
+        : await api.post(endpoint, submitData);
 
-      const response = await api[method](endpoint, submitData);
+      const responseData = res.data;
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
-      }
-
-      const responseData = await response.json();
-
+      // update state using functional updates (avoid stale closures)
       if (editingService) {
-        // Update existing service in state
-        setServices(services.map(service =>
-          service.id === editingService.id ? responseData : service
-        ));
+        setServices(prev => prev.map(s => (s.id === editingService.id ? responseData : s)));
       } else {
-        // Add new service to state
-        setServices([responseData, ...services]);
+        setServices(prev => [responseData, ...prev]);
       }
 
+      // success: close modal and clear modal errors
       setShowModal(false);
+      setModalError(null);
       setError(null);
     } catch (err) {
       console.error('Error submitting service:', err);
-      setError(err.message || 'Failed to save service');
+
+      // axios often carries server response in err.response.data
+      const serverMsg = err?.response?.data || err?.message || 'Failed to save service';
+      setModalError(typeof serverMsg === 'string' ? serverMsg : JSON.stringify(serverMsg));
     } finally {
       setSubmitLoading(false);
     }
@@ -204,11 +204,6 @@ const ServicesSection = () => {
       }
     });
   };
-
-  // const getCategoryName = (categoryId) => {
-  //   const category = categories.find(cat => cat.id === categoryId);
-  //   return category ? category.name : 'Unknown Category';
-  // };
 
   if (loading) {
     return (
@@ -369,7 +364,10 @@ const ServicesSection = () => {
                 {editingService ? 'Edit Service' : 'Create New Service'}
               </h4>
               <button
-                onClick={() => setShowModal(false)}
+                onClick={() => {
+                  setShowModal(false);
+                  setModalError(null);
+                }}
                 className="text-white/60 hover:text-white transition-colors"
               >
                 <X size={24} />
@@ -377,10 +375,10 @@ const ServicesSection = () => {
             </div>
 
             <div className="p-6 space-y-6">
-              {error && (
+              {modalError && (
                 <div className="bg-red-500/20 border border-red-500/50 rounded-lg p-4 flex items-center space-x-3">
                   <AlertCircle size={20} className="text-red-400 flex-shrink-0" />
-                  <p className="text-red-200">{error}</p>
+                  <p className="text-red-200">{modalError}</p>
                 </div>
               )}
 
@@ -529,12 +527,16 @@ const ServicesSection = () => {
               <div className="flex items-center justify-end space-x-4 pt-4">
                 <button
                   type="button"
-                  onClick={() => setShowModal(false)}
+                  onClick={() => {
+                    setShowModal(false);
+                    setModalError(null);
+                  }}
                   className="px-6 py-2 border border-white/10 text-white rounded-lg hover:bg-white/5 transition-colors"
                   disabled={submitLoading}
                 >
                   Cancel
                 </button>
+
                 <button
                   type="button"
                   onClick={handleSubmit}

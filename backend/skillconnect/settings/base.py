@@ -3,7 +3,6 @@ from datetime import timedelta
 import os
 import environ
 
-
 # Initialize environ
 env = environ.Env(
     DEBUG=(bool, False)
