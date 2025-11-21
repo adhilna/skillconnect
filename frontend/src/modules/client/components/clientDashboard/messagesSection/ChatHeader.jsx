@@ -1,7 +1,7 @@
 import React from "react";
 import { ArrowLeft, Phone, Video, MoreVertical } from "lucide-react";
 
-const ChatHeader = ({ chat, onBack, isMobile, onVoiceCall, onVideoCall }) => (
+const ChatHeader = ({ chat, onBack, isMobile, onStartCall }) => (
     <div className="p-4 border-b border-white/10 bg-black/20 backdrop-blur-lg flex items-center justify-between">
         <div className="flex items-center space-x-3">
             {isMobile && (
@@ -27,14 +27,14 @@ const ChatHeader = ({ chat, onBack, isMobile, onVoiceCall, onVideoCall }) => (
         </div>
         <div className="flex items-center space-x-2">
             <button
-                onClick={onVoiceCall}
+                onClick={onStartCall}
                 className="bg-white/10 text-white p-2 rounded-lg hover:bg-white/20"
                 aria-label="Start voice call"
             >
                 <Phone size={16} />
             </button>
             <button
-                onClick={onVideoCall}
+                onClick={onStartCall}
                 className="bg-white/10 text-white p-2 rounded-lg hover:bg-white/20"
                 aria-label="Start video call"
             >

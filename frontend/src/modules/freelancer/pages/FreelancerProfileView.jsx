@@ -2,6 +2,7 @@ import React, { useEffect, useState, useContext } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import api from '../../../api/api';
 import { AuthContext } from '../../../context/AuthContext';
+import { useToast } from "../../../hooks/useToast";
 import {
     Star,
     Clock,
@@ -82,7 +83,7 @@ const FreelancerProfileView = () => {
     const location = useLocation();
     const from = location.state?.from || "explore";
     const { token } = useContext(AuthContext);
-
+    const { info } = useToast();
     const [profile, setProfile] = useState(location.state?.freelancerProfileData || null);
     const [loading, setLoading] = useState(!profile);
     const [error, setError] = useState('');
@@ -309,13 +310,13 @@ const FreelancerProfileView = () => {
                                 <FloatingActionButton
                                     icon={MessageCircle}
                                     label="Send Message"
-                                    onClick={() => alert('Message functionality coming soon!')}
+                                    onClick={() => info('Message functionality coming soon!')}
                                     primary={true}
                                 />
                                 <FloatingActionButton
                                     icon={UserPlus}
                                     label="Follow"
-                                    onClick={() => alert('Follow functionality coming soon!')}
+                                    onClick={() => info('Follow functionality coming soon!')}
                                 />
                             </div>
                         </div>

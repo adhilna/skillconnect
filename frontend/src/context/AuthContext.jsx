@@ -22,6 +22,7 @@ export const AuthProvider = ({ children }) => {
         localStorage.setItem('refresh', refreshToken);
         return userData;
     };
+    console.log(user);
 
     const logout = () => {
         setUser(null);

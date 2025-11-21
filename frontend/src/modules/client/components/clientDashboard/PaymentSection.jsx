@@ -25,6 +25,7 @@ import {
 import api from '../../../../api/api';
 import { AuthContext } from '../../../../context/AuthContext';
 import PaymentFlow from './paymentSection/PaymentFlow';
+import { useToast } from "../../../../hooks/useToast";
 
 const PaymentDashboard = ({
   currentView,
@@ -44,6 +45,7 @@ const PaymentDashboard = ({
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(false);
   const { token } = useContext(AuthContext);
+  const { warning, error } = useToast();
 
   const paymentMethods = [
     {
@@ -180,7 +182,7 @@ const PaymentDashboard = ({
 
   const handlePayNow = async () => {
     if (selectedMethod !== "razorpay") {
-      alert("Only Razorpay is supported right now");
+      warning("Only Razorpay is supported right now");
       return;
     }
     setIsProcessing(true);
@@ -209,7 +211,7 @@ const PaymentDashboard = ({
       const options = {
         key: razorpay_key,
         order_id,
-        amount: amount + 150 * 100,
+        amount,
         currency,
         name: 'Skill+Connect',
         description,
@@ -236,7 +238,7 @@ const PaymentDashboard = ({
           } catch (error) {
             console.error("Payment verification failed", error);
             setIsProcessing(false);
-            alert("Payment verification failed. Please check your payment status.");
+            warning("Payment verification failed. Please check your payment status.");
           }
         },
         modal: {
@@ -244,7 +246,7 @@ const PaymentDashboard = ({
             setIsProcessing(false);
             setShowConfirmModal(false);
             setCurrentView('dashboard');
-            alert("Payment cancelled.");
+            error("Payment cancelled.");
           },
         },
       };
@@ -254,7 +256,7 @@ const PaymentDashboard = ({
     } catch (error) {
       setIsProcessing(false);
       console.error("Error creating order:", error);
-      alert("Failed to create payment order.");
+      warning("Failed to create payment order.");
     }
   };
 
@@ -320,12 +322,16 @@ const PaymentDashboard = ({
 
         <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3">
           <button
-            onClick={() => setShowPaidModal(false)}
+            onClick={() => {
+              warning("Feature coming soon");
+              setShowPaidModal(false);
+            }}
             className="flex-1 bg-white/10 text-white py-2.5 sm:py-3 rounded-xl text-sm sm:text-base font-medium hover:bg-white/20 transition-all flex items-center justify-center space-x-2"
           >
             <Download size={14} className="sm:w-4 sm:h-4" />
             <span>Download Receipt</span>
           </button>
+
           <button
             onClick={() => setShowPaidModal(false)}
             className="flex-1 bg-gradient-to-r from-green-500 to-emerald-500 text-white py-2.5 sm:py-3 rounded-xl text-sm sm:text-base font-medium hover:from-green-600 hover:to-emerald-600 transition-all"

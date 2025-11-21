@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect, useContext } from 'react';
 import api from '../../../../api/api';
 import { AuthContext } from '../../../../context/AuthContext';
+import { useToast } from "../../../../hooks/useToast";
 import {
     MessageCircle,
     Filter,
@@ -562,6 +563,7 @@ const MessagesSection = ({ conversationId, onOpenPaymentFlow, selectedPayment, s
     const [loadingChats, setLoadingChats] = useState(false);
     const [loadingMessages, setLoadingMessages] = useState(false);
     const { user, token } = useContext(AuthContext);
+    const { info } = useToast();
     const [newMessage, setNewMessage] = useState('');
     const [attachedFiles, setAttachedFiles] = useState([]);
     const [uploadProgress, setUploadProgress] = useState(0);
@@ -684,7 +686,13 @@ const MessagesSection = ({ conversationId, onOpenPaymentFlow, selectedPayment, s
 
                 const msgs = await Promise.all(
                     res.data.map(async (msg) => {
-                        const isSenderMe = Number(msg.sender_id) === Number(user.id);
+                        const loggedInProfileId = user?.user
+                            ?? user?.profileData?.user
+                            ?? user?.id
+                            ?? user?.profileData?.id
+                            ?? null;
+                        const isSenderMe = String(msg.sender_id) === String(loggedInProfileId);
+
 
                         let paymentStatus = msg.payment_status;
                         if (msg.message_type === 'payment' && msg.payment_request) {
@@ -698,6 +706,18 @@ const MessagesSection = ({ conversationId, onOpenPaymentFlow, selectedPayment, s
                                 console.error('Error fetching payment status for msg', msg.id, err);
                             }
                         }
+                        // inside your fetchMessages mapping, near the top of the callback:
+                        // console.log(
+                        //     'fetchMessages — raw msg:',
+                        //     msg,
+                        //     'Sender ID (possible keys):',
+                        //     msg.sender_id ?? msg.senderid ?? msg.senderId,
+                        //     'User ID:', user?.id ?? null
+                        // );
+                        // console.log('Full user object:', user);
+                        // console.log('User profileId:', user?.user ?? user?.id ?? null);
+
+
 
                         return {
                             id: msg.id,
@@ -753,7 +773,7 @@ const MessagesSection = ({ conversationId, onOpenPaymentFlow, selectedPayment, s
 
     // WebSocket for real-time messages
     useEffect(() => {
-        if (!selectedChat || !token) return;
+        if (!selectedChat || !token || !user) return;
 
         let isMounted = true;
         // const backendHost = 'localhost:8000';
@@ -781,9 +801,33 @@ const MessagesSection = ({ conversationId, onOpenPaymentFlow, selectedPayment, s
             if (!isMounted) return;
             const data = JSON.parse(event.data);
 
+            // console.log(
+            //     'WS message received — raw data:',
+            //     data,
+            //     'Sender ID (possible keys):',
+            //     data.sender_id ?? data.senderid ?? data.senderId,
+            //     'User ID:', user?.id ?? null
+            // );
+            // console.log(
+            //     'Full user object:', user,
+            //     'Profile data:', user?.profileData,
+            // );
+
+
+
+
+
             // ------------------ Handle chat messages ------------------
             if (data.type === 'chat_message' || (!data.type && data.id)) {
-                const isSenderMe = Number(data.sender_id) === Number(user.id);
+                const loggedInProfileId = user?.user
+                    ?? user?.profileData?.user
+                    ?? user?.id
+                    ?? user?.profileData?.id
+                    ?? null;
+                // console.log('Logged in profileId:', loggedInProfileId);
+
+                const isSenderMe = String(data.sender_id) === String(loggedInProfileId);
+
 
                 const newMsg = {
                     ...data,
@@ -1079,6 +1123,10 @@ const MessagesSection = ({ conversationId, onOpenPaymentFlow, selectedPayment, s
         setMessages([]);
     };
 
+    const onStartCall = () => {
+        info("This feature will update soon")
+    }
+
     return (
         <div className="h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 flex flex-col md:flex-row">
 
@@ -1149,6 +1197,7 @@ const MessagesSection = ({ conversationId, onOpenPaymentFlow, selectedPayment, s
                             isMobile={isMobile}
                             token={token}
                             userId={user?.id}
+                            onStartCall={onStartCall}
                         />
                         {/* Project Context */}
                         <ProjectContext

@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Calendar, FileText, Clock, CheckCircle, X, ChevronDown, ChevronUp, Minimize2 } from 'lucide-react';
-// import api from '../../../../../api/api';
+
 
 const ProjectContext = ({
     project,
@@ -21,6 +21,9 @@ const ProjectContext = ({
     handleSendContract,
     handleStatusUpdate,
 }) => {
+    const [selectedTerms, setSelectedTerms] = useState('custom');
+    const [selectedMilestones, setSelectedMilestones] = useState('custom');
+    const [errors, setErrors] = useState({});
 
     // Workflow steps
     const workflowSteps = [
@@ -47,6 +50,10 @@ const ProjectContext = ({
             terms: '',
             milestones: ''
         });
+        setContractForm({ amount: '', deadline: '', terms: '', milestones: '' });
+        setSelectedTerms('custom');
+        setSelectedMilestones('custom');
+        setErrors({});
     };
 
     const handleInputChange = (field, value) => {
@@ -54,6 +61,9 @@ const ProjectContext = ({
             ...prev,
             [field]: value
         }));
+        if (errors[field]) {
+            setErrors({ ...errors, [field]: null });
+        }
     };
 
     // Progress visual (10 steps)
@@ -270,8 +280,12 @@ const ProjectContext = ({
             </div>
             {/* Contract Modal */}
             {isModalOpen && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-gray-800 rounded-lg max-w-md w-full max-h-[90vh] overflow-y-auto">
+                <div
+                    className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+                    role="dialog"
+                    aria-modal="true"
+                >
+                    <div className="bg-gray-800 rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
                         <div className="flex items-center justify-between p-4 border-b border-gray-700">
                             <h3 className="text-white font-medium text-lg">Create Contract</h3>
                             <button
@@ -282,9 +296,10 @@ const ProjectContext = ({
                             </button>
                         </div>
                         <div className="p-4 space-y-4">
+                            {/* Amount */}
                             <div>
                                 <label className="block text-white text-sm font-medium mb-2">
-                                    Contract Amount
+                                    Contract Amount <span className="text-red-400">*</span>
                                 </label>
                                 <input
                                     type="text"
@@ -293,10 +308,15 @@ const ProjectContext = ({
                                     placeholder="$5,000"
                                     className="w-full bg-gray-700 text-white border border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
                                 />
+                                {errors.amount && (
+                                    <p className="text-red-400 text-xs mt-1">{errors.amount}</p>
+                                )}
                             </div>
+
+                            {/* Deadline */}
                             <div>
                                 <label className="block text-white text-sm font-medium mb-2">
-                                    Project Deadline
+                                    Project Deadline <span className="text-red-400">*</span>
                                 </label>
                                 <input
                                     type="date"
@@ -304,28 +324,240 @@ const ProjectContext = ({
                                     onChange={(e) => handleInputChange('deadline', e.target.value)}
                                     className="w-full bg-gray-700 text-white border border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
                                 />
+                                {errors.deadline && (
+                                    <p className="text-red-400 text-xs mt-1">{errors.deadline}</p>
+                                )}
                             </div>
+
+                            {/* Project Milestones with Templates */}
                             <div>
                                 <label className="block text-white text-sm font-medium mb-2">
-                                    Contract Terms
+                                    Project Milestones
                                 </label>
+
+                                {/* Template selector pills */}
+                                <div className="flex flex-wrap gap-2 mb-3">
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setSelectedMilestones('ms1');
+                                            handleInputChange('milestones', 'Milestone 1 — Design & Planning: 30% — Due: [date]\nMilestone 2 — Development: 50% — Due: [date]\nMilestone 3 — Final Delivery: 20% — Due: [date]');
+                                        }}
+                                        className={`px-3 py-1.5 text-xs rounded-full transition-colors ${selectedMilestones === 'ms1'
+                                            ? 'bg-blue-500 text-white'
+                                            : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                                            }`}
+                                    >
+                                        3-Phase (30/50/20)
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setSelectedMilestones('ms2');
+                                            handleInputChange('milestones', 'Milestone 1 — Prototype & Design: 40% — Due: [date]\nMilestone 2 — Final Development & Delivery: 60% — Due: [date]');
+                                        }}
+                                        className={`px-3 py-1.5 text-xs rounded-full transition-colors ${selectedMilestones === 'ms2'
+                                            ? 'bg-blue-500 text-white'
+                                            : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                                            }`}
+                                    >
+                                        2-Phase (40/60)
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setSelectedMilestones('ms3');
+                                            handleInputChange('milestones', 'Milestone 1 — Initial Work: 50% — Due: [date]\nMilestone 2 — Final Delivery: 50% — Due: [date]');
+                                        }}
+                                        className={`px-3 py-1.5 text-xs rounded-full transition-colors ${selectedMilestones === 'ms3'
+                                            ? 'bg-blue-500 text-white'
+                                            : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                                            }`}
+                                    >
+                                        2-Phase Equal (50/50)
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setSelectedMilestones('ms4');
+                                            handleInputChange('milestones', 'Milestone 1 — Week 1: 25% — Due: [date]\nMilestone 2 — Week 2: 25% — Due: [date]\nMilestone 3 — Week 3: 25% — Due: [date]\nMilestone 4 — Week 4: 25% — Due: [date]');
+                                        }}
+                                        className={`px-3 py-1.5 text-xs rounded-full transition-colors ${selectedMilestones === 'ms4'
+                                            ? 'bg-blue-500 text-white'
+                                            : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                                            }`}
+                                    >
+                                        4 Weekly (25% each)
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setSelectedMilestones('ms5');
+                                            handleInputChange('milestones', 'Single milestone: Full payment upon project completion (100%) — Due: [date]');
+                                        }}
+                                        className={`px-3 py-1.5 text-xs rounded-full transition-colors ${selectedMilestones === 'ms5'
+                                            ? 'bg-blue-500 text-white'
+                                            : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                                            }`}
+                                    >
+                                        Single (100%)
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setSelectedMilestones('ms6');
+                                            handleInputChange('milestones', 'Milestone 1 — Advance: 20% — Due: [date]\nMilestone 2 — Mid-project: 30% — Due: [date]\nMilestone 3 — Near completion: 30% — Due: [date]\nMilestone 4 — Final delivery: 20% — Due: [date]');
+                                        }}
+                                        className={`px-3 py-1.5 text-xs rounded-full transition-colors ${selectedMilestones === 'ms6'
+                                            ? 'bg-blue-500 text-white'
+                                            : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                                            }`}
+                                    >
+                                        4-Phase (20/30/30/20)
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setSelectedMilestones('custom');
+                                            handleInputChange('milestones', '');
+                                        }}
+                                        className={`px-3 py-1.5 text-xs rounded-full transition-colors ${selectedMilestones === 'custom'
+                                            ? 'bg-blue-500 text-white'
+                                            : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                                            }`}
+                                    >
+                                        Custom
+                                    </button>
+                                </div>
+
+                                <textarea
+                                    value={contractForm.milestones}
+                                    onChange={(e) => handleInputChange('milestones', e.target.value)}
+                                    placeholder="Key deliverables and timeline milestones"
+                                    rows={4}
+                                    className="w-full bg-gray-700 text-white border border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500 resize-none"
+                                />
+                            </div>
+
+                            {/* Payment Terms with Templates */}
+                            <div>
+                                <label className="block text-white text-sm font-medium mb-2">
+                                    Payment Terms
+                                </label>
+
+                                {/* Template selector pills */}
+                                <div className="flex flex-wrap gap-2 mb-3">
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setSelectedTerms('terms1');
+                                            handleInputChange('terms', 'Payment split as per milestones above. Each milestone payment due within 3 business days of milestone completion and approval. Includes 2 rounds of revisions per milestone.');
+                                        }}
+                                        className={`px-3 py-1.5 text-xs rounded-full transition-colors ${selectedTerms === 'terms1'
+                                            ? 'bg-blue-500 text-white'
+                                            : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                                            }`}
+                                    >
+                                        Milestone-Based Payment
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setSelectedTerms('terms2');
+                                            handleInputChange('terms', 'Initial advance payment required before work begins. Remaining balance split across milestones. Payment terms: Net 5 days from invoice. Late payments subject to 2% monthly interest.');
+                                        }}
+                                        className={`px-3 py-1.5 text-xs rounded-full transition-colors ${selectedTerms === 'terms2'
+                                            ? 'bg-blue-500 text-white'
+                                            : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                                            }`}
+                                    >
+                                        Advance + Milestones
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setSelectedTerms('terms3');
+                                            handleInputChange('terms', 'Fixed price contract. Payment tied to milestone completion. Includes design, development, testing, and 1 month post-launch support. Source files and documentation provided upon final payment.');
+                                        }}
+                                        className={`px-3 py-1.5 text-xs rounded-full transition-colors ${selectedTerms === 'terms3'
+                                            ? 'bg-blue-500 text-white'
+                                            : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                                            }`}
+                                    >
+                                        Fixed Price Contract
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setSelectedTerms('terms4');
+                                            handleInputChange('terms', 'Hourly billing at agreed rate. Weekly invoices sent every Monday for previous week. Payment due within 7 days. Includes detailed time logs and progress reports. Overtime (>40hrs/week) billed at 1.5x rate.');
+                                        }}
+                                        className={`px-3 py-1.5 text-xs rounded-full transition-colors ${selectedTerms === 'terms4'
+                                            ? 'bg-blue-500 text-white'
+                                            : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                                            }`}
+                                    >
+                                        Hourly/Time-Based
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setSelectedTerms('terms5');
+                                            handleInputChange('terms', 'Monthly retainer model. Fixed monthly fee covers up to [X] hours of work. Additional hours billed at [rate]. Unused hours do not roll over. 30-day notice required for cancellation.');
+                                        }}
+                                        className={`px-3 py-1.5 text-xs rounded-full transition-colors ${selectedTerms === 'terms5'
+                                            ? 'bg-blue-500 text-white'
+                                            : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                                            }`}
+                                    >
+                                        Monthly Retainer
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setSelectedTerms('terms6');
+                                            handleInputChange('terms', 'Payment upon completion. Full amount due within 7 days of final delivery and client approval. Includes unlimited revisions during development phase. Final source files released after payment clearance.');
+                                        }}
+                                        className={`px-3 py-1.5 text-xs rounded-full transition-colors ${selectedTerms === 'terms6'
+                                            ? 'bg-blue-500 text-white'
+                                            : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                                            }`}
+                                    >
+                                        Pay on Completion
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setSelectedTerms('terms7');
+                                            handleInputChange('terms', '50% upfront deposit required to commence work. Remaining 50% due before final delivery. Includes 3 revision rounds. Rush delivery (under 2 weeks) incurs 25% surcharge. Payment via bank transfer or approved payment processor.');
+                                        }}
+                                        className={`px-3 py-1.5 text-xs rounded-full transition-colors ${selectedTerms === 'terms7'
+                                            ? 'bg-blue-500 text-white'
+                                            : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                                            }`}
+                                    >
+                                        50/50 Split
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setSelectedTerms('custom');
+                                            handleInputChange('terms', '');
+                                        }}
+                                        className={`px-3 py-1.5 text-xs rounded-full transition-colors ${selectedTerms === 'custom'
+                                            ? 'bg-blue-500 text-white'
+                                            : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                                            }`}
+                                    >
+                                        Custom
+                                    </button>
+                                </div>
+
                                 <textarea
                                     value={contractForm.terms}
                                     onChange={(e) => handleInputChange('terms', e.target.value)}
                                     placeholder="Payment terms, deliverables, revisions, etc."
                                     rows={4}
-                                    className="w-full bg-gray-700 text-white border border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500 resize-none"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-white text-sm font-medium mb-2">
-                                    Project Milestones
-                                </label>
-                                <textarea
-                                    value={contractForm.milestones}
-                                    onChange={(e) => handleInputChange('milestones', e.target.value)}
-                                    placeholder="Key deliverables and timeline milestones"
-                                    rows={3}
                                     className="w-full bg-gray-700 text-white border border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500 resize-none"
                                 />
                             </div>

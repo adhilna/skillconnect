@@ -9,9 +9,11 @@ import ChatInput from './messagesSection/ChatInput';
 import ProjectContext from './messagesSection/ProjectContext';
 import ChatHeader from './messagesSection/ChatHeader';
 import config from '../../../../config/environment';
+import { useToast } from "../../../../hooks/useToast";
 
 const FreelancerChatDashboard = ({ conversationId }) => {
   const { user, token } = useContext(AuthContext);
+  const { info, error } = useToast();
   const [currentView, setCurrentView] = useState('list');
   const [selectedChat, setSelectedChat] = useState(null);
   const [chatListData, setChatListData] = useState([]);
@@ -137,7 +139,14 @@ const FreelancerChatDashboard = ({ conversationId }) => {
         // Map messages and fetch latest payment status if needed
         const msgs = await Promise.all(
           res.data.map(async (msg) => {
-            const isSenderMe = Number(msg.sender_id) === Number(user.id);
+            const loggedInProfileId = user?.user
+              ?? user?.profileData?.user
+              ?? user?.id
+              ?? user?.profileData?.id
+              ?? null;
+            const isSenderMe = String(msg.sender_id) === String(loggedInProfileId);
+            console.log("sender_id:", msg.sender_id, "user.user:", user?.user, "profileData.user:", user?.profileData?.user, "loggedInProfileId:", loggedInProfileId);
+
 
             let paymentStatus = msg.payment_status;
 
@@ -205,9 +214,9 @@ const FreelancerChatDashboard = ({ conversationId }) => {
     fetchMessages();
   }, [selectedChat, user, token]);
 
-  // WebSocket connection for realtime messages omitted for brevity (keep your existing code here)
+  // WebSocket connection for realtime messages omitted for brevity
   useEffect(() => {
-    if (!selectedChat || !token) return;
+    if (!selectedChat || !token || !user) return;
 
     let isMounted = true;
 
@@ -248,7 +257,17 @@ const FreelancerChatDashboard = ({ conversationId }) => {
         // Handle different incoming event types:
         if (data.type === 'chat_message' || (!data.type && data.id)) {
           // Normal chat message event (some backend messages might lack explicit type)
-          const isSenderMe = Number(data.sender_id) === Number(user.id);
+          const loggedInProfileId = user?.user
+            ?? user?.profileData?.user
+            ?? user?.id
+            ?? user?.profileData?.id
+            ?? null;
+          const isSenderMe = String(data.sender_id) === String(loggedInProfileId);
+          console.log("sender_id:", data.sender_id, "user.user:", user?.user, "profileData.user:", user?.profileData?.user, "loggedInProfileId:", loggedInProfileId);
+          console.log('Full freelancer user object:', user);
+          console.log('Freelancer profileData:', user?.profileData);
+
+
 
           const newMsg = {
             ...data,
@@ -470,7 +489,7 @@ const FreelancerChatDashboard = ({ conversationId }) => {
     }
 
     if (!contractForm.amount || !contractForm.deadline) {
-      alert('Please fill in at least amount and deadline');
+      info('Please fill in at least amount and deadline');
       return;
     }
 
@@ -481,7 +500,7 @@ const FreelancerChatDashboard = ({ conversationId }) => {
         : null;
 
     if (!normalizedOrderType) {
-      alert('Invalid order type');
+      info('Invalid order type');
       return;
     }
 
@@ -511,7 +530,7 @@ const FreelancerChatDashboard = ({ conversationId }) => {
         });
       })
       .catch((err) => {
-        alert('Failed to send contract. Please try again.');
+        error('Failed to send contract. Please try again.');
         console.error(err);
       });
   };
@@ -673,6 +692,10 @@ const FreelancerChatDashboard = ({ conversationId }) => {
     setMessages([]);
   };
 
+  const onStartCall = () => {
+    info("This feature will update soon")
+  }
+
   // Parent component
   const sendTypingEvent = (isTyping) => {
     if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
@@ -724,6 +747,7 @@ const FreelancerChatDashboard = ({ conversationId }) => {
               onBack={handleBackToList}
               isMobile={isMobile}
               token={token}
+              onStartCall={onStartCall}
             />
 
             <ProjectContext

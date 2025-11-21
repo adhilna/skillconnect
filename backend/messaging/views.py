@@ -22,6 +22,7 @@ from .pagination import PaymentHistoryPagination
 from .razorpay_client import client
 from django.conf import settings
 from razorpay.errors import SignatureVerificationError
+from decimal import Decimal, ROUND_HALF_UP
 
 # --- Custom Permission: Only participants can access
 
@@ -301,7 +302,7 @@ class ContractViewSet(viewsets.ModelViewSet):
         else:
             from rest_framework.exceptions import ValidationError
             raise ValidationError({'order_type': "Must be 'service' or 'proposal'."})
-        
+
         broadcast_contract_update(contract)
 
     def perform_update(self, serializer):
@@ -512,23 +513,35 @@ class PaymentViewSet(viewsets.ModelViewSet):
         payment_req = self.get_object()
         if payment_req.status != 'pending':
             return Response({"error": "Order already processed"}, status=status.HTTP_400_BAD_REQUEST)
-        amount = int(payment_req.amount * 100)  # paise
-        order = client.order.create({
-            "amount": amount,
-            "currency": "INR",
-            "payment_capture": "1",
-            "notes": {
-                "payment_request_id": payment_req.id
-            }
-        })
+        PROCESSING_FEE = Decimal(getattr(settings, 'PROCESSING_FEE', '150.00'))
+        base_amount = Decimal(payment_req.amount)
+        total_amount_rupees = (base_amount + PROCESSING_FEE)
+        total_amount_paise = int((total_amount_rupees * Decimal('100')).quantize(Decimal('1'), rounding=ROUND_HALF_UP))
+
+        try:
+            order = client.order.create({
+                "amount": total_amount_paise,
+                "currency": "INR",
+                "payment_capture": "1",
+                "notes": {
+                    "payment_request_id": payment_req.id
+                }
+            })
+        except Exception as e:
+            # handle razorpay API errors gracefully
+            return Response({"error": "Razorpay order creation failed", "detail": str(e)}, status=status.HTTP_502_BAD_GATEWAY)
+
         payment_req.transaction_id = order['id']
         payment_req.save()
         return Response({
             "order_id": order['id'],
             "razorpay_key": settings.RAZORPAY_KEY_ID,
-            "amount": amount,
+            "amount": total_amount_paise,
             "currency": "INR",
-            "description": payment_req.description
+            "description": payment_req.description,
+            "processing_fee": str(PROCESSING_FEE),    # rupees (string) — optional, useful for UI
+            "base_amount": str(base_amount),
+            "total_amount_rupees": str(total_amount_rupees),
         })
 
     @action(detail=True, methods=['post'], url_path='verify-razorpay-payment')

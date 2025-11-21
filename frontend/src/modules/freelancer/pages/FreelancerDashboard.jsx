@@ -33,7 +33,7 @@ const FreelancerDashboard = () => {
 
   const [freelancers, setFreelancers] = useState([]);
 
-  const { token } = useContext(AuthContext);
+  const { token, user, setUser } = useContext(AuthContext);
 
   // analyticsSection States
   const [paymentHistory, setPaymentHistory] = useState([]);
@@ -56,6 +56,25 @@ const FreelancerDashboard = () => {
     { id: 'profile', label: 'Profile', icon: User },
     { id: 'settings', label: 'Settings', icon: Settings },
   ];
+
+  useEffect(() => {
+    if (!token || user?.role !== "FREELANCER") return;
+    if (user.profileData) return; // Already present
+
+    api.get('/api/v1/profiles/freelancer/profile-setup/me/', {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then(res => {
+        const profile = Array.isArray(res.data) ? res.data[0] : res.data;
+        if (profile) {
+          setUser({ ...user, profileData: profile });
+          // Optionally: setProfileData(profile) for local state if needed
+        }
+      })
+      .catch(err => {
+        console.error('Error fetching freelancer profile:', err);
+      });
+  }, [token, user, setUser]);
 
   useEffect(() => {
     if (activeSection === 'browse') {
@@ -163,6 +182,8 @@ const FreelancerDashboard = () => {
 
     if (token) fetchActiveProjects();
   }, [token]);
+
+
 
   const analytics = useMemo(() => {
     const payments = Array.isArray(paymentHistory) ? paymentHistory : [];

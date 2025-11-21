@@ -16,8 +16,29 @@ from core.validators import (
     validate_skills_input as skills_validator,
     validate_url_field
 )
-from django.core.validators import URLValidator
-from django.core.exceptions import ValidationError
+import urllib.parse
+from django.core.files.storage import default_storage
+
+def _safe_extract_presigned_url(maybe_url):
+    if not maybe_url:
+        return None
+    # If already looks like a real URL, return it
+    if isinstance(maybe_url, str) and (maybe_url.startswith('http://') or maybe_url.startswith('https://')):
+        return maybe_url
+    s = maybe_url
+    try:
+        for _ in range(3):
+            s = urllib.parse.unquote(s)
+        idx = s.find('https://') if 'https://' in s else s.find('http://')
+        if idx != -1:
+            candidate = s[idx:]
+            if '?' in candidate and (('X-Amz-' in candidate) or ('AWSAccessKeyId' in candidate) or ('Signature' in candidate)):
+                return candidate
+            return candidate
+    except Exception:
+        pass
+    return maybe_url
+
 
 
 # Supporting serializers
@@ -41,10 +62,44 @@ class EducationSerializer(serializers.ModelSerializer):
         }
 
     def get_certificate(self, obj):
-        request = self.context.get('request')
-        if obj.certificate and hasattr(obj.certificate, 'url'):
-            return request.build_absolute_uri(obj.certificate.url) if request else obj.certificate.url
-        return None
+        """
+        Return a usable absolute URL:
+        - If storage returns absolute url (S3/presigned) -> return it unchanged.
+        - If storage returns relative path (e.g. '/media/...') -> build absolute URI using request (backend host).
+        - Fallback to default_storage.url(name).
+        """
+        try:
+            if not obj.certificate:
+                return None
+
+            raw_url = getattr(obj.certificate, 'url', None)
+
+            # 1) If storage returned an absolute URL (S3 or full), sanitize/recover and return it
+            if raw_url:
+                # if already absolute, return it (safe for S3)
+                if isinstance(raw_url, str) and (raw_url.startswith('http://') or raw_url.startswith('https://')):
+                    # sanitize double-encoded cases (optional)
+                    sanitized = _safe_extract_presigned_url(raw_url)
+                    return sanitized or raw_url
+
+                # 2) If it's a relative path (starts with '/'), convert to absolute using request (backend host)
+                if isinstance(raw_url, str) and raw_url.startswith('/'):
+                    request = self.context.get('request')
+                    if request:
+                        # This will produce http(s)://<backend-host>/media/...
+                        return request.build_absolute_uri(raw_url)
+                    # no request in context — fallthrough to default_storage below
+
+            # 3) Fallback: try building from storage name (works for local and S3 storages too)
+            try:
+                return default_storage.url(obj.certificate.name)
+            except Exception:
+                return raw_url or None
+
+        except Exception:
+            return None
+
+
 
     def validate_college(self, value):
         return validate_non_empty_string(value, field_name="college")
@@ -88,10 +143,44 @@ class ExperienceSerializer(serializers.ModelSerializer):
         }
 
     def get_certificate(self, obj):
-        request = self.context.get('request')
-        if obj.certificate and hasattr(obj.certificate, 'url'):
-            return request.build_absolute_uri(obj.certificate.url) if request else obj.certificate.url
-        return None
+        """
+        Return a usable absolute URL:
+        - If storage returns absolute url (S3/presigned) -> return it unchanged.
+        - If storage returns relative path (e.g. '/media/...') -> build absolute URI using request (backend host).
+        - Fallback to default_storage.url(name).
+        """
+        try:
+            if not obj.certificate:
+                return None
+
+            raw_url = getattr(obj.certificate, 'url', None)
+
+            # 1) If storage returned an absolute URL (S3 or full), sanitize/recover and return it
+            if raw_url:
+                # if already absolute, return it (safe for S3)
+                if isinstance(raw_url, str) and (raw_url.startswith('http://') or raw_url.startswith('https://')):
+                    # sanitize double-encoded cases (optional)
+                    sanitized = _safe_extract_presigned_url(raw_url)
+                    return sanitized or raw_url
+
+                # 2) If it's a relative path (starts with '/'), convert to absolute using request (backend host)
+                if isinstance(raw_url, str) and raw_url.startswith('/'):
+                    request = self.context.get('request')
+                    if request:
+                        # This will produce http(s)://<backend-host>/media/...
+                        return request.build_absolute_uri(raw_url)
+                    # no request in context — fallthrough to default_storage below
+
+            # 3) Fallback: try building from storage name (works for local and S3 storages too)
+            try:
+                return default_storage.url(obj.certificate.name)
+            except Exception:
+                return raw_url or None
+
+        except Exception:
+            return None
+
+
 
     def validate_role(self, value):
         return validate_non_empty_string(value, field_name="role")
@@ -161,7 +250,6 @@ class PortfolioSerializer(serializers.ModelSerializer):
         if not value:
             return value
         return validate_url_field(value, field_name="Project Link")
-
 
 class SocialLinksSerializer(serializers.ModelSerializer):
     class Meta:

@@ -8,6 +8,7 @@ const ProposalsSection = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [showModal, setShowModal] = useState(false);
+    const [modalError, setModalError] = useState(null);
     const [editingProposal, setEditingProposal] = useState(null);
     const [submitLoading, setSubmitLoading] = useState(false);
     const [formData, setFormData] = useState({
@@ -123,6 +124,8 @@ const ProposalsSection = () => {
             is_active: true
         });
         setShowModal(true);
+        setError(null);
+        setModalError(null);
     };
 
     const handleEdit = (proposal) => {
@@ -141,18 +144,21 @@ const ProposalsSection = () => {
             is_active: proposal.is_active ?? true
         });
         setShowModal(true);
+        setError(null);
+        setModalError(null);
     };
 
     const handleSubmit = async () => {
         // 1. Validate input fields
         if (!formData.title || !formData.description || !formData.category_id ||
             !formData.budget_min || !formData.budget_max || !formData.timeline_days) {
-            setError('Please fill in all required fields');
+            setModalError('Please fill in all required fields');
             return;
         }
 
         setSubmitLoading(true);
         setError(null);
+        setModalError(null);
 
         try {
             const submitData = {
@@ -191,6 +197,7 @@ const ProposalsSection = () => {
             }
 
             setShowModal(false);
+            setModalError(null);
             setError(null);
 
         } catch (err) {
@@ -408,7 +415,10 @@ const ProposalsSection = () => {
                                 {editingProposal ? 'Edit Project' : 'Post New Project'}
                             </h4>
                             <button
-                                onClick={() => setShowModal(false)}
+                                onClick={() => {
+                                    setShowModal(false);
+                                    setModalError(null);
+                                }}
                                 className="text-white/60 hover:text-white transition-colors"
                             >
                                 <X size={24} />
@@ -416,9 +426,10 @@ const ProposalsSection = () => {
                         </div>
 
                         <div className="p-6 space-y-6">
-                            {error && (
-                                <div className="bg-red-500/20 border border-red-400/50 text-red-300 px-4 py-3 rounded-lg text-sm">
-                                    {error}
+                            {modalError && (
+                                <div className="bg-red-500/20 border border-red-500/50 rounded-lg p-4 flex items-center space-x-3">
+                                    <AlertCircle size={20} className="text-red-400 flex-shrink-0" />
+                                    <p className="text-red-200">{modalError}</p>
                                 </div>
                             )}
 
@@ -584,7 +595,10 @@ const ProposalsSection = () => {
                             <div className="flex items-center justify-end space-x-4 pt-4">
                                 <button
                                     type="button"
-                                    onClick={() => setShowModal(false)}
+                                    onClick={() => {
+                                        setShowModal(false);
+                                        setModalError(null);
+                                    }}
                                     disabled={submitLoading}
                                     className="px-6 py-2 border border-white/10 text-white rounded-lg hover:bg-white/5 transition-colors disabled:opacity-50"
                                 >
