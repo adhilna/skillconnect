@@ -20,6 +20,7 @@ CORS_ALLOWED_ORIGINS = env.list('CORS_ALLOWED_ORIGINS', default=[])
 CORS_ALLOW_CREDENTIALS = True
 
 CSRF_TRUSTED_ORIGINS = [
+    'http://34.47.222.85',
     'http://3.107.105.91',
     'http://3.107.105.91:8000',
     'http://3.107.105.91:3000',
