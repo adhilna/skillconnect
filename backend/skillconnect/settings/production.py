@@ -30,7 +30,7 @@ CSRF_TRUSTED_ORIGINS = [
     'https://www.skillconnect.buzz',
 ]
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', '3.107.105.91', 'skillconnect.buzz', 'www.skillconnect.buzz']
+ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=[])
 
 SECURE_CROSS_ORIGIN_OPENER_POLICY = 'same-origin-allow-popups'
 
