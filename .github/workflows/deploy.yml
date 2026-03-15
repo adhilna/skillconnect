@@ -31,10 +31,11 @@ jobs:
             cd backend
             source venv/bin/activate
             pip install -r requirements.txt
-            python manage.py migrate
-            python manage.py collectstatic --noinput
+            python3 manage.py migrate
+            python3 manage.py collectstatic --noinput
             sudo systemctl restart daphne
             sudo systemctl restart celery
+            sudo systemctl restart nginx
 
       - name: Upload Build Folder
         uses: appleboy/scp-action@master
