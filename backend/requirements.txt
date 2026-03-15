@@ -5,6 +5,8 @@ attrs==25.3.0
 autobahn==24.4.2
 Automat==25.4.16
 billiard==4.2.1
+boto3==1.40.57
+botocore==1.40.57
 cachetools==5.5.2
 celery==5.5.2
 certifi==2025.4.26
@@ -30,6 +32,7 @@ django-filter==25.1
 django-phonenumber-field==8.1.0
 django-ratelimit==4.1.0
 django-redis==5.4.0
+django-storages==1.14.6
 djangorestframework==3.16.0
 djangorestframework_simplejwt==5.5.0
 google-auth==2.40.2
@@ -39,6 +42,7 @@ hyperframe==6.1.0
 hyperlink==21.0.0
 idna==3.10
 incremental==24.7.2
+jmespath==1.0.1
 kombu==5.5.3
 msgpack==1.1.1
 oauthlib==3.2.2
@@ -60,6 +64,7 @@ requests==2.32.3
 requests-oauthlib==2.0.0
 rest-framework-simplejwt==0.0.2
 rsa==4.9.1
+s3transfer==0.14.0
 service-identity==24.2.0
 six==1.17.0
 sqlparse==0.5.3

@@ -1,3 +1,5 @@
+import os
+
 from rest_framework import generics, status
 from .serializers import (
     RegisterSerializer,
@@ -143,10 +145,10 @@ class GoogleAuthView(APIView):
 
         try:
             idinfo = id_token.verify_oauth2_token(
-                token,
-                requests.Request(),
-                "177280873690-gfuk3olcl1ue5ue3c693jdd7850tk9uf.apps.googleusercontent.com"
-            )
+            token,
+            requests.Request(),
+            os.getenv('GOOGLE_CLIENT_ID') # Use the env variable here
+        )
             email = idinfo.get('email')
             google_id = idinfo.get('sub')
 
