@@ -14,6 +14,11 @@ jobs:
       - name: Build Frontend (on GitHub)
         run: |
           cd frontend
+          echo "VITE_API_URL=https://skillconnect.buzz" > .env
+          echo "VITE_WS_URL=wss://skillconnect.buzz" >> .env
+          echo "VITE_GOOGLE_CLIENT_ID=${{ secrets.VITE_GOOGLE_CLIENT_ID }}" >> .env
+          echo "VITE_RAZORPAY_KEY_ID=${{ secrets.VITE_RAZORPAY_KEY_ID }}" >> .env
+
           npm install
           npm run build
 
