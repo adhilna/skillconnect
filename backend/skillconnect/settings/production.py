@@ -16,8 +16,17 @@ SECURE_HSTS_INCLUDE_SUBDOMAINS = False
 SECURE_HSTS_PRELOAD = False
 
 # CORS Settings for production
-CORS_ALLOWED_ORIGINS = env.list('CORS_ALLOWED_ORIGINS', default=[])
+CORS_ALLOWED_ORIGINS = [
+    "https://skillconnect.buzz",
+    "https://www.skillconnect.buzz",
+]
+
 CORS_ALLOW_CREDENTIALS = True
+
+from corsheaders.defaults import default_headers
+CORS_ALLOW_HEADERS = list(default_headers) + [
+    "authorization",
+]
 
 CSRF_TRUSTED_ORIGINS = [
     'http://34.47.222.85',
