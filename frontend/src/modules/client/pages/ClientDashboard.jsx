@@ -414,84 +414,6 @@ const ClientDashboard = () => {
         handleCancel
     };
 
-    const getCurrentSectionContent = () => {
-        switch (activeSection) {
-            case 'dashboard':
-                return <DashboardOverview
-                    profileData={profileData}
-                    featuredFreelancers={freelancers.slice(0, 3)} // Only top 3
-                    loading={loadingFreelancers}
-                    setActiveSection={setActiveSection}
-                    summaryMetrics={summaryMetrics}
-                    loadingPayments={loadingPayments}
-                    activeProjectsCount={activeProjects?.length || 0}
-                    loadingActive={loadingActive}
-                    hiredFreelancersCount={hiredFreelancersCount}
-                    activeProjects={activeProjects}
-                />;
-            case 'browse':
-                return <BrowseTalentSection
-                    preloadedFreelancers={freelancers}
-                    loading={loadingFreelancers}
-                />;
-            case 'explore':
-                return <ExploreServicesSection />;
-            case 'proposals':
-                return <ProposalsSection
-                    selectedOrderId={selectedOrderId}
-                    onSelectOrder={setSelectedOrderId}
-                />;
-            case 'orders':
-                return <OrderSection
-                    selectedOrderId={selectedOrderId}
-                    onSelectOrder={setSelectedOrderId}
-                    onStartChat={startChatForConversation}
-                />;
-            case 'messages':
-                return <MessagesSection
-                    conversationId={activeConversationId}
-                    onOpenPaymentFlow={openPaymentFlow}
-                    selectedPayment={paymentSelectedPayment}
-                    setSelectedPayment={setPaymentSelectedPayment}
-                />;
-            case 'freelancers':
-                return <FreelancersSection />;
-            case 'payments':
-                return <PaymentSection
-                    currentView={paymentSectionView}
-                    setCurrentView={setPaymentSectionView}
-                    selectedPayment={paymentSelectedPayment}
-                    setSelectedPayment={setPaymentSelectedPayment}
-                />;
-            case 'analytics':
-                return <AnalyticsSection
-                    paymentHistory={paymentHistory}
-                    setPaymentHistory={setPaymentHistory}
-                    totalPages={totalPages}
-                    setTotalPages={setTotalPages}
-                    loadingPayments={loadingPayments}
-                />;
-            case 'profile':
-                return <ProfileSection
-                    profileData={isEditing ? editData : profileData}
-                    isEditing={isEditing}
-                    onInputChange={handleInputChange}
-                    onArrayAdd={handleArrayAdd}
-                    onArrayRemove={handleArrayRemove}
-                    onEdit={() => setIsEditing(true)}
-                    onCancel={handleCancel}
-                    onSave={handleSave}
-                />;
-            case 'settings':
-                return <SettingsSection />;
-            default:
-                return <DashboardOverview
-                    profileData={profileData}
-
-                />;
-        }
-    };
-
     return (
         <OrdersProvider>
             <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900">
@@ -508,8 +430,8 @@ const ClientDashboard = () => {
                     sidebarOpen={sidebarOpen}
                     setSidebarOpen={setSidebarOpen}
                     navigationItems={navigationItems}
-                    // activeSection={activeSection}
-                    // setActiveSection={setActiveSection}
+                // activeSection={activeSection}
+                // setActiveSection={setActiveSection}
                 />
 
                 {/* Main Content */}
