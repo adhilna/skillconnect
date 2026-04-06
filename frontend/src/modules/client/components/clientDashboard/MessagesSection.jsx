@@ -30,6 +30,7 @@ import {
 import ProjectContext from './messagesSection/ProjectContext';
 import ChatHeader from './messagesSection/ChatHeader';
 import config from '../../../../config/environment';
+import { useOutletContext } from 'react-router-dom';
 
 // Reaction picker component
 const ReactionPicker = ({ isVisible, onReact, onClose }) => {
@@ -555,7 +556,13 @@ const AttachmentMenu = ({ isVisible, onClose, onFileSelect, onVoiceRecord }) => 
     );
 };
 
-const MessagesSection = ({ conversationId, onOpenPaymentFlow, selectedPayment, setSelectedPayment }) => {
+const MessagesSection = () => {
+    const {
+        activeConversationId: conversationId,
+        openPaymentFlow: onOpenPaymentFlow,
+        paymentSelectedPayment: selectedPayment,
+        setSelectedPayment
+    } = useOutletContext();
     const [chatListData, setChatListData] = useState([]);
     const [messages, setMessages] = useState([]);
     const [selectedChat, setSelectedChat] = useState(null);

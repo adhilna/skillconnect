@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Plus, X, User, Shield, Target, Users, DollarSign, Briefcase, Edit3, Save, Award, CreditCard } from "react-feather";
+import { useOutletContext } from 'react-router-dom';
 
 // EditableField: Handles text, select, and textarea fields
 const EditableField = ({
@@ -145,16 +146,20 @@ const EditableArrayField = ({
 };
 
 // Main ProfileSection Component
-const ProfileSection = ({
-  profileData = {},
-  isEditing,
-  onInputChange,
-  onArrayAdd,
-  onArrayRemove,
-  onEdit,
-  onCancel,
-  onSave,
-}) => {
+const ProfileSection = () => {
+  const {
+    profileData: savedData, // Rename it to avoid confusion
+    isEditing,
+    editData,
+    handleInputChange: onInputChange,
+    handleArrayAdd: onArrayAdd,
+    handleArrayRemove: onArrayRemove,
+    setIsEditing, // Pull the raw setter
+    handleCancel: onCancel,
+    handleSave: onSave
+  } = useOutletContext();
+  const profileData = isEditing ? editData : savedData;
+  const onEdit = () => setIsEditing(true);
   // Local state for new array values
   const [newProjectType, setNewProjectType] = useState("");
   // const [newCommunicationMethod, setNewCommunicationMethod] = useState("");

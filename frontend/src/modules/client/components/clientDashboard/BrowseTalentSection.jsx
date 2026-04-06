@@ -1,10 +1,10 @@
 import React, { useState, useMemo } from 'react';
 import {
-    Search, Filter, Star, MapPin, Clock,
-    ChevronDown, ChevronLeft, ChevronRight, X, Eye
+    Search, Star, MapPin, Clock, ChevronLeft, ChevronRight, X, Eye
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import api from '../../../../api/api';
+import { useOutletContext } from 'react-router-dom';
 
 const FreelancerCard = ({ freelancer, onViewProfile }) => {
     const getInitials = (name) =>
@@ -94,7 +94,12 @@ const FreelancerCard = ({ freelancer, onViewProfile }) => {
     );
 };
 
-const BrowseTalentSection = ({ preloadedFreelancers = [], loading }) => {
+const BrowseTalentSection = () => {
+    const { freelancers, loadingFreelancers } = useOutletContext();
+    const preloadedFreelancers = useMemo(() => {
+        return freelancers || [];
+    }, [freelancers]);
+    const loading = loadingFreelancers;
     const [searchTerm, setSearchTerm] = useState('');
     const [sortOption, setSortOption] = useState('rating');
     const [currentPage, setCurrentPage] = useState(1);

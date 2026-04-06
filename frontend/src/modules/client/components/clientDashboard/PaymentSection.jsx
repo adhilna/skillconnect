@@ -26,14 +26,15 @@ import api from '../../../../api/api';
 import { AuthContext } from '../../../../context/AuthContext';
 import PaymentFlow from './paymentSection/PaymentFlow';
 import { useToast } from "../../../../hooks/useToast";
+import { useOutletContext } from 'react-router-dom';
 
-const PaymentDashboard = ({
-  currentView,
-  setCurrentView,
-  selectedPayment,
-  setSelectedPayment,
-}) => {
-  // console.log("📄 PaymentSection mounted with selectedPayment:", selectedPayment);
+const PaymentDashboard = () => {
+  const {
+    paymentSectionView: currentView,
+    setPaymentSectionView: setCurrentView,
+    paymentSelectedPayment: selectedPayment,
+    setSelectedPayment
+  } = useOutletContext();
   const [selectedMethod, setSelectedMethod] = useState('razorpay');
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);

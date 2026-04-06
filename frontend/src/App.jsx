@@ -14,6 +14,17 @@ import ExplorePage from './pages/ExplorePage';
 import HowItWorksPage from './pages/HowItWorksPage';
 import FreelancerDashboard from './modules/freelancer/pages/FreelancerDashboard';
 import ClientDashboard from './modules/client/pages/ClientDashboard';
+import DashboardOverview from './modules/client/components/clientDashboard/DashboardOverview';
+import BrowseTalentSection from './modules/client/components/clientDashboard/BrowseTalentSection';
+import ExploreServicesSection from './modules/client/components/clientDashboard/ExploreServicesSection';
+import ProposalsSection from './modules/client/components/clientDashboard/ProposalsSection';
+import ClientProposalOrdersSection from './modules/client/components/clientDashboard/OrderSection';
+import MessagesSection from './modules/client/components/clientDashboard/MessagesSection';
+import FreelancersSection from './modules/client/components/clientDashboard/FreelancersSection';
+import PaymentDashboard from './modules/client/components/clientDashboard/PaymentSection';
+import AnalyticsSection from './modules/client/components/clientDashboard/AnalyticsSection';
+import ProfileSection from './modules/client/components/clientDashboard/ProfileSection';
+import SettingsSection from './modules/client/components/clientDashboard/SettingsSection';
 import EnterprisePage from './pages/EnterprisePage';
 import { ToastProvider } from './context/ToastContext';
 import { useToast } from './hooks/useToast';
@@ -40,7 +51,21 @@ function App() {
               <Route path='/how-it-works' element={<HowItWorksPage />} />
               <Route path='/enterprise' element={<EnterprisePage />} />
               <Route path='freelancer/dashboard' element={<FreelancerDashboard />} />
-              <Route path='client/dashboard' element={<ClientDashboard />} />
+              {/* Client Dashboard Parent */}
+              <Route path="client/dashboard" element={<ClientDashboard />}>
+                {/* Child Routes */}
+                <Route index element={<DashboardOverview />} />
+                <Route path="browse" element={<BrowseTalentSection />} />
+                <Route path="explore" element={<ExploreServicesSection />} />
+                <Route path="proposals" element={<ProposalsSection />} />
+                <Route path="orders" element={<ClientProposalOrdersSection />} />
+                <Route path="messages" element={<MessagesSection />} />
+                <Route path="freelancers" element={<FreelancersSection />} />
+                <Route path="payments" element={<PaymentDashboard />} />
+                <Route path="analytics" element={<AnalyticsSection />} />
+                <Route path="profile" element={<ProfileSection />} />
+                <Route path="settings" element={<SettingsSection />} />
+              </Route>
               <Route path="/freelancers/:id/view" element={<FreelancerProfileView />} />
               <Route path="/freelancer/clients/:id" element={<ClientProfileView />} />
             </Routes>

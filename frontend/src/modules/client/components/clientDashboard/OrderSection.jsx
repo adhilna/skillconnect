@@ -3,14 +3,21 @@ import api from '../../../../api/api';
 import { AuthContext } from '../../../../context/AuthContext';
 import OrderItem from './OrderItem';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { useOutletContext, useNavigate } from 'react-router-dom';
 
 
-const ClientProposalOrdersSection = ({ selectedOrderId, onSelectOrder, onStartChat }) => {
+const ClientProposalOrdersSection = () => {
+    const {
+        selectedOrderId,
+        setSelectedOrderId: onSelectOrder,
+        startChatForConversation: onStartChat
+    } = useOutletContext();
     const { token } = useContext(AuthContext);
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const [activeFilter, setActiveFilter] = useState('all');
+    const navigate = useNavigate();
 
     const orderRefs = useRef({});
 
@@ -113,6 +120,7 @@ const ClientProposalOrdersSection = ({ selectedOrderId, onSelectOrder, onStartCh
             const conversationId = response.data.id;
             if (onStartChat) {
                 onStartChat(conversationId);  // Tell dashboard to open chat UI in messages section
+                navigate('/client/dashboard/messages');
             } else {
                 alert('Chat handler not found.');
             }
@@ -121,7 +129,6 @@ const ClientProposalOrdersSection = ({ selectedOrderId, onSelectOrder, onStartCh
             alert("Failed to open chat. Please try again later.");
         }
     };
-
 
     // Sort orders pending > accepted > cancelled > rejected
     const sortedOrders = [...orders].sort((a, b) => {

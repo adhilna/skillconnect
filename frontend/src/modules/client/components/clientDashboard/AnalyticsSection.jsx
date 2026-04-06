@@ -14,10 +14,17 @@ import {
     ArrowUpDown
 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { useOutletContext } from 'react-router-dom';
 
 const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
-const AnalyticsSection = ({ paymentHistory, totalPages, setTotalPages, loadingPayments }) => {
+const AnalyticsSection = () => {
+    const {
+        paymentHistory,
+        totalPages,
+        setTotalPages,
+        loadingPayments
+    } = useOutletContext();
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
     const [currentPage, setCurrentPage] = useState(1);

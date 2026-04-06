@@ -3,7 +3,7 @@ import {
     Home, Search, MessageCircle, Users, BarChart3,
     User, Settings, Briefcase, CreditCard, Compass, ShoppingCart
 } from 'lucide-react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, Outlet, useNavigate } from 'react-router-dom';
 import Sidebar from '../components/clientDashboard/Sidebar';
 import Header from '../components/clientDashboard/Header';
 import DashboardOverview from '../components/clientDashboard/DashboardOverview';
@@ -24,6 +24,7 @@ import { OrdersProvider } from "../../../context/client/OrdersContext";
 const ClientDashboard = () => {
     const { token, user, setUser } = useContext(AuthContext);
     const location = useLocation();
+    const navigate = useNavigate();
     const [activeSection, setActiveSection] = useState('dashboard');
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [profileData, setProfileData] = useState(null);
@@ -50,7 +51,6 @@ const ClientDashboard = () => {
 
     // hired freelancers states
     const [hiredFreelancersCount, setHiredFreelancersCount] = useState(0);
-    // const [hiredFreelancers, setHiredFreelancers] = useState([]);
 
     // fetch active projects count
     useEffect(() => {
@@ -364,6 +364,56 @@ const ClientDashboard = () => {
         { id: 'settings', label: 'Settings', icon: Settings },
     ];
 
+    const contextValue = {
+        // Auth & Basic Data
+        token,
+        user,
+        setUser,
+        profileData,
+        profileId,
+
+        // Freelancer Data
+        freelancers,
+        loadingFreelancers,
+        hiredFreelancersCount,
+        featuredFreelancers: freelancers.slice(0, 3),
+
+        // Order & Proposal States
+        selectedOrderId,
+        setSelectedOrderId, // Function to update selected order
+
+        // Messaging & Conversation
+        activeConversationId,
+        startChatForConversation, // Your function to switch to chat
+
+        // Payment & Analytics States
+        paymentHistory,
+        setPaymentHistory,
+        loadingPayments,
+        totalPages,
+        setTotalPages,
+        summaryMetrics,
+        paymentSectionView,
+        setPaymentSectionView,
+        paymentSelectedPayment,
+        setSelectedPayment: setPaymentSelectedPayment,
+        openPaymentFlow, // Your function to trigger payment logic
+
+        // Active Project States
+        activeProjects,
+        loadingActive,
+
+        // Profile Editing States & Functions
+        isEditing,
+        setIsEditing,
+        editData,
+        handleInputChange,
+        handleArrayAdd,
+        handleArrayRemove,
+        handleSave,
+        handleCancel
+    };
+
     const getCurrentSectionContent = () => {
         switch (activeSection) {
             case 'dashboard':
@@ -458,8 +508,8 @@ const ClientDashboard = () => {
                     sidebarOpen={sidebarOpen}
                     setSidebarOpen={setSidebarOpen}
                     navigationItems={navigationItems}
-                    activeSection={activeSection}
-                    setActiveSection={setActiveSection}
+                    // activeSection={activeSection}
+                    // setActiveSection={setActiveSection}
                 />
 
                 {/* Main Content */}
@@ -471,14 +521,14 @@ const ClientDashboard = () => {
                         profileData={profileData}
                         firstLetter={firstLetter}
                         onNotificationClick={(notif) => {
-                            setActiveSection('orders');
+                            navigate('/client/dashboard/orders');
                             setSelectedOrderId(notif.id);
                         }}
                     />
 
                     {/* Page Content */}
                     <main className="p-6">
-                        {getCurrentSectionContent()}
+                        <Outlet context={contextValue} />
                     </main>
                 </div>
             </div>

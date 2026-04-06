@@ -5,9 +5,10 @@ import ProjectItem from './ProjectItem';
 import ActivityItem from './ActivityItem';
 import FreelancerCard from './FreelancerCard';
 import { useOrders } from "../../../../context/client/OrdersContext"
+import { useOutletContext } from 'react-router-dom';
 
-const DashboardOverview = (props) => {
-    const { profileData, featuredFreelancers, loading, setActiveSection, summaryMetrics, loadingPayments, activeProjectsCount, loadingActive, hiredFreelancersCount, activeProjects } = props;
+const DashboardOverview = () => {
+    const { profileData, featuredFreelancers, loading, setActiveSection, summaryMetrics, loadingPayments, activeProjectsCount, loadingActive, hiredFreelancersCount, activeProjects } = useOutletContext();
 
     const { orders, loadingOrders, ordersError } = useOrders();
     const totalOrders = orders?.length || 0;
@@ -246,7 +247,7 @@ const DashboardOverview = (props) => {
                     <div className="w-5 h-5 border-2 border-t-transparent border-gray-400 rounded-full animate-spin mx-auto"></div>
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {featuredFreelancers.map((freelancer) => (
+                        {featuredFreelancers?.map((freelancer) => (
                             <FreelancerCard
                                 key={freelancer.id}
                                 name={freelancer.name}
