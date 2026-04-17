@@ -90,9 +90,11 @@ const FreelancerProfileView = () => {
 
     const handleBack = () => {
         if (from === "browse") {
-            navigate("/client/dashboard", { state: { section: "browse" } });
+            // 🎯 Direct path to the browse section
+            navigate("/client/dashboard/browse");
         } else {
-            navigate("/client/dashboard", { state: { section: "explore" } });
+            // 🎯 Direct path to the explore section
+            navigate("/client/dashboard/explore");
         }
     };
 
@@ -197,7 +199,7 @@ const FreelancerProfileView = () => {
     const social_links_output = raw_social_links_output || {};
     const verification_output = raw_verification_output || {};
 
-// console.log("skills:", skills);
+    // console.log("skills:", skills);
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900">

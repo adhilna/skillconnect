@@ -76,9 +76,11 @@ const ClientProfileView = () => {
 
     const handleBack = () => {
         if (from === "browse") {
-            navigate("/freelancer/dashboard", { state: { section: "browse" } });
+            // 🎯 Direct path to the browse section
+            navigate("/freelancer/dashboard/browse");
         } else {
-            navigate("/freelancer/dashboard", { state: { section: "explore" } });
+            // 🎯 Direct path to the explore section
+            navigate("/freelancer/dashboard/explore");
         }
     };
 
