@@ -1068,7 +1068,6 @@ const MessagesSection = () => {
 
         try {
             const res = await api.get(`api/v1/messaging/payment-requests/${paymentRequestId}/`);
-            console.log("Payment API data:", res.data);
             const updatedPayment = res.data;
             setMessages(prevMessages =>
                 prevMessages.map(m =>

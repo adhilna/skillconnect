@@ -10,8 +10,14 @@ import ProjectContext from './messagesSection/ProjectContext';
 import ChatHeader from './messagesSection/ChatHeader';
 import config from '../../../../config/environment';
 import { useToast } from "../../../../hooks/useToast";
+import { useOutletContext } from 'react-router-dom';
 
-const FreelancerChatDashboard = ({ conversationId }) => {
+const FreelancerChatDashboard = () => {
+  const {
+    activeConversationId
+  } = useOutletContext();
+
+  const conversationId = activeConversationId
   const { user, token } = useContext(AuthContext);
   const { info, error } = useToast();
   const [currentView, setCurrentView] = useState('list');

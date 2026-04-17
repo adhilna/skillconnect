@@ -41,6 +41,7 @@ import {
   Legend
 } from 'recharts';
 import { FaSpinner } from 'react-icons/fa';
+import { useOutletContext } from 'react-router-dom';
 
 const generateSmartInsights = ({
   monthlyEarningsData,
@@ -104,27 +105,8 @@ const generateSmartInsights = ({
 
 const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
-// const paymentMethodData = [
-//   { name: 'Stripe', value: 45, color: '#8B5CF6' },
-//   { name: 'PayPal', value: 35, color: '#06B6D4' },
-//   { name: 'Razorpay', value: 20, color: '#10B981' }
-// ];
-
-// const ratingsOverTimeData = [
-//   { month: 'Jan', rating: 4.2 },
-//   { month: 'Feb', rating: 4.5 },
-//   { month: 'Mar', rating: 4.3 },
-//   { month: 'Apr', rating: 4.7 },
-//   { month: 'May', rating: 4.6 },
-//   { month: 'Jun', rating: 4.8 },
-//   { month: 'Jul', rating: 4.9 },
-//   { month: 'Aug', rating: 4.8 },
-//   { month: 'Sep', rating: 4.9 },
-//   { month: 'Oct', rating: 4.9 },
-// ];
-
-const AnalyticsSection = ({ paymentHistory, totalPages, setTotalPages, loadingPayments, activeProjects }) => {
-  // const [timeRange, setTimeRange] = useState('3months');
+const AnalyticsSection = () => {
+  const { paymentHistory, totalPages, setTotalPages, loadingPayments, activeProjects } = useOutletContext()
   const [selectedMetric, setSelectedMetric] = useState('earnings');
   const [showGuide, setShowGuide] = useState(false);
 

@@ -4,9 +4,19 @@ import StatCard from './StatCard';
 import ActivityItem from './ActivityItem';
 import ProjectItem from './messagesSection/ProjectItem';
 import { useOrders } from "../../../../context/freelancer/OrdersContext"
+import { useOutletContext } from 'react-router-dom';
 
-const DashboardOverview = (props) => {
-  const { profileData, analytics, loadingPayments, loadingActive, activeProjects, setActiveSection, activeProjectsCount } = props;
+const DashboardOverview = () => {
+
+  const {
+    profileData,
+    analytics,
+    loadingPayments,
+    loadingActive,
+    activeProjects,
+    setActiveSection,
+    activeProjectsCount
+  } = useOutletContext();
 
   const { orders, loadingOrders, ordersError } = useOrders();
   const totalOrders = orders?.length || 0;

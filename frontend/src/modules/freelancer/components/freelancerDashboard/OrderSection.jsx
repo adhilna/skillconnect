@@ -3,9 +3,21 @@ import { ShoppingCart, Filter, X, ChevronLeft, ChevronRight } from 'lucide-react
 import api from '../../../../api/api'; // adjust this path as needed
 import { AuthContext } from '../../../../context/AuthContext';
 import OrderItem from './OrderItem';
+import { useOutletContext, useNavigate } from 'react-router-dom';
 
 
-const OrderSection = ({ selectedOrderId, onSelectOrder, onStartChat }) => {
+const OrderSection = () => {
+  // 🎯 Pull everything from the context instead of props
+  const {
+    selectedOrderId,
+    setSelectedOrderId, 
+    startChatForConversation,
+  } = useOutletContext();
+  const navigate = useNavigate();
+
+  const onSelectOrder = setSelectedOrderId;
+  const onStartChat = startChatForConversation;
+
   const { token } = useContext(AuthContext);
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -98,6 +110,7 @@ const OrderSection = ({ selectedOrderId, onSelectOrder, onStartChat }) => {
         { headers: { Authorization: `Bearer ${token}` } }
       );
       const conversationId = response.data.id;
+      navigate('/freelancer/dashboard/messages');
       if (onStartChat) {
         onStartChat(conversationId);  // Tell dashboard to open chat UI in messages section
       } else {

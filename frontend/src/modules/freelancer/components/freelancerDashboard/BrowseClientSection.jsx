@@ -1,6 +1,7 @@
 import React from 'react';
 import { MapPin, Globe, Eye, Building, Users } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useOutletContext } from 'react-router-dom';
 
 const ClientCard = ({ client }) => {
     const getInitials = (name) =>
@@ -83,7 +84,17 @@ const ClientCard = ({ client }) => {
     );
 };
 
-const BrowseClientsSection = ({ clients, loading, error }) => {
+const BrowseClientsSection = () => {
+    const {
+        clients,
+        loadingClients: loading,
+        clientsError: error
+    } = useOutletContext();
+    const context = useOutletContext();
+    console.log("FULL CONTEXT OBJECT:", context);
+
+    console.log("Clients from context:", clients);
+
     if (loading) {
         return (
             <div className="flex justify-center items-center h-64">
