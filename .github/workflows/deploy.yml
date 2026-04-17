@@ -31,14 +31,17 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script_stop: true
           script: |
-            cd ~/skillconnect
+            cd /home/skillconnect717/skillconnect
             git pull origin main
 
             cd backend
             source venv/bin/activate
+
             pip install -r requirements.txt
+
             python3 manage.py migrate
             python3 manage.py collectstatic --noinput
+
             sudo systemctl restart daphne
             sudo systemctl restart celery
             sudo systemctl restart nginx
